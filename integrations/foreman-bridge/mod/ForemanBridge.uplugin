@@ -1,0 +1,14 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "SemVersion": "0.1.0",
+  "GameVersion": ">=513885",
+  "FriendlyName": "Foreman Bridge",
+  "Description": "Independent, asset-free server bridge prototype. Authoritative constructor and local-chat probe.",
+  "Category": "Modding",
+  "CanContainContent": false,
+  "RequiredOnRemote": false,
+  "Modules": [{ "Name": "ForemanBridge", "Type": "Runtime", "LoadingPhase": "PostDefault" }],
+  "Plugins": [{ "Name": "SML", "Enabled": true, "SemVersion": "3.12.0" }]
+}

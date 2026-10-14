@@ -1,0 +1,118 @@
+{
+  "schema": 1,
+  "bridgeVersion": "0.1.0",
+  "stage": "constructor-bridge-reviewed-prototype",
+  "starterCommit": "8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49",
+  "engineRelease": "5.6.1-css-83",
+  "msvcToolset": "14.38.33130",
+  "msvcCompiler": "19.38.33145",
+  "windowsSdk": "10.0.22621.0",
+  "linuxToolchain": "v25_clang-18.1.0-rockylinux8",
+  "wwiseSdk": "2025.1.6.9117",
+  "wwiseIntegration": "2025.1.6.9117.4248",
+  "game": {
+    "windowsEpicManifest": "513885.383",
+    "linuxSteamApp": "1690800",
+    "linuxSteamBuildId": "25782485",
+    "runtimeChangelist": 513885
+  },
+  "editorBuild": {
+    "result": "passed",
+    "actions": 4,
+    "seconds": 29.71,
+    "log": "ForemanBridge-Editor-20261014-125118.log"
+  },
+  "packages": [
+    {
+      "platform": "Windows",
+      "sha256": "ef1c301409e4caaf193db7f4d05e42b25084fdc1a67ec7e8038783c82371bafe",
+      "file": "ForemanBridge-Windows.zip"
+    },
+    {
+      "platform": "LinuxServer",
+      "sha256": "4beb1546e135e6bfae9f13a04ba7bcd242a558090b0f0d643d2dcaf29b645f59",
+      "file": "ForemanBridge-LinuxServer.zip"
+    }
+  ],
+  "acceptance": {
+    "publishedSmlServerInitialisation": "observed",
+    "publishedSmlClientInitialisation": "observed",
+    "smlOnlyPlayerJoin": "passed-2026-10-14T02:23:07Z",
+    "emptyBridgeServerLoadAndPlayerJoin": "passed-2026-10-14T02:38:56Z",
+    "crossMachineReceiver": "passed-player-server-VPS-2026-10-14",
+    "localReceiverMainLoop": "passed-player-and-server-2026-10-14",
+    "task8": "passed",
+    "remoteOutage": "passed-69.8-seconds",
+    "liveOverflowSnapshotRace": "passed-two-event-probe-release-restored",
+    "saveRollback": "passed-2-to-1-to-2"
+  },
+  "engineInstallerSha256": {
+    "UnrealEngine-CSS-Editor-Win64.exe": "50af30cf5260e2072a4f1602cd7e092ae651e3686349094cc9b140ce6fd88df1",
+    "UnrealEngine-CSS-Editor-Win64-1.bin": "3e0f6d3a596dc1ce82a7ddc224997a9fa6c733a9c19ad76c5b77c1803ba2d31d",
+    "UnrealEngine-CSS-Editor-Win64-2.bin": "d4ea409aac21f4d0cf665562162bd24d7dbcbff60f33398b538b012edd40937b",
+    "UnrealEngine-CSS-Editor-Win64-3.bin": "91b363a87c4a9056233a459dea583d82f7e97acea5bcc84bb14a7eb83585bbcc"
+  },
+  "publishedSmlArchives": [
+    {
+      "file": "SML_3.12.0_Windows.zip",
+      "sha256": "ff2f1d5a5d7af5f2fe896305cf6389cf7f2200e392975f5e11a20a67146107af",
+      "bytes": 38752019
+    },
+    {
+      "file": "SML_3.12.0_LinuxServer.zip",
+      "sha256": "b44d03b49afbd3757c8566281d0a1a6e250c4b676284774f1c1d11f6e6957b77",
+      "bytes": 6627612
+    }
+  ],
+  "packageBuild": {
+    "result": "passed",
+    "actions": 18,
+    "automationToolElapsed": "0h 0m 56s",
+    "exitCode": 0,
+    "log": "ForemanBridge-Package-20261014-125222.log",
+    "warnings": [
+      "Nonfatal msdia registration diagnostics from Linux link steps."
+    ]
+  },
+  "sourceInputs": {
+    "ForemanBridge.uplugin": "142649d284a56f9877a4d1eaa30f655a86e7e4a85d02d2417c91f3f6ea2c663f",
+    "Source/ForemanBridge/ForemanBridge.Build.cs": "54cd24501fb534d79cc163bd3fc5cf69ab94f4cc62f6e23af896e54147d86ecf",
+    "Source/ForemanBridge/Private/BridgeConfig.cpp": "6d43cdb9d4be0bf03a5269b70d72b3b7a69c24b0a246dfdbb1944126c65a9593",
+    "Source/ForemanBridge/Private/BridgeConfig.h": "cad9ad175078d84086ef1fe58caa4874efd421de3c2ae25621a0462b1f519664",
+    "Source/ForemanBridge/Private/BridgeGameAdapter.cpp": "501fb69f26a63855a36b9a80862ea1e82286c49dbab61f8d00ebab5dc8962979",
+    "Source/ForemanBridge/Private/BridgeGameAdapter.h": "dee3e1a638eb34c427940756486e18ffbc165e7e0aeabc41ebf7a398fa6886c3",
+    "Source/ForemanBridge/Private/BridgeStatusCommand.cpp": "239bf89a14d1cd8bdc9dd9400ec5c6b3252e7c380275775c50dedf4838188c74",
+    "Source/ForemanBridge/Private/BridgeSubsystem.cpp": "80b2fb6f7d64f076e52525951c70bd0e75af1f29c011ec70d0c359ce1d5694a8",
+    "Source/ForemanBridge/Private/BridgeTransport.cpp": "c99d07ae54ee87ab5bb04187d5f3cbde425f80595fde941fdad97dff7c036583",
+    "Source/ForemanBridge/Private/BridgeTransport.h": "17267e7bdbd77e2236f4aae348debff23d1e1c82b6bb6cdacf4fe970e7702c8c",
+    "Source/ForemanBridge/Private/BridgeWire.cpp": "a75b946de93d35e476d82c770612264a7b1f7212216c142db23f5ca05fed91c3",
+    "Source/ForemanBridge/Private/BridgeWire.h": "7c8f21fb50a3bdb595a616c04f54f66e5c2a31b7b274aef2c96f741374b60c2f",
+    "Source/ForemanBridge/Private/BridgeWorldModule.cpp": "9de4f2251552c39a7f11eb657b9ba48cd5c627e159c1086360de9d9093666a92",
+    "Source/ForemanBridge/Private/Core/BridgeDelivery.cpp": "36d6e3721a4592b5957be056c8a8c3a6992917be7e0d878fe87c876d6b2bbd39",
+    "Source/ForemanBridge/Private/Core/BridgeDelivery.h": "b599801f02bf7c78b7ca20a9d72c6986d952041aab812c96fc9c055d3c574cd4",
+    "Source/ForemanBridge/Private/Core/BridgeState.cpp": "8bce764752db5e4b3b13d387ef9c08a827b527f41e0d5b96b027605c8292891c",
+    "Source/ForemanBridge/Private/Core/BridgeState.h": "02e3fce6ef372724a9d99e569ab0a143697f368c99577f467c3736ee5365f040",
+    "Source/ForemanBridge/Private/Core/BridgeTypes.h": "527f94e40cd336af7c5341d9de36b8e822ab12a3089f733600c6a5bc513d2ae8",
+    "Source/ForemanBridge/Private/ForemanBridgeModule.cpp": "de47d96d9ce74b4c90179bb45cacca7baed8ab3ba6e401628628529a7d5a0627",
+    "Source/ForemanBridge/Private/Tests/BridgeProbeTests.cpp": "11d7b24c821f1ee1f804542ebc9b55d37757976656dc0e1e185dc0dc00bc52f8",
+    "Source/ForemanBridge/Private/Tests/BridgeTransportTests.cpp": "b67869d9b5c03299ad01f5739b74458c319df45238ed984311600eecb601f56c",
+    "Source/ForemanBridge/Private/Tests/BridgeWireTests.cpp": "a7e57d5ef139cafa5f576e18f498e9eb67309a0770cdc0c3d2eb545acb677d7c",
+    "Source/ForemanBridge/Public/BridgeStatusCommand.h": "d1a0a1cc6429e1f0ca3dd17a9d60457d02893abdaba70b0f0dfd2050dbed1de3",
+    "Source/ForemanBridge/Public/BridgeSubsystem.h": "32ae8d31fda478968bf78a805afcfea9e10b255ddd5f39ba781868664ce454a2",
+    "Source/ForemanBridge/Public/BridgeWorldModule.h": "e0fa0484e7bdd10b3a60005b3b6ece6fde9a5f31d44770acf92622e9aa52e662"
+  },
+  "bridgeSourceCommit": "cf02906",
+  "receiverSourceCommit": "82b5af4",
+  "tests": {
+    "receiver": 71,
+    "coreState": 8,
+    "coreDelivery": 8,
+    "unreal": 7
+  },
+  "review": {
+    "critical": 0,
+    "importantFixed": 2,
+    "minorDeferred": 1,
+    "report": "docs/final-review.md"
+  }
+}

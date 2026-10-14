@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "components": {
+    "mod": {
+      "sourceCommit": "625065cea01be0baf48a6be2336dac31a62a8fa3",
+      "files": {
+        ".gitignore": "3de3c3f1520ab2724361930b10cf063dbb77432968b2dc295865d0b65ed7a7cd",
+        "ForemanBridge.uplugin": "142649d284a56f9877a4d1eaa30f655a86e7e4a85d02d2417c91f3f6ea2c663f",
+        "README.md": "7b22dc45c2d332b270fee804c4e20a09c858595101ab405555a4571ee0fe9900",
+        "Scripts/Build.ps1": "1e90038ada7b2429cb9c252f92dd5fc9d456983b85a7a64a7e590dc160e1915c",
+        "Scripts/Stage-Test.ps1": "6d43dc0a32744ef48391284e4ff16c28e44a5277583d73d1d8e1a372279fec23",
+        "Scripts/Test-Core.ps1": "29a4bb583fa0871fd07086d1869ec0702f6d79c18c64799dcf6c0bb1a956a56d",
+        "Scripts/Test-Staging.ps1": "e8b5ffea2b1478bb86454c3049083189000e6ca788dec7b0a27166a2017813e5",
+        "Scripts/Test-Unreal.ps1": "96072a9d3bff4278e76ec8c8a05c382461057a25e58e898c8319ebe910da6578",
+        "Scripts/Verify-Task1.ps1": "d3ac51ddfab6375f09944655b0c8815d01a3e8bfe8233377e0a4623e4350355a",
+        "Source/ForemanBridge/ForemanBridge.Build.cs": "54cd24501fb534d79cc163bd3fc5cf69ab94f4cc62f6e23af896e54147d86ecf",
+        "Source/ForemanBridge/Private/BridgeConfig.cpp": "6d43cdb9d4be0bf03a5269b70d72b3b7a69c24b0a246dfdbb1944126c65a9593",
+        "Source/ForemanBridge/Private/BridgeConfig.h": "cad9ad175078d84086ef1fe58caa4874efd421de3c2ae25621a0462b1f519664",
+        "Source/ForemanBridge/Private/BridgeGameAdapter.cpp": "501fb69f26a63855a36b9a80862ea1e82286c49dbab61f8d00ebab5dc8962979",
+        "Source/ForemanBridge/Private/BridgeGameAdapter.h": "dee3e1a638eb34c427940756486e18ffbc165e7e0aeabc41ebf7a398fa6886c3",
+        "Source/ForemanBridge/Private/BridgeStatusCommand.cpp": "239bf89a14d1cd8bdc9dd9400ec5c6b3252e7c380275775c50dedf4838188c74",
+        "Source/ForemanBridge/Private/BridgeSubsystem.cpp": "80b2fb6f7d64f076e52525951c70bd0e75af1f29c011ec70d0c359ce1d5694a8",
+        "Source/ForemanBridge/Private/BridgeTransport.cpp": "c99d07ae54ee87ab5bb04187d5f3cbde425f80595fde941fdad97dff7c036583",
+        "Source/ForemanBridge/Private/BridgeTransport.h": "17267e7bdbd77e2236f4aae348debff23d1e1c82b6bb6cdacf4fe970e7702c8c",
+        "Source/ForemanBridge/Private/BridgeWire.cpp": "a75b946de93d35e476d82c770612264a7b1f7212216c142db23f5ca05fed91c3",
+        "Source/ForemanBridge/Private/BridgeWire.h": "7c8f21fb50a3bdb595a616c04f54f66e5c2a31b7b274aef2c96f741374b60c2f",
+        "Source/ForemanBridge/Private/BridgeWorldModule.cpp": "9de4f2251552c39a7f11eb657b9ba48cd5c627e159c1086360de9d9093666a92",
+        "Source/ForemanBridge/Private/Core/BridgeDelivery.cpp": "36d6e3721a4592b5957be056c8a8c3a6992917be7e0d878fe87c876d6b2bbd39",
+        "Source/ForemanBridge/Private/Core/BridgeDelivery.h": "b599801f02bf7c78b7ca20a9d72c6986d952041aab812c96fc9c055d3c574cd4",
+        "Source/ForemanBridge/Private/Core/BridgeState.cpp": "8bce764752db5e4b3b13d387ef9c08a827b527f41e0d5b96b027605c8292891c",
+        "Source/ForemanBridge/Private/Core/BridgeState.h": "02e3fce6ef372724a9d99e569ab0a143697f368c99577f467c3736ee5365f040",
+        "Source/ForemanBridge/Private/Core/BridgeTypes.h": "527f94e40cd336af7c5341d9de36b8e822ab12a3089f733600c6a5bc513d2ae8",
+        "Source/ForemanBridge/Private/ForemanBridgeModule.cpp": "de47d96d9ce74b4c90179bb45cacca7baed8ab3ba6e401628628529a7d5a0627",
+        "Source/ForemanBridge/Private/Tests/BridgeProbeTests.cpp": "11d7b24c821f1ee1f804542ebc9b55d37757976656dc0e1e185dc0dc00bc52f8",
+        "Source/ForemanBridge/Private/Tests/BridgeTransportTests.cpp": "b67869d9b5c03299ad01f5739b74458c319df45238ed984311600eecb601f56c",
+        "Source/ForemanBridge/Private/Tests/BridgeWireTests.cpp": "a7e57d5ef139cafa5f576e18f498e9eb67309a0770cdc0c3d2eb545acb677d7c",
+        "Source/ForemanBridge/Public/BridgeStatusCommand.h": "d1a0a1cc6429e1f0ca3dd17a9d60457d02893abdaba70b0f0dfd2050dbed1de3",
+        "Source/ForemanBridge/Public/BridgeSubsystem.h": "32ae8d31fda478968bf78a805afcfea9e10b255ddd5f39ba781868664ce454a2",
+        "Source/ForemanBridge/Public/BridgeWorldModule.h": "e0fa0484e7bdd10b3a60005b3b6ece6fde9a5f31d44770acf92622e9aa52e662",
+        "Tests/CoreTests.cpp": "05a7c9633e639e9acdf6b18aa8b42a7edbbd9bef52c8d8a319338847b4c8a3e3",
+        "Tests/fixtures/v1.json": "c2e4377dd8f692a65c9e49368b2f938779a14d32922781cac9e4648c729f995e",
+        "docs/acceptance.md": "59f427b54d9c9bc6b2a4014f3033ffd4ab4c8eb5707b124ad9e6221359a6b855",
+        "docs/build-manifest.json": "c83ca0764b9987c2c805e1d6a35771c4121ff356e9ba94786d80d12154bf629e",
+        "docs/final-review.md": "1ef2d222a7a3d226624fac9a85671cee33d279032aa6721b313015206b389493",
+        "docs/game-probe.md": "013bca1f2c54ba167264cd89aaa86002d46bd38a885c4603a7e3d88a041e4710",
+        "docs/implementation-decisions.md": "f820927e317a28b64f043dd3c9b256745ea0925c218c173c636dc51c08afb9d3",
+        "docs/protocol-v1.md": "330730fe581f43149d30dba90f2092ca32b76f4830ed7eb411e54ba61b2f485d"
+      }
+    },
+    "receiver": {
+      "sourceCommit": "82b5af4b0748b94023eec63377ca8d66cbb54e9e",
+      "files": {
+        ".gitignore": "19ec15539f455ae74b6aa076419f24c0971b54fa075b7b20c215c7aaaa62ed2f",
+        "README.md": "1bf7006138fcb6403fcd076f5604f5ab9a5619ac3a79f9fdab4f8467345e1d33",
+        "fixtures/v1.json": "c2e4377dd8f692a65c9e49368b2f938779a14d32922781cac9e4648c729f995e",
+        "package.json": "f39eb050adbb883e0cd163d9becd82aa12616564e7b5eba5800814b03c55d269",
+        "scripts/acceptance-receiver.mjs": "aa2b0dc0f1ea4dfde54b0f6d775fa7eef2a0fa3af4be098bb337f3d5cb40d4a2",
+        "scripts/make-test-cert.sh": "aefc42a600caebe1755c5edb19d99aabaa4771b13e4dbeca5f8738351e1688a5",
+        "scripts/replay-scenario.mjs": "41d26626ff330eff342ebe87736517784513c7e7e078bc4c0e01acf6647e7069",
+        "src/main.mjs": "eac39b55f5b68ed3becec94e233e67c22c82cdd1b7f37a730e81c94efc7afe53",
+        "src/protocol.mjs": "0cb313f1002beaaa7e89a2e990485f2f9d39d511fa517efe24156c8b9687f65b",
+        "src/server.mjs": "8b053e4eefca469e9421858573a76351d7002d11fa36a047d654618c2cd99232",
+        "src/store.mjs": "344300d3aff5f5f93c448168276fa54bf63ba2044cd8819e7bf49f8dde5940c4",
+        "test/acceptance-gate.test.mjs": "f3b11aff9b4ce339c71cfd55bf614a748669d29365264f06a05a9b6b0b6a7d81",
+        "test/protocol.test.mjs": "54a643b3296eff2fcf707f0f3af8b55cff539388b5120f4614202aa53ab854d4",
+        "test/recovery.test.mjs": "360b218a97b3b4df09eb7532f040c8b55d9e6997bcc4431b375440a7999cca56",
+        "test/server.test.mjs": "30c88b3550b18f22ef250d863c021c91eb214156d0a752980e0afec99b67e4e1",
+        "test/store.test.mjs": "6faae1c59680df8a95d6497d73b7f9cca75922a308014edf95cab168bb5cd4f7"
+      }
+    }
+  }
+}

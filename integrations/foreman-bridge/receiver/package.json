@@ -1,0 +1,13 @@
+{
+  "name": "foreman-bridge-receiver",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.21.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/main.mjs"
+  }
+}

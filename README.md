@@ -213,3 +213,11 @@ Studios. Game data is read from files that ship with the game and remains their 
 ## Attribution
 
 Built by Stu · [GitHub](https://github.com/StuartMeeks) · [Reddit](https://www.reddit.com/user/sherman384)
+
+## Independent SML bridge prototype
+
+The private derivative includes a reviewed [SML companion bridge and independent
+receiver](integrations/foreman-bridge/README.md). It observes constructors on a
+dedicated server, delivers current state over HTTPS and replies through in-game
+chat. It is separately built and tested; Foreman application integration is not
+yet implemented.
