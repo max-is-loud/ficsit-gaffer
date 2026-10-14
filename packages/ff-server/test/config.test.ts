@@ -59,3 +59,26 @@ describe('clientLlmConfig override', () => {
     expect(resolved.model).toBe('claude-custom');
   });
 });
+
+const BRIDGE_ENV = {
+  FOREMAN_BRIDGE_URL: 'https://receiver.example:9443',
+  FOREMAN_BRIDGE_QUERY_TOKEN: 'q'.repeat(48),
+  FOREMAN_BRIDGE_SERVER_ID: '00000001-0000-4000-8000-000000000001',
+  FOREMAN_BRIDGE_WORLD_ID: '00000002-0000-4000-8000-000000000001',
+  FOREMAN_BRIDGE_PLAYTHROUGH_ID: 'playthrough_1',
+};
+
+describe('server config bridge binding', () => {
+  it('is optional and carried privately on the server config', () => {
+    expect(resolveServerConfig({}).bridge).toBeUndefined();
+    expect(resolveServerConfig(BRIDGE_ENV).bridge?.worldId).toBe(
+      BRIDGE_ENV.FOREMAN_BRIDGE_WORLD_ID,
+    );
+  });
+
+  it('fails startup configuration for an incomplete binding', () => {
+    expect(() =>
+      resolveServerConfig({ FOREMAN_BRIDGE_URL: BRIDGE_ENV.FOREMAN_BRIDGE_URL }),
+    ).toThrow(/incomplete/i);
+  });
+});

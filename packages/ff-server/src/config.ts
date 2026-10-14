@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { resolveBridgeBinding } from './bridge/config.js';
+import type { BridgeBinding } from './bridge/types.js';
 import type { LlmRuntimeConfig, ProviderKind } from './llm/types.js';
 
 /**
@@ -47,6 +49,11 @@ export interface ServerConfig {
    * path the server injects.
    */
   saveDataDir: string;
+  /**
+   * Optional live-bridge binding (one receiver world → one playthrough). Holds a
+   * credential: never include it in health/config responses, logs or prompts.
+   */
+  bridge: BridgeBinding | undefined;
 }
 
 const DEFAULT_HOST = '0.0.0.0';
@@ -163,6 +170,7 @@ export function resolveServerConfig(env: NodeJS.ProcessEnv = process.env): Serve
     historyWindow: parsePositiveInt(env['HISTORY_WINDOW'], DEFAULT_HISTORY_WINDOW),
     systemPromptPath: resolveSystemPromptPath(env),
     saveDataDir: resolveSaveDataDir(env),
+    bridge: resolveBridgeBinding(env),
   };
 }
 
