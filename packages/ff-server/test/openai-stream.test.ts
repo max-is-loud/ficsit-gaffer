@@ -1,7 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { consumeOpenAiStream, tokenLimitParam, type OpenAiStreamChunk } from '../src/llm/openai.js';
+import {
+  consumeOpenAiStream,
+  OpenAiCompatibleProvider,
+  tokenLimitParam,
+  type OpenAiStreamChunk,
+} from '../src/llm/openai.js';
+import { liveStateToolDefinitions } from '../src/tools/liveStateTools.js';
 import type { LlmStreamEvent } from '../src/llm/types.js';
+
+// Capture SDK requests; consumeOpenAiStream tests never touch the client.
+const wire = vi.hoisted(() => ({ requests: [] as Record<string, unknown>[] }));
+vi.mock('openai', () => ({
+  default: class {
+    public readonly chat = {
+      completions: {
+        create: async (request: Record<string, unknown>) => {
+          wire.requests.push(structuredClone(request));
+          return (async function* () {
+            yield { choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] };
+          })();
+        },
+      },
+    };
+  },
+}));
 
 async function* chunks(items: OpenAiStreamChunk[]): AsyncGenerator<OpenAiStreamChunk> {
   for (const item of items) {
@@ -138,5 +161,60 @@ describe('tokenLimitParam', () => {
     expect(tokenLimitParam('gpt-4o', 8192)).toEqual({ max_tokens: 8192 });
     expect(tokenLimitParam('llama3.1', 8192)).toEqual({ max_tokens: 8192 });
     expect(tokenLimitParam('qwen3:32b', 8192)).toEqual({ max_tokens: 8192 });
+  });
+});
+
+describe('OpenAI live tool serialisation', () => {
+  it('carries the live tool definition and folds its error result into the tool message', async () => {
+    const [definition] = liveStateToolDefinitions('p1', {
+      binding: {
+        url: 'https://receiver.example:9443/',
+        queryToken: 'openai-test-query-token-0123456789',
+        serverId: '00000001-0000-4000-8000-000000000001',
+        worldId: '00000002-0000-4000-8000-000000000001',
+        playthroughId: 'p1',
+      },
+      client: { query: async () => Promise.reject(new Error('unused')) },
+    });
+    expect(definition).toBeDefined();
+    await new OpenAiCompatibleProvider('sk-test').runTurn(
+      {
+        system: 'Foreman',
+        model: 'gpt-4.1',
+        maxTokens: 512,
+        tools: definition === undefined ? [] : [definition],
+        messages: [
+          { role: 'user', content: 'How many constructors?' },
+          {
+            role: 'assistant',
+            text: '',
+            toolCalls: [{ id: 'c1', name: 'get_live_constructor_state', arguments: {} }],
+          },
+          {
+            role: 'tool',
+            toolCallId: 'c1',
+            content: 'Live observations unavailable.',
+            isError: true,
+          },
+        ],
+      },
+      () => {},
+    );
+    const request = wire.requests[0] as {
+      tools: { function: { name: string; parameters: { properties: Record<string, unknown> } } }[];
+      messages: { role: string; content: string | null; tool_call_id?: string }[];
+    };
+    expect(request.tools[0]?.function.name).toBe('get_live_constructor_state');
+    expect(Object.keys(request.tools[0]?.function.parameters.properties ?? {}).sort()).toEqual([
+      'cursor',
+      'includeLocations',
+      'limit',
+    ]);
+    expect(request.messages.at(-1)).toEqual({
+      role: 'tool',
+      tool_call_id: 'c1',
+      content: 'ERROR: Live observations unavailable.',
+    });
+    expect(JSON.stringify(request)).not.toContain('openai-test-query-token');
   });
 });

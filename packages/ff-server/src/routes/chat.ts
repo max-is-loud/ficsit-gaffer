@@ -24,6 +24,7 @@ export function chatRouter(deps: AppDeps): Router {
     playthroughs: deps.playthroughs,
     workOrders: deps.workOrders,
     mcp: deps.mcp,
+    liveState: deps.liveState,
   };
 
   router.post('/', async (req, res) => {

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
 import { buildApp } from './app.js';
+import { createBridgeClient } from './bridge/client.js';
 import { createAuth } from './auth.js';
 import { resolveServerConfig } from './config.js';
 import { disconnectDb, prisma } from './db.js';
@@ -18,6 +19,7 @@ import { ForemanService } from './services/foremanService.js';
 import { PlaythroughService } from './services/playthroughService.js';
 import { SaveService } from './services/saveService.js';
 import { WorkOrderService } from './services/workOrderService.js';
+import type { LiveStateService } from './tools/liveStateTools.js';
 
 /** Loads `.env` from the package dir, the workspace root, and the cwd. */
 function loadEnv(): void {
@@ -51,6 +53,22 @@ async function main(): Promise<void> {
 
   const playthroughs = new PlaythroughService(prisma);
   const workOrders = new WorkOrderService(prisma);
+
+  // Optional live Constructor observations for one operator-bound playthrough.
+  // The binding carries a credential: log only the non-secret playthrough id.
+  let liveState: LiveStateService | undefined;
+  if (config.bridge !== undefined) {
+    liveState = { binding: config.bridge, client: createBridgeClient(config.bridge) };
+    const linked = await playthroughs.findOwnerId(config.bridge.playthroughId);
+    if (linked === undefined || linked.userId === null) {
+      logger.warn(
+        `Live bridge playthrough '${config.bridge.playthroughId}' does not exist or has no owner; live observations stay unreachable until an owned playthrough with that id exists.`,
+      );
+    }
+    logger.info(
+      `Live Constructor bridge enabled for playthrough '${config.bridge.playthroughId}'.`,
+    );
+  }
   const deps: AppDeps = {
     config,
     auth: createAuth(prisma),
@@ -66,6 +84,7 @@ async function main(): Promise<void> {
     ),
     llmProviderFactory: createProvider,
     systemPromptTemplate,
+    liveState,
   };
 
   // Migrate any pre-#76 single-file saves to the per-version layout (idempotent).

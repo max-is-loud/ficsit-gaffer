@@ -43,6 +43,13 @@ export function playthroughsRouter(deps: AppDeps): Router {
       return;
     }
     if (parsed.data.id !== undefined) {
+      // The live bridge is bound by playthrough id. Never let a client choose that
+      // id, or deleting the linked playthrough would let anyone re-create it and
+      // inherit the world's observations.
+      if (parsed.data.id === deps.liveState?.binding.playthroughId) {
+        res.status(409).json({ error: 'Playthrough id is reserved.' });
+        return;
+      }
       const existing = await deps.playthroughs.get(parsed.data.id);
       if (existing !== undefined) {
         res.status(409).json({ error: `Playthrough '${parsed.data.id}' already exists.` });

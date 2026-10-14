@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
@@ -9,15 +10,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { createAuth } from '../src/auth.js';
 import { resolveServerConfig } from '../src/config.js';
+import type { BridgeClient, ConstructorQuery } from '../src/bridge/types.js';
 import type { AppDeps } from '../src/deps.js';
 import type { McpGateway } from '../src/mcp/client.js';
 import { SummaryService } from '../src/llm/summary.js';
-import type { LlmProviderFactory } from '../src/llm/provider.js';
+import type { LlmProvider, LlmProviderFactory } from '../src/llm/provider.js';
 import { ForemanService } from '../src/services/foremanService.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
 import { SaveService } from '../src/services/saveService.js';
 import { WorkOrderService } from '../src/services/workOrderService.js';
-import { createTestDb, createTestForeman, type TestDb } from './helpers.js';
+import { LIVE_CONSTRUCTOR_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
+import { createTestDb, createTestForeman, createTestPlaythrough, type TestDb } from './helpers.js';
 
 let saveDir: string;
 
@@ -28,6 +31,48 @@ let baseUrl: string;
 let playthroughs: PlaythroughService;
 // Cookie for the default signed-in user; threaded through every request.
 let cookie: string;
+
+// The single playthrough the live bridge is bound to; created directly in the db.
+const LINKED_ID = `live-linked-${randomUUID()}`;
+const LIVE_TOKEN = 'route-test-query-token-0123456789abcdef';
+const liveCalls: ConstructorQuery[] = [];
+const liveClient: BridgeClient = {
+  query: async (query) => {
+    liveCalls.push(query);
+    return {
+      protocol: 1,
+      serverId: '00000001-0000-4000-8000-000000000001',
+      worldId: '00000002-0000-4000-8000-000000000001',
+      revision: '0000000a-0000-4000-8000-000000000001',
+      epoch: '00000003-0000-4000-8000-000000000001',
+      status: 'fresh',
+      reason: 'recent_sync',
+      lastSyncAt: 1_760_000_000_000,
+      evaluatedAt: 1_760_000_001_000,
+      totalCount: 2,
+      locations: [],
+      coordinateSystem: 'unreal_cm',
+      returnedCount: 0,
+      hasMore: false,
+      nextCursor: null,
+    };
+  },
+};
+const liveState: LiveStateService = {
+  client: liveClient,
+  binding: {
+    url: 'https://receiver.example:9443/',
+    queryToken: LIVE_TOKEN,
+    serverId: '00000001-0000-4000-8000-000000000001',
+    worldId: '00000002-0000-4000-8000-000000000001',
+    playthroughId: LINKED_ID,
+  },
+};
+/** Per-request provider; tests may swap it to script tool calls. */
+let makeProvider: () => LlmProvider = () => ({
+  runTurn: async () => ({ text: '', toolCalls: [], stopReason: 'stop' }),
+  complete: async () => '',
+});
 
 const stubMcp: McpGateway = {
   gameVersion: '1.2.3.0',
@@ -69,10 +114,7 @@ beforeAll(async () => {
   db = await createTestDb();
   saveDir = fs.mkdtempSync(path.join(os.tmpdir(), 'foreman-saves-test-'));
   playthroughs = new PlaythroughService(db.prisma);
-  const stubFactory: LlmProviderFactory = () => ({
-    runTurn: async () => ({ text: '', toolCalls: [], stopReason: 'stop' }),
-    complete: async () => '',
-  });
+  const stubFactory: LlmProviderFactory = () => makeProvider();
   const deps: AppDeps = {
     config: resolveServerConfig({}),
     auth: createAuth(db.prisma),
@@ -84,6 +126,7 @@ beforeAll(async () => {
     summary: new SummaryService(playthroughs, { historyWindow: 20 }, stubFactory),
     llmProviderFactory: stubFactory,
     systemPromptTemplate: 'Prompt {{PERSONALITY}} {{PIONEER_PROFILE}} {{SESSION_SUMMARY}}',
+    liveState,
   };
   const app = buildApp(deps);
   await new Promise<void>((resolve) => {
@@ -473,5 +516,94 @@ describe('chat history window (BYOK)', () => {
       body: JSON.stringify({ message: 'hi', historyWindow: 50 }),
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('live Constructor tool authorization', () => {
+  const KEY_HEADER = 'x-anthropic-api-key';
+
+  /** A provider that calls the live tool once, then answers. */
+  function liveProvider(): LlmProvider {
+    let turn = 0;
+    return {
+      runTurn: async () => {
+        turn += 1;
+        return turn === 1
+          ? {
+              text: '',
+              toolCalls: [{ id: 'l1', name: LIVE_CONSTRUCTOR_TOOL, arguments: {} }],
+              stopReason: 'tool_use',
+            }
+          : { text: 'Answered.', toolCalls: [], stopReason: 'stop' };
+      },
+      complete: async () => '',
+    };
+  }
+
+  async function chat(playthroughId: string, c: string): Promise<{ status: number; body: string }> {
+    const original = makeProvider;
+    makeProvider = liveProvider;
+    try {
+      const res = await fetch(`${baseUrl}/api/playthroughs/${playthroughId}/chat`, {
+        method: 'POST',
+        headers: { ...authHeaders(c), [KEY_HEADER]: 'sk-test-byok' },
+        body: JSON.stringify({ message: 'How many constructors?' }),
+      });
+      return { status: res.status, body: await res.text() };
+    } finally {
+      makeProvider = original;
+    }
+  }
+
+  async function userIdFor(email: string): Promise<string> {
+    const user = await db.prisma.user.findUniqueOrThrow({ where: { email } });
+    return user.id;
+  }
+
+  it('lets only the owner of the linked playthrough reach the receiver', async () => {
+    const ownerCookie = await signUp('live-owner@example.com');
+    await createTestPlaythrough(db.prisma, {
+      id: LINKED_ID,
+      userId: await userIdFor('live-owner@example.com'),
+    });
+    const before = liveCalls.length;
+
+    const owner = await chat(LINKED_ID, ownerCookie);
+    expect(owner.status).toBe(200);
+    expect(owner.body).toContain(LIVE_CONSTRUCTOR_TOOL);
+    expect(liveCalls.length).toBe(before + 1);
+
+    const intruder = await chat(LINKED_ID, await signUp('live-intruder@example.com'));
+    expect(intruder.status).toBe(403);
+    expect(liveCalls.length).toBe(before + 1);
+
+    // The owner's other, unlinked playthrough gets no live access either.
+    const unlinked = await createPlaythrough({}, ownerCookie);
+    const other = await chat(unlinked.id, ownerCookie);
+    expect(other.status).toBe(200);
+    expect(liveCalls.length).toBe(before + 1);
+
+    // Once deleted, the linked id cannot be used or re-created by anyone.
+    const del = await fetch(`${baseUrl}/api/playthroughs/${LINKED_ID}`, {
+      method: 'DELETE',
+      headers: authHeaders(ownerCookie),
+    });
+    expect(del.status).toBe(204);
+    expect((await chat(LINKED_ID, ownerCookie)).status).toBe(404);
+    const foremanId = await createForeman();
+    const recreate = await fetch(`${baseUrl}/api/playthroughs`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ id: LINKED_ID, foremanId }),
+    });
+    expect(recreate.status).toBe(409);
+    expect(liveCalls.length).toBe(before + 1);
+  });
+
+  it('never serialises the private binding in public responses', async () => {
+    const body = await (await fetch(`${baseUrl}/health`)).text();
+    expect(body).not.toContain(LIVE_TOKEN);
+    expect(body).not.toContain(liveState.binding.worldId);
+    expect(body).not.toContain('receiver.example');
   });
 });

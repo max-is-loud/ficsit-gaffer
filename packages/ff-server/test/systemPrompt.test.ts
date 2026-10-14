@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { buildSystemPrompt, loadSystemPromptTemplate } from '../src/anthropic/systemPrompt.js';
+import { resolveSystemPromptPath } from '../src/config.js';
 
 function tempPrompt(contents: string): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'foreman-prompt-'));
@@ -72,5 +73,43 @@ describe('buildSystemPrompt', () => {
       summary: '   ',
     });
     expect(result).not.toContain('Session So Far');
+  });
+});
+
+describe('live Constructor guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Live Constructor Observations'));
+
+  it('has a dedicated section naming the tool', () => {
+    expect(prompt).toContain('## Live Constructor Observations');
+    expect(section).toContain('get_live_constructor_state');
+  });
+
+  it('requires a fresh query and never treats earlier text or summaries as current', () => {
+    expect(section).toMatch(/call `get_live_constructor_state` (again )?for every/i);
+    expect(section).toMatch(/earlier (messages|answers)/i);
+    expect(section).toMatch(/summar/i);
+  });
+
+  it('distinguishes fresh, last-known and unavailable answers', () => {
+    expect(section).toMatch(/last.known/i);
+    expect(section).toMatch(/lastSyncAt/);
+    expect(section).toMatch(/unavailable/i);
+    expect(section).toMatch(/unknown, not zero/i);
+  });
+
+  it('keeps live observations separate from save data', () => {
+    expect(section).toMatch(/save/i);
+    expect(section).toMatch(/separate|not the same as|never mix/i);
+  });
+
+  it('discloses partial locations against the exact total', () => {
+    expect(section).toMatch(/totalConstructors/);
+    expect(section).toMatch(/partial|some of/i);
+  });
+
+  it('forbids invented landmarks and claims beyond Constructors', () => {
+    expect(section).toMatch(/near your base/i);
+    expect(section).toMatch(/recipes|power|production/i);
   });
 });

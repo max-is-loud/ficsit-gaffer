@@ -1,12 +1,14 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { BridgeQueryError } from '../src/bridge/types.js';
 import { AnthropicProvider } from '../src/llm/anthropic.js';
 import { runChat } from '../src/llm/chat.js';
 import type { LlmStreamEvent } from '../src/llm/types.js';
 import type { McpGateway } from '../src/mcp/client.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
 import { WorkOrderService } from '../src/services/workOrderService.js';
+import { LIVE_CONSTRUCTOR_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
 import { createTestDb, createTestForeman, createTestUser, type TestDb } from './helpers.js';
 
 // Mock only the external SDK stream; exercise the real adapter and chat loop.
@@ -106,7 +108,9 @@ const mcp: McpGateway = {
       : { text: 'Recipe found', isError: false },
 };
 
-async function chat(): Promise<{ text: string; chunks: string[]; tools: string[] }> {
+async function chat(
+  liveState?: LiveStateService,
+): Promise<{ text: string; chunks: string[]; tools: string[] }> {
   const chunks: string[] = [];
   const tools: string[] = [];
   const text = await runChat(
@@ -117,7 +121,14 @@ async function chat(): Promise<{ text: string; chunks: string[]; tools: string[]
       model: 'claude-sonnet-5-5',
       maxTokens: 4096,
     },
-    { systemPromptTemplate: 'Foreman', historyWindow: 20, playthroughs, workOrders, mcp },
+    {
+      systemPromptTemplate: 'Foreman',
+      historyWindow: 20,
+      playthroughs,
+      workOrders,
+      mcp,
+      liveState,
+    },
     {
       text: (delta) => chunks.push(delta),
       toolUse: (name) => tools.push(name),
@@ -215,6 +226,53 @@ describe('Anthropic continuation through runChat', () => {
     expect(wire.requests[2]?.tools).toEqual(wire.requests[0]?.tools);
     expect(first).toEqual(originalFirst);
     expect(second).toEqual(originalSecond);
+  });
+
+  it('carries the live tool definition and its error result in native format', async () => {
+    const liveState: LiveStateService = {
+      binding: {
+        url: 'https://receiver.example:9443/',
+        queryToken: 'anthropic-test-query-token-0123456789',
+        serverId: '00000001-0000-4000-8000-000000000001',
+        worldId: '00000002-0000-4000-8000-000000000001',
+        playthroughId,
+      },
+      client: {
+        query: async () => {
+          throw new BridgeQueryError('unavailable', 'timeout');
+        },
+      },
+    };
+    wire.responses.push(
+      response(
+        [
+          {
+            type: 'tool_use',
+            id: 'live-1',
+            name: LIVE_CONSTRUCTOR_TOOL,
+            input: { includeLocations: true },
+            caller: { type: 'direct' },
+          },
+        ],
+        'tool_use',
+      ),
+      response([{ type: 'text', text: 'Live data unavailable.', citations: null }]),
+    );
+    await chat(liveState);
+    const tool = wire.requests[0]?.tools?.find(
+      (t) => 'name' in t && t.name === LIVE_CONSTRUCTOR_TOOL,
+    ) as { input_schema?: { properties?: Record<string, unknown> } } | undefined;
+    expect(Object.keys(tool?.input_schema?.properties ?? {}).sort()).toEqual([
+      'cursor',
+      'includeLocations',
+      'limit',
+    ]);
+    const results = wire.requests[1]?.messages.at(-1);
+    expect(results).toMatchObject({
+      role: 'user',
+      content: [{ type: 'tool_result', tool_use_id: 'live-1', is_error: true }],
+    });
+    expect(JSON.stringify(wire.requests)).not.toContain('anthropic-test-query-token');
   });
 
   it('returns only visible text for a response without tool use', async () => {

@@ -7,6 +7,7 @@ import type { ForemanService } from './services/foremanService.js';
 import type { PlaythroughService } from './services/playthroughService.js';
 import type { SaveService } from './services/saveService.js';
 import type { WorkOrderService } from './services/workOrderService.js';
+import type { LiveStateService } from './tools/liveStateTools.js';
 
 /** Everything the HTTP layer needs, assembled once at startup. */
 export interface AppDeps {
@@ -24,4 +25,6 @@ export interface AppDeps {
   llmProviderFactory: LlmProviderFactory;
   /** The foreman system prompt template (placeholders not yet substituted). */
   systemPromptTemplate: string;
+  /** Live Constructor observations for the one bound playthrough; absent when disabled. */
+  liveState?: LiveStateService;
 }

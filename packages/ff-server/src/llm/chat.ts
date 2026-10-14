@@ -5,6 +5,12 @@ import type { WorkOrder } from '../types.js';
 import { logger } from '../logger.js';
 import { buildSystemPrompt, type PromptContext } from '../anthropic/systemPrompt.js';
 import {
+  handleLiveStateTool,
+  isLiveStateTool,
+  liveStateToolDefinitions,
+  type LiveStateService,
+} from '../tools/liveStateTools.js';
+import {
   handleWorkOrderTool,
   isWorkOrderTool,
   workOrderToolDefinitions,
@@ -19,6 +25,8 @@ export interface ChatDeps {
   playthroughs: PlaythroughService;
   workOrders: WorkOrderService;
   mcp: McpGateway;
+  /** Live Constructor observations; only the bound playthrough may use them. */
+  liveState?: LiveStateService;
 }
 
 /** A single chat turn to run. The user message is already persisted. */
@@ -57,7 +65,7 @@ export async function runChat(
   events: ChatEvents,
 ): Promise<string> {
   const system = buildSystemPrompt(deps.systemPromptTemplate, req.promptContext);
-  const tools = await assembleTools(deps.mcp);
+  const tools = await assembleTools(deps.mcp, req.playthroughId, deps.liveState);
 
   const history = await deps.playthroughs.recentMessages(req.playthroughId, deps.historyWindow);
   const messages: NeutralMessage[] = history.map((message) => ({
@@ -107,10 +115,21 @@ export async function runChat(
   return streamedText;
 }
 
-/** Merges the MCP game-data tools with the server-local work-order tools. */
-async function assembleTools(mcp: McpGateway): Promise<ToolDefinition[]> {
-  const mcpTools = await mcp.listTools();
-  return [...mcpTools, ...workOrderToolDefinitions()];
+/**
+ * Merges the MCP game-data tools with the server-local work-order and live tools.
+ * The live tool's name is reserved: an MCP tool of the same name is never offered.
+ */
+async function assembleTools(
+  mcp: McpGateway,
+  playthroughId: string,
+  liveState: LiveStateService | undefined,
+): Promise<ToolDefinition[]> {
+  const mcpTools = (await mcp.listTools()).filter((tool) => !isLiveStateTool(tool.name));
+  return [
+    ...mcpTools,
+    ...workOrderToolDefinitions(),
+    ...liveStateToolDefinitions(playthroughId, liveState),
+  ];
 }
 
 interface ToolOutcome {
@@ -118,7 +137,7 @@ interface ToolOutcome {
   isError: boolean;
 }
 
-/** Routes a tool call to the work-order handler or the MCP server. */
+/** Routes a tool call to the live, work-order or MCP handler. */
 async function dispatchTool(
   playthroughId: string,
   savePath: string | undefined,
@@ -126,6 +145,10 @@ async function dispatchTool(
   deps: ChatDeps,
   events: ChatEvents,
 ): Promise<ToolOutcome> {
+  // Local and authority-checked even when unadvertised; never falls through to MCP.
+  if (isLiveStateTool(call.name)) {
+    return handleLiveStateTool(playthroughId, call.arguments, deps.liveState);
+  }
   if (isWorkOrderTool(call.name)) {
     const outcome = await handleWorkOrderTool(playthroughId, call.name, call.arguments, {
       workOrders: deps.workOrders,
