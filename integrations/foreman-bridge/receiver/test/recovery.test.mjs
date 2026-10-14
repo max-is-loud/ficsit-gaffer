@@ -20,6 +20,7 @@ test('HTTPS duplicate events and command results have one durable effect',async(
 test('HTTPS receiver reopen retains cursor; fresh database requires snapshot',async()=>{
  const r=await runScenario(config,'receiver-restart');
  assert.equal(r.resumeCursor,'1');assert.equal(r.count,1);assert.equal(r.emptyDatabaseMode,'snapshotRequired');
+ assert.equal(r.restartReason,'receiver_restarted');assert.equal(r.resumedHelloReason,'receiver_restarted');assert.equal(r.syncedStatus,'fresh');
 });
 test('HTTPS partial snapshot stays invisible and post-watermark event survives',async()=>{
  const r=await runScenario(config,'snapshot-race');
@@ -28,4 +29,5 @@ test('HTTPS partial snapshot stays invisible and post-watermark event survives',
 test('HTTPS 60-second receiver outage converges and retention loss requests snapshot',async()=>{
  const r=await runScenario(config,'outage');
  assert.ok(r.outageMs>=60000);assert.equal(r.count,2);assert.equal(r.cursor,'2');assert.equal(r.gapReason,'retention_gap');assert.equal(r.recoveredCount,3);
+ assert.deepEqual([r.gapStatus.status,r.gapStatus.reason,r.gapStatus.totalCount],['last_known','resynchronizing',2]);assert.equal(r.recoveredStatus,'fresh');
 });

@@ -54,6 +54,7 @@ export async function runScenario(config,scenario) {
  const snapshot=async(rows,watermark)=>ok('snapshot/commit',await stage(rows,watermark));
  const exchange=(events=[],commandResults=[])=>ok('exchange',q({events,commandResults}));
  const count=()=>store.current(context.worldId).length;
+ const status=()=>store.queryConstructors({serverId:context.serverId,worldId:context.worldId},{});
  function inspect() {
   const db=new DatabaseSync(databasePath,{readOnly:true});
   try {return {eventReceipts:db.prepare("SELECT count(*) AS n FROM receipts WHERE kind='event'").get().n,commands:db.prepare('SELECT count(*) AS n FROM commands').get().n,executedCommands:db.prepare("SELECT count(*) AS n FROM commands WHERE status='executed'").get().n};}finally{db.close();}
@@ -69,7 +70,8 @@ export async function runScenario(config,scenario) {
    Object.assign(result,inspect(),{count:count(),pendingCommands:final.commands.length});
    assert.deepEqual([result.count,result.eventReceipts,result.commands,result.executedCommands,result.pendingCommands],[1,1,1,1,0]);
   } else if(scenario==='receiver-restart') {
-   await stop();await start();const resume=await hello('1','1');assert.equal(resume.mode,'resume');
+   await stop();await start();result.restartReason=status().reason;const resume=await hello('1','1');assert.equal(resume.mode,'resume');
+   result.resumedHelloReason=status().reason;await exchange();result.syncedStatus=status().status;
    Object.assign(result,{resumeCursor:resume.cursor,count:count()});assert.equal(result.count,1);assert.equal(resume.cursor,'1');
    await stop();databasePath=join(dir,'empty.db');await start();result.emptyDatabaseMode=(await hello('1','1')).mode;assert.equal(result.emptyDatabaseMode,'snapshotRequired');
   } else if(scenario==='snapshot-race') {
@@ -83,7 +85,7 @@ export async function runScenario(config,scenario) {
    await start();const resume=await hello('2','2');assert.equal(resume.mode,'resume');assert.equal(resume.cursor,'1');
    const final=await exchange([up(2,b)]);Object.assign(result,{count:count(),cursor:final.ackSeq});
    const gap=await hello('4','4');assert.equal(gap.mode,'snapshotRequired');result.gapReason=gap.reason;assert.equal(gap.reason,'retention_gap');
-   const c=row();await snapshot([a,b,c],'4');result.recoveredCount=count();assert.equal(result.count,2);assert.equal(result.cursor,'2');assert.equal(result.recoveredCount,3);
+   result.gapStatus=status();const c=row();await snapshot([a,b,c],'4');result.recoveredCount=count();result.recoveredStatus=status().status;assert.equal(result.count,2);assert.equal(result.cursor,'2');assert.equal(result.recoveredCount,3);
   }
   return result;
  } finally {await stop();rmSync(dir,{recursive:true,force:true});}

@@ -26,7 +26,7 @@ function setup(t,options) {
   return {chunk,commit,reply:store.commitSnapshot(commit,1000)};
  }
  const exchange=(events=[],commandResults=[],now=1000)=>store.exchange(request({events,commandResults}),now);
- const dump=()=>{const db=new DatabaseSync(path);try{return Object.fromEntries(['worlds','epochs','connections','receipts','constructors','snapshots','snapshot_chunks','commands'].map(n=>[n,db.prepare(`SELECT * FROM ${n}`).all()]));}finally{db.close();}};
+ const dump=()=>{const db=new DatabaseSync(path);try{return Object.fromEntries(['worlds','epochs','connections','receipts','constructors','snapshots','snapshot_chunks','commands','sync_metadata'].map(n=>[n,db.prepare(`SELECT * FROM ${n}`).all()]));}finally{db.close();}};
  return {get store(){return store;},context,request,hello,snapshot,exchange,dump,reopen(){store.close();store=openStore(path,options);}};
 }
 test('durable event receipts and hello retry survive reopen',t=>{
