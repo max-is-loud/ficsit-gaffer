@@ -29,9 +29,9 @@
     "@foreman/sf-present": "0.1.0",
     "@foreman/sf-save-data": "0.1.0",
     "@foreman/sf-save-data-graph": "0.1.0",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
