@@ -132,6 +132,62 @@
       "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\",\"bridgeSourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}"
     },
     {
+      "name": "helloStarterCommitSingletonArray",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":[\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\"],\"bridgeSourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloStarterCommitNumber",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":12345,\"bridgeSourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloStarterCommitNull",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":null,\"bridgeSourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloStarterCommitObject",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":{\"value\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\"},\"bridgeSourceSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloSourceSha256SingletonArray",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\",\"bridgeSourceSha256\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloSourceSha256Number",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\",\"bridgeSourceSha256\":12345}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloSourceSha256Null",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\",\"bridgeSourceSha256\":null}}",
+      "error": "invalid_schema"
+    },
+    {
+      "name": "helloSourceSha256Object",
+      "direction": "request",
+      "kind": "hello",
+      "body": "{\"protocol\":1,\"serverId\":\"00000001-0000-4000-8000-000000000001\",\"worldId\":\"00000002-0000-4000-8000-000000000001\",\"epoch\":\"00000003-0000-4000-8000-000000000001\",\"requestId\":\"00000004-0000-4000-8000-000000000001\",\"latestSeq\":\"0\",\"oldestRetainedSeq\":\"0\",\"provenance\":{\"gameVersion\":\"513885\",\"smlVersion\":\"3.12.0\",\"bridgeVersion\":\"0.1.0\",\"starterCommit\":\"8eebc9e659f0b2ff4392d2f8cf6e2cff60c8ea49\",\"bridgeSourceSha256\":{\"value\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}}",
+      "error": "invalid_schema"
+    },
+    {
       "name": "snapshotChunk",
       "direction": "request",
       "kind": "snapshot/chunk",

@@ -1,20 +1,28 @@
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {decodeRequest, validateResponse, snapshotDigest} from '../src/protocol.mjs';
+import {decodeRequest, validateResponse, snapshotDigest, ProtocolError} from '../src/protocol.mjs';
 const fixtures = JSON.parse(readFileSync(new URL('../fixtures/v1.json', import.meta.url)));
 for (const fixture of fixtures.cases) {
   test(fixture.name, () => {
     const raw = fixture.rawHex ? Buffer.from(fixture.rawHex, 'hex') : Buffer.from(fixture.body);
     const run = () => fixture.direction === 'request'
       ? decodeRequest(fixture.kind, raw) : validateResponse(raw, fixture.expected);
-    if (fixture.error) { assert.throws(run, {code:fixture.error}); }
+    if (fixture.error) { assert.throws(run, error => error instanceof ProtocolError && error.code===fixture.error); }
     else { assert.deepEqual(run(), JSON.parse(fixture.body)); }
   });
 }
 for (const fixture of fixtures.digests) {
   test(fixture.name, () => assert.equal(snapshotDigest(fixture.chunks.map(x => Buffer.from(x))), fixture.sha256));
 }
+test('provenance hashes must be strings before pattern checks', () => {
+  const valid = JSON.parse(fixtures.cases.find(x => x.name === 'helloEmpty').body);
+  assert.deepEqual(decodeRequest('hello', Buffer.from(JSON.stringify(valid))), valid);
+  for (const field of ['starterCommit', 'bridgeSourceSha256']) {
+    const malformed = {...valid, provenance:{...valid.provenance, [field]:[valid.provenance[field]]}};
+    assert.throws(() => decodeRequest('hello', Buffer.from(JSON.stringify(malformed))), ProtocolError);
+  }
+});
 test('large sequences remain strings', () => {
   const body = fixtures.cases.find(x => x.name === 'validLargeSeq').body;
   assert.equal(decodeRequest('exchange', Buffer.from(body)).events[0].seq, '9007199254740993');

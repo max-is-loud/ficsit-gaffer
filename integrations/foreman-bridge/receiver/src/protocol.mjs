@@ -125,7 +125,10 @@ export function decodeRequest(kind,rawUtf8) {
     requireThat(oldest<=latest,'invalid_sequence');
     fields(value.provenance,['gameVersion','smlVersion','bridgeVersion','starterCommit','bridgeSourceSha256']);
     for(const key of ['gameVersion','smlVersion','bridgeVersion']) { text(value.provenance[key],128); }
-    requireThat(/^[0-9a-f]{40}$/.test(value.provenance.starterCommit)&&/^[0-9a-f]{64}$/.test(value.provenance.bridgeSourceSha256),'invalid_schema');
+    const {starterCommit,bridgeSourceSha256}=value.provenance;
+    // RegExp.test coerces non-strings, so ["<hash>"] would otherwise pass.
+    requireThat(typeof starterCommit==='string'&&typeof bridgeSourceSha256==='string','invalid_schema');
+    requireThat(/^[0-9a-f]{40}$/.test(starterCommit)&&/^[0-9a-f]{64}$/.test(bridgeSourceSha256),'invalid_schema');
   } else if(kind==='exchange') {
     fields(value,[...keys,'events','commandResults']);
     boundedArray(value.events,event,'invalid_event');
