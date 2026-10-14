@@ -1,0 +1,9 @@
+/Binaries/
+/Intermediate/
+/Saved/
+/.superpowers/
+/build.local.json
+/out/
+*.log
+
+/Source/ForemanBridge/Private/BridgeBuildInfo.h
