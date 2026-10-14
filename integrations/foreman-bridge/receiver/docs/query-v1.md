@@ -14,7 +14,9 @@ which is unchanged. Staged snapshot rows are never visible here.
 
 Both use the existing token format (`[A-Za-z0-9_-]{32,256}`) and must differ;
 configuring equal values fails startup. Omitting `queryToken` disables the query
-route (it answers `404` like any unknown route). Credentials are compared by
+route: like any unknown route it then authenticates against the producer
+credential, so other credentials get `401` and the producer credential gets
+`404`. Credentials are compared by
 constant-time SHA-256 digest and authentication happens before any body is read.
 
 ## Request
@@ -118,7 +120,7 @@ Error bodies are `{"error": "<code>"}` with no internal detail.
 | 400 | `invalid_query` | Malformed JSON, unknown field, bad `limit`, or a cursor without `includeLocations: true` |
 | 400 | `invalid_cursor` | Cursor is not one this receiver issued for its world |
 | 401 | `unauthorized` | Missing or wrong credential (including the producer credential) |
-| 404 | `not_found` | Query route disabled (no `queryToken`) |
+| 404 | `not_found` | Query route disabled (no `queryToken`) and the producer credential was sent; any other credential gets 401 |
 | 405 | `method_not_allowed` | Not `POST` |
 | 408 | `request_timeout` | Body not received within `requestTimeoutMs` |
 | 409 | `state_changed` | Cursor's revision is no longer current |

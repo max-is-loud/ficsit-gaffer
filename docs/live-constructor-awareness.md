@@ -96,9 +96,10 @@ FOREMAN_BRIDGE_PLAYTHROUGH_ID=<playthrough id>
 - IDs must match the receiver's lowercase UUIDs; every response's
   `serverId`/`worldId` is checked against them.
 - Startup logs a warning if the linked playthrough does not exist or has no
-  owner. Clients cannot create a playthrough with the linked id, so deleting
-  the linked playthrough cannot hand the world to another account: re-link to a
-  new playthrough id instead.
+  owner. Clients cannot create a playthrough with the linked id, and nobody
+  but its current owner can claim it, so deleting the linked playthrough (or
+  binding an unowned one) cannot hand the world to another account: re-link to
+  a new, owned playthrough id instead.
 
 ## How chat uses it
 

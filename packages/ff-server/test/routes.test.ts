@@ -600,6 +600,21 @@ describe('live Constructor tool authorization', () => {
     expect(liveCalls.length).toBe(before + 1);
   });
 
+  it('refuses to let anyone claim an unowned linked playthrough', async () => {
+    // Runs after the linked playthrough was deleted above: an operator mistake
+    // leaves an anonymous (pre-accounts) row under the linked id.
+    await createTestPlaythrough(db.prisma, { id: LINKED_ID, userId: null });
+    const claimer = await signUp('live-claimer@example.com');
+    const claim = await fetch(`${baseUrl}/api/playthroughs/${LINKED_ID}/claim`, {
+      method: 'POST',
+      headers: authHeaders(claimer),
+    });
+    expect(claim.status).toBe(403);
+    const before = liveCalls.length;
+    expect((await chat(LINKED_ID, claimer)).status).toBe(403);
+    expect(liveCalls.length).toBe(before);
+  });
+
   it('never serialises the private binding in public responses', async () => {
     const body = await (await fetch(`${baseUrl}/health`)).text();
     expect(body).not.toContain(LIVE_TOKEN);

@@ -78,6 +78,15 @@ export function playthroughsRouter(deps: AppDeps): Router {
   // Claim a pre-accounts anonymous playthrough (one created before sign-in) for
   // the caller. Idempotent if already owned; 403 if owned by another user.
   router.post('/:playthroughId/claim', async (req, res) => {
+    // The live-bridge playthrough must already be owned: claiming an unowned row
+    // under that id would hand the linked world's observations to the claimer.
+    if (playthroughId(req) === deps.liveState?.binding.playthroughId) {
+      const owner = await deps.playthroughs.findOwnerId(playthroughId(req));
+      if (owner?.userId !== req.user!.id) {
+        res.status(403).json({ error: 'Forbidden.' });
+        return;
+      }
+    }
     const result = await deps.playthroughs.claim(playthroughId(req), req.user!.id);
     if (result.ok) {
       res.json(result.playthrough);

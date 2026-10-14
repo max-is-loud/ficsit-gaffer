@@ -142,7 +142,7 @@
         "files": {
           ".gitignore": "19ec15539f455ae74b6aa076419f24c0971b54fa075b7b20c215c7aaaa62ed2f",
           "README.md": "d11c02812b90ccb5125285eb6eabdd959c7499d9025c3a0bad178d30bb04b8d1",
-          "docs/query-v1.md": "835aaec496e5111513548874f9951622abb16b9f5a8dadc0df73dd2ef84f980e",
+          "docs/query-v1.md": "cde5171a3df870c1dec983379cc64044fae657169fe0aa02d7775b97fcbec2db",
           "fixtures/v1.json": "9eea01d3c770189905065d700accbc32c36db2c41034651c431300abd68136da",
           "package.json": "f39eb050adbb883e0cd163d9becd82aa12616564e7b5eba5800814b03c55d269",
           "scripts/acceptance-receiver.mjs": "aa2b0dc0f1ea4dfde54b0f6d775fa7eef2a0fa3af4be098bb337f3d5cb40d4a2",
