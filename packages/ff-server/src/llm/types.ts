@@ -1,3 +1,5 @@
+import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages';
+
 import type { ToolDefinition } from '../mcp/client.js';
 
 /**
@@ -22,11 +24,16 @@ export interface NeutralTextMessage {
   content: string;
 }
 
+/** Native content for replay within one request; never persisted as chat text. */
+export type ProviderContinuation = { provider: 'anthropic'; content: ContentBlock[] };
+
 /** An assistant turn that produced text and/or tool calls (in-loop only). */
 export interface NeutralAssistantTurn {
   role: 'assistant';
   text: string;
   toolCalls: NeutralToolCall[];
+  /** Opaque to the shared loop; only the matching provider interprets it. */
+  continuation?: ProviderContinuation;
 }
 
 /** The result of running one tool, fed back to the model (in-loop only). */
@@ -53,6 +60,8 @@ export interface LlmTurnResult {
   /** Tool calls to run (empty when stopReason is 'stop'). */
   toolCalls: NeutralToolCall[];
   stopReason: StopReason;
+  /** Complete native assistant content needed to continue a tool-use loop. */
+  continuation?: ProviderContinuation;
 }
 
 /** A single turn request to a provider. */

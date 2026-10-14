@@ -64,6 +64,7 @@ export class AnthropicProvider implements LlmProvider {
       text,
       toolCalls,
       stopReason: final.stop_reason === 'tool_use' ? 'tool_use' : 'stop',
+      continuation: { provider: 'anthropic', content: final.content },
     };
   }
 
@@ -101,8 +102,10 @@ function cacheableTools(tools: LlmRequest['tools']): Anthropic.Tool[] {
 }
 
 /**
- * Translates neutral history to Anthropic message params. Assistant turns become
- * text + tool_use blocks; consecutive tool results are folded into one user
+ * Translates neutral history to Anthropic message params. Native assistant
+ * content is replayed unchanged, including thinking signatures and block order.
+ * Turns without native content fall back to text + tool_use blocks.
+ * Consecutive tool results are folded into one user
  * message of tool_result blocks (Anthropic requires them grouped that way).
  */
 function toAnthropicMessages(messages: NeutralMessage[]): Anthropic.MessageParam[] {
@@ -130,6 +133,10 @@ function toAnthropicMessages(messages: NeutralMessage[]): Anthropic.MessageParam
     if (message.role === 'user') {
       out.push({ role: 'user', content: message.content });
     } else if ('toolCalls' in message) {
+      if (message.continuation?.provider === 'anthropic') {
+        out.push({ role: 'assistant', content: message.continuation.content });
+        continue;
+      }
       const blocks: Anthropic.ContentBlockParam[] = [];
       if (message.text.length > 0) {
         blocks.push({ type: 'text', text: message.text });

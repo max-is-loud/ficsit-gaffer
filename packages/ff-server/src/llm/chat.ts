@@ -78,7 +78,12 @@ export async function runChat(
       },
     );
 
-    messages.push({ role: 'assistant', text: result.text, toolCalls: result.toolCalls });
+    messages.push({
+      role: 'assistant',
+      text: result.text,
+      toolCalls: result.toolCalls,
+      continuation: result.continuation,
+    });
 
     if (result.stopReason !== 'tool_use') {
       return streamedText;
