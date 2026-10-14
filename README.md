@@ -166,6 +166,7 @@ All optional — by default the server serves the bundled **stable** game data.
 | `BETTER_AUTH_SECRET` | Signs account session cookies. If unset, the server generates one on first start and persists it in the data volume (single-node deployments work out of the box). Set it explicitly (`openssl rand -base64 32`) for multi-instance or Postgres deployments. |
 | `BETTER_AUTH_URL` | Public origin the app is served from (for correct cookies behind a proxy). Optional; derived from the request if unset. |
 | `HISTORY_WINDOW` | Most-recent messages sent per chat request (default `20`). |
+| `FOREMAN_BRIDGE_URL`, `FOREMAN_BRIDGE_QUERY_TOKEN`, `FOREMAN_BRIDGE_SERVER_ID`, `FOREMAN_BRIDGE_WORLD_ID`, `FOREMAN_BRIDGE_PLAYTHROUGH_ID` | Optional live Constructor awareness: link one bridge receiver world to one playthrough (all five or none). See [docs/live-constructor-awareness.md](docs/live-constructor-awareness.md). |
 
 > The legacy `ANTHROPIC_*` variables still work when `LLM_PROVIDER` is `anthropic`.
 
@@ -219,5 +220,6 @@ Built by Stu · [GitHub](https://github.com/StuartMeeks) · [Reddit](https://www
 The private derivative includes a reviewed [SML companion bridge and independent
 receiver](integrations/foreman-bridge/README.md). It observes constructors on a
 dedicated server, delivers current state over HTTPS and replies through in-game
-chat. It is separately built and tested; Foreman application integration is not
-yet implemented.
+chat. It is separately built and tested. Foreman web chat can read its
+Constructor observations for one explicitly linked playthrough through a
+read-only receiver query — see [live Constructor awareness](docs/live-constructor-awareness.md).

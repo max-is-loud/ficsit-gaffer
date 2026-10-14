@@ -19,6 +19,7 @@ Private configuration (mode 0600):
   "serverId": "operator-generated-uuid",
   "worldId": "operator-generated-uuid",
   "token": "at-least-32-random-alphanumeric-characters",
+  "queryToken": "optional-different-read-only-token",
   "databasePath": "/absolute/private/receiver.db",
   "certPath": "/absolute/private/server.pem",
   "keyPath": "/absolute/private/server-key.pem",
@@ -40,6 +41,17 @@ receipts, cursor and chat changes commit together. Only a verified complete
 snapshot becomes live. Retired epochs remain archived and old connections cannot
 write. Accurate current state is promised; complete crash-spanning event history
 is not. The service has no unauthenticated state/query endpoint.
+
+## Read-only query
+
+With the optional `queryToken` (same format, must differ from `token`),
+`POST /query/v1/constructors` returns the committed Constructor count, paginated
+positions and freshness for the configured world. The query token cannot call
+ingestion routes and the producer token cannot query; without `queryToken` the
+route is disabled. Staged snapshot rows are never visible. Freshness is
+process-local: after a restart persisted state is reported as last known until
+the game synchronises again. Existing databases gain sync metadata on open. See
+[`docs/query-v1.md`](docs/query-v1.md) for the exact contract.
 
 ## Disposable TLS setup
 
