@@ -1,3 +1,7 @@
+// Explore-order section showing the collection route: waypoints, their
+// collectibles with an optional collect toggle in the live view, and the unlock
+// cost of hard-drive pods.
+
 import type { ExploreWaypoint, UnlockCost } from '../../api/types.js';
 import { COLLECTIBLE_LABEL, fmtCoords } from './format.js';
 

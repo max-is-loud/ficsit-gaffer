@@ -1,3 +1,7 @@
+// Body of the Work History drawer: the playthrough's work orders as a git-style
+// graph list, using the layout from historyGraph. Selecting a row asks the parent
+// to view that order read-only.
+
 import type { WorkOrder } from '../api/types.js';
 import { buildHistoryGraph, type GraphCell } from './historyGraph.js';
 import { STATE_LABEL, woLabel } from './workOrderLabels.js';

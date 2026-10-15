@@ -1,3 +1,6 @@
+// Display labels for work-order ids, states and parent-child relationship types,
+// shared by the cockpit and the history views.
+
 import type { OrderType, WorkOrderRelationshipType, WorkOrderState } from '../api/types.js';
 
 /** Render a sequence number as its canonical id — WO-NNN (build) or EO-NNN (explore). */

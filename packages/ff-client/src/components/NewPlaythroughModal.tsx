@@ -1,3 +1,8 @@
+// Modal for starting a playthrough: name, foreman (existing or newly created),
+// optional .sav upload with name defaulted from the save, and optional pioneer
+// profile. It collects the input; creation and the same-game save match check are
+// left to the parent.
+
 import { useRef, useState } from 'react';
 
 import type { Foreman, SaveMatch } from '../api/types.js';

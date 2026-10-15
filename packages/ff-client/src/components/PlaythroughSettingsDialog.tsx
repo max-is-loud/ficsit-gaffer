@@ -1,3 +1,7 @@
+// Per-playthrough settings dialog: name, attached foreman, pioneer profile, and a
+// delete danger zone gated on typing the playthrough name. Changes are applied
+// together by the footer Save through callbacks.
+
 import { useState } from 'react';
 
 import type { Foreman, Playthrough } from '../api/types.js';

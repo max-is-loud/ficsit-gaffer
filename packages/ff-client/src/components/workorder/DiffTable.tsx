@@ -1,3 +1,6 @@
+// Before/after table of field changes between two work-order revisions. Renders
+// nothing for an empty diff.
+
 import type { WorkOrderRevisionDiff } from '../../api/types.js';
 import { summarise } from './format.js';
 

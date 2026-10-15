@@ -1,3 +1,6 @@
+// Pure layout for the Work History git-style gutter: turns the parent/child tree
+// of work orders into per-row lane cells. It does no fetching and no rendering.
+
 import type { WorkOrder } from '../api/types.js';
 import { RELATIONSHIP_LABEL } from './workOrderLabels.js';
 

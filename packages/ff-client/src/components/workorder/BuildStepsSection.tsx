@@ -1,3 +1,7 @@
+// Plan section components for build steps (with per-buildable cost) and the
+// aggregated build cost. Plan-only by default; the live panel passes an execution
+// object to add checkboxes and steppers.
+
 import type { WorkOrderStep, WorkOrderStepDef } from '../../api/types.js';
 import { remainingCost, totalCost } from '../../workOrderCost.js';
 import { buildableCostLines, fmtCost } from './format.js';

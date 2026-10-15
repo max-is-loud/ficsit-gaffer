@@ -1,3 +1,6 @@
+// Header dropdown for the signed-in user: shows their email and offers Account
+// settings and Sign out.
+
 import { useState } from 'react';
 
 interface UserMenuProps {

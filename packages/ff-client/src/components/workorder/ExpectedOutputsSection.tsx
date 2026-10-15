@@ -1,3 +1,6 @@
+// Plan-only sections for what an order delivers (power as the hero figure, other
+// outputs as a ledger) and the foreman's freeform notes.
+
 import type { ExpectedOutput } from '../../api/types.js';
 import { outputLine } from './format.js';
 

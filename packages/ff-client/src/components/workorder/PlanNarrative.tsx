@@ -1,3 +1,6 @@
+// Plan-only briefing at the top of an order: objective, goal, strategic rationale
+// and definition of done.
+
 interface PlanNarrativeProps {
   goal: string;
   objective?: string;

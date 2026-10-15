@@ -1,3 +1,6 @@
+// Global header bar. It lays out the wordmark, the playthrough switcher and save
+// drop-zone passed in by App, and the user menu.
+
 import { UserMenu } from './UserMenu.js';
 
 interface HeaderProps {

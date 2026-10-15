@@ -1,3 +1,6 @@
+// Dismissible banner listing advisories returned by a save upload, such as a
+// game-build mismatch.
+
 import type { SaveWarning } from '../api/types.js';
 
 interface SaveWarningBannerProps {

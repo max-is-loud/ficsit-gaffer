@@ -1,3 +1,7 @@
+// Revisions tab of the work-order panel: the revision ledger, and for a selected
+// revision its plan-only snapshot rendered with the shared plan sections plus the
+// diff against the previous revision.
+
 import { useEffect, useState } from 'react';
 
 import { getRevisionDiff } from '../../api/client.js';

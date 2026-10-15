@@ -1,3 +1,6 @@
+// The Profile tab of account settings: display name field (saved by the dialog
+// footer) and a change-password form that applies immediately.
+
 import { useState } from 'react';
 
 import { changePassword } from '../api/auth.js';

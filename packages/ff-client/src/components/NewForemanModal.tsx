@@ -1,3 +1,7 @@
+// Modal for creating a foreman: pick a starting persona preset, then edit the
+// name and personality before saving. Shared by the account foreman library and
+// the new-playthrough modal.
+
 import { useState } from 'react';
 
 import type { Foreman } from '../api/types.js';

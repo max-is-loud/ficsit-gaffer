@@ -1,3 +1,7 @@
+// Two-factor management dialog: enrol with a locally rendered QR code and
+// recovery codes, verify a code to enable it, or disable it with a password.
+// Calls the auth helpers in api/auth.ts directly.
+
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 

@@ -1,3 +1,6 @@
+// Plan-only sections for the recommended build location (summary, bearing,
+// coordinates) and the resource nodes feeding the order.
+
 import type { LocationRecommendation, ResourceNodeReference } from '../../api/types.js';
 import { Collapsible } from './Collapsible.js';
 import { fmtCoords, metres } from './format.js';

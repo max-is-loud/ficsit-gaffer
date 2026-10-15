@@ -1,3 +1,7 @@
+// Tabbed account-level settings dialog (profile, foremen, LLM, security, billing
+// placeholder). Profile, foremen and security are delegated to their own
+// components; this file owns tab selection, the LLM form and the footer Save.
+
 import { useMemo, useState } from 'react';
 
 import { updateDisplayName, type AuthUser } from '../api/auth.js';

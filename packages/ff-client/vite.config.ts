@@ -1,3 +1,6 @@
+// Vite and Vitest config for the client: React plugin, a dev server that proxies
+// /api to the backend (VITE_API_TARGET), and the node-environment unit-test glob.
+
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 

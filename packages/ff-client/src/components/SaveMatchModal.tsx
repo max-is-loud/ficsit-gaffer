@@ -1,3 +1,7 @@
+// Modal shown when an uploaded save matches existing playthroughs: lets the user
+// add it to one of them or create a new playthrough anyway. It never resolves
+// ambiguous matches itself.
+
 import type { SaveMatch } from '../api/types.js';
 
 interface SaveMatchModalProps {
