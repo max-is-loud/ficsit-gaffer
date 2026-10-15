@@ -1,3 +1,6 @@
+// Registers the save-game MCP tools (player state, recipes, milestones, storage, collectibles, production, power, bottlenecks,
+// nearby items and parts, material coverage), resolving the save per call through the registry and delegating the maths to query/.
+
 import { loadWorldLocations, type WorldLocations } from '@foreman/sf-game-data';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';

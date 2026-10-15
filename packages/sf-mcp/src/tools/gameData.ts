@@ -1,3 +1,6 @@
+// Registers the game-data MCP tools (items, recipes, production lines, schematics, buildings, world collectibles
+// and resource nodes) against the production graph and world queries, converting between metres and centimetres at the edge.
+
 import type { Coord, WorldQueries } from '@foreman/sf-game-data';
 import { cmToMetres, compassBearing, metresToCm } from '@foreman/sf-present';
 import type { GraphDB } from '@foreman/sf-game-data-graph';

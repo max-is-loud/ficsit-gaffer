@@ -1,3 +1,5 @@
+// Vitest config for sf-mcp: Node environment, picks up test/**/*.test.ts.
+
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({

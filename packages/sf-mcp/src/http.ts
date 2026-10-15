@@ -1,3 +1,6 @@
+// Streamable HTTP transport for the unified MCP server: a stateless POST /mcp endpoint that registers both tool sets
+// per request, plus a /health route reporting game-data and save identity. Server wiring lives in index.ts.
+
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';

@@ -1,3 +1,6 @@
+// Builds the game-data index the save tools join against (display names, recipes, buildings, fluid classes,
+// Project Assembly phases) from the merged dataset, and the single class-name-to-display-name resolution rule.
+
 import {
   loadGameData,
   type Building,
