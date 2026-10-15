@@ -15,7 +15,7 @@ import { isTestFile } from './files.mjs';
  * @property {number} [issue] Refactor issue linked to the exemption.
  */
 
-const BYTE_ORDER_MARK = '﻿';
+const BYTE_ORDER_MARK = '\uFEFF';
 const COMMENT_OPENERS = ['//', '/*'];
 
 /**

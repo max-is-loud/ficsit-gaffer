@@ -83,7 +83,7 @@ test('hasHeader accepts every comment opener', () => {
 });
 
 test('hasHeader skips a BOM, a shebang, #pragma once and blank lines', () => {
-  assert.equal(hasHeader('﻿// a\n'), true);
+  assert.equal(hasHeader('\uFEFF// a\n'), true);
   assert.equal(hasHeader('#!/usr/bin/env node\n// a\n'), true);
   assert.equal(hasHeader('#pragma once\n\n// a\n'), true);
   assert.equal(hasHeader('\n\n  // a\n'), true);

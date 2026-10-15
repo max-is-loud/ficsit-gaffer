@@ -35,7 +35,8 @@
     "start:mcp": "npm run start -w @foreman/sf-mcp",
     "start:server": "npm run start -w @foreman/ff-server",
     "inspect:game-data": "npm run inspect:game-data -w @foreman/sf-mcp --",
-    "inspect:save": "npm run inspect:save -w @foreman/sf-mcp --"
+    "inspect:save": "npm run inspect:save -w @foreman/sf-mcp --",
+    "check:source": "node scripts/check-source-files.mjs"
   },
   "overrides": {
     "@hono/node-server": "^1.19.13",
