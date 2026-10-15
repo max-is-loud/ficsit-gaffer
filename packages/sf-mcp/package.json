@@ -20,6 +20,7 @@
     "inspect:game-data": "tsx src/scripts/inspectGameData.ts",
     "inspect:save": "tsx src/scripts/inspectSave.ts",
     "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\"",
+    "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write \"{src,test}/**/*.ts\""
   },
   "dependencies": {

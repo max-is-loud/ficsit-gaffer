@@ -1,0 +1,16 @@
+{
+  ".github/scripts/check-game-data.mjs": {
+    "complexity": {
+      "count": 2
+    },
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  }
+}

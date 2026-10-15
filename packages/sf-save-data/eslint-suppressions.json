@@ -1,0 +1,66 @@
+{
+  "src/normalise/gameSettings.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/normalise/index.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/normalise/inventories.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/normalise/player.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/normalise/production.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/normalise/recipes.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/normalise/scannable.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/normalise/schematics.ts": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "src/normalise/storage.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/normalise/topology.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "test/normalise.test.ts": {
+    "id-length": {
+      "count": 13
+    }
+  }
+}

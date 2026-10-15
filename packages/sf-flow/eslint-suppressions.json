@@ -1,0 +1,24 @@
+{
+  "src/solve.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 12
+    },
+    "max-depth": {
+      "count": 6
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "test/solve.test.ts": {
+    "id-length": {
+      "count": 11
+    }
+  }
+}

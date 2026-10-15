@@ -33,6 +33,23 @@ export default [
       ],
       '@typescript-eslint/no-explicit-any': 'error',
       curly: ['error', 'all'],
+      'max-lines-per-function': ['error', { max: 60, skipBlankLines: true, skipComments: true }],
+      'max-depth': ['error', 3],
+      complexity: ['error', 12],
+      'max-params': ['error', 4],
+      'id-length': [
+        'error',
+        { min: 2, exceptions: ['i', 'j', 'k', 'x', 'y', 'z', '_'], properties: 'never' },
+      ],
+    },
+  },
+  {
+    // describe/it nesting and table-driven cases are how tests are meant to be written.
+    files: ['**/test/**', '**/*.test.*', '**/*.spec.*'],
+    rules: {
+      'max-lines-per-function': 'off',
+      'max-depth': 'off',
+      complexity: 'off',
     },
   },
   {

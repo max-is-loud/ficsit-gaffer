@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "inspect": "tsx src/scripts/inspect.ts",
     "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\"",
+    "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write \"{src,test}/**/*.ts\""
   },
   "devDependencies": {

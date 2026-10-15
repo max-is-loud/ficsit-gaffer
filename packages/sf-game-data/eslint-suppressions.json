@@ -1,0 +1,22 @@
+{
+  "src/world/index.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/world/queries.ts": {
+    "id-length": {
+      "count": 34
+    }
+  },
+  "test/world-queries.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "test/world.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  }
+}

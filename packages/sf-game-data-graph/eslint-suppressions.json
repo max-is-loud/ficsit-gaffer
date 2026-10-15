@@ -1,0 +1,52 @@
+{
+  "src/graph/queries/buildings.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/graph/queries/items.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/graph/queries/production.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "id-length": {
+      "count": 15
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/graph/queries/recipes.ts": {
+    "id-length": {
+      "count": 8
+    }
+  },
+  "src/graph/queries/schematics.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "test/graph.test.ts": {
+    "id-length": {
+      "count": 18
+    }
+  },
+  "test/power.test.ts": {
+    "id-length": {
+      "count": 12
+    }
+  }
+}

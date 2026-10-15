@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\"",
+    "lint:prune": "eslint . --prune-suppressions",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

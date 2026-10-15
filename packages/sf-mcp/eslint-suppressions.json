@@ -1,0 +1,104 @@
+{
+  "src/config.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/http.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/query/bottlenecks.ts": {
+    "complexity": {
+      "count": 3
+    },
+    "id-length": {
+      "count": 19
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/query/selectors.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "id-length": {
+      "count": 60
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 5
+    }
+  },
+  "src/scripts/inspectGameData.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/scripts/inspectSave.ts": {
+    "id-length": {
+      "count": 20
+    }
+  },
+  "src/tools/gameData.ts": {
+    "id-length": {
+      "count": 6
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/tools/save.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "test/bottlenecks.test.ts": {
+    "id-length": {
+      "count": 8
+    }
+  },
+  "test/gameDataTools.test.ts": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "test/materialCoverage.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "test/power.test.ts": {
+    "id-length": {
+      "count": 8
+    }
+  },
+  "test/production.test.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "test/registry.test.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "test/tools.test.ts": {
+    "id-length": {
+      "count": 11
+    }
+  }
+}

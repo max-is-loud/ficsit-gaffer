@@ -1,4 +1,4 @@
-// ESLint flat config for sf-present: recommended JS and TypeScript rules over the package sources.
+// Lint rules for sf-present: the shared base in ../../eslint.config.base.js, with no package overrides.
 
 import base from '../../eslint.config.base.js';
 
