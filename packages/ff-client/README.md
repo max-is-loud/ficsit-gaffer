@@ -70,7 +70,7 @@ alongside it.
 
 - **Fonts** are self-hosted via `@fontsource` (Barlow, Barlow Condensed, IBM Plex
   Mono), bundled same-origin so no CDN is needed (CSP-safe).
-- Remaining Phase-3 work is tracked in the
-  [issue tracker](https://github.com/StuartMeeks/ficsit-foreman/issues): a navigable
+- Remaining Phase-3 work was tracked in the
+  [upstream issue tracker](https://github.com/StuartMeeks/ficsit-foreman/issues): a navigable
   Work History drawer, and driving the foreman propose-completion / chat flow
   end-to-end against a live backend.

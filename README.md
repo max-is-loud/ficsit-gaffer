@@ -1,4 +1,12 @@
-# FICSIT Foreman
+# Gaffer for Satisfactory
+
+*A live foreman for Satisfactory, descended from FICSIT Foreman.*
+
+**Gaffer** is a derivative of Stuart Meeks's
+[FICSIT Foreman](https://github.com/StuartMeeks/ficsit-foreman), taking it in its own
+direction: live awareness of the factory floor. See [Origins](#origins) for what it
+inherits and how it differs. The code, packages and Docker images still use the
+`foreman` names until the rename planned before public release.
 
 FICSIT Foreman is an AI companion for the game **Satisfactory**. It acts as your on-site
 foreman: it knows the game, tracks where you are in it, and hands you a human-scaled
@@ -80,7 +88,7 @@ survives in the `foreman-db` volume either way. **Update** to a newer build with
 > **Prefer not to install Docker Desktop?** On Windows 11 you can run the same images
 > with WSL's built-in container runtime (`wslc`, public preview) instead — see
 > [Installation — WSL Containers](https://github.com/StuartMeeks/ficsit-foreman/wiki/Installation-wslc)
-> in the wiki for the full walkthrough.
+> in the upstream wiki for the full walkthrough.
 
 ### macOS / Linux
 
@@ -117,7 +125,7 @@ Prefer not to use Docker, or want to develop on FICSIT Foreman? You'll need **No
 **npm 10+** (Windows / macOS / Linux).
 
 ```bash
-git clone https://github.com/StuartMeeks/ficsit-foreman
+git clone https://github.com/max-is-loud/ficsit-foreman
 cd ficsit-foreman
 npm install
 npm run build
@@ -197,23 +205,43 @@ Resolution order for game data: `SF_GAME_DATA_PATH` → bundled channel
 
 Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow
 and conventions, including how to supply bundled `sf-game-data.json` game-data updates. Planned
-work and open design questions live in the [issue tracker](https://github.com/StuartMeeks/ficsit-foreman/issues);
+work and open design questions live in the [issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the
+[Gaffer roadmap](https://github.com/users/max-is-loud/projects/4);
 the parser and graph design are documented in [`PARSER.md`](./packages/sf-game-data/PARSER.md).
 
 ## Licence
 
-[Apache 2.0](./LICENSE). Use it, fork it, build on it.
+[Apache 2.0](./LICENSE). Use it, fork it, build on it. Attribution for the upstream
+project is in [`NOTICE`](./NOTICE).
 
 ## Disclaimer
 
-FICSIT Foreman is an unofficial, community-made companion tool. It is **not affiliated
+Gaffer, like FICSIT Foreman before it, is an unofficial, community-made companion tool. It is **not affiliated
 with, endorsed by, or sponsored by Coffee Stain Studios**. *Satisfactory*, *FICSIT*, and
 all related names, logos, and game content are trademarks or property of Coffee Stain
 Studios. Game data is read from files that ship with the game and remains their property.
 
+## Origins
+
+Gaffer began as a copy of [FICSIT Foreman](https://github.com/StuartMeeks/ficsit-foreman)
+at upstream commit `3514182` (2026-10-01). Everything up to that point — the game-data
+backbone, the foreman chat backend, work orders, the save subsystem and the web UI — is
+Stuart Meeks's work, used under the [Apache 2.0](./LICENSE) licence; see [`NOTICE`](./NOTICE).
+
+Gaffer is a separate project with its own [issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues)
+and [roadmap](https://github.com/users/max-is-loud/projects/4). Where FICSIT Foreman works
+from uploaded saves, Gaffer adds near-real-time awareness of the game world through a
+server-side SML bridge: what has been built, where the pioneer is, and whether work orders
+have actually been met. Issue and PR numbers in commits and docs from before the split refer
+to the [upstream tracker](https://github.com/StuartMeeks/ficsit-foreman/issues); the docs
+label them "upstream #N". Generally useful fixes are kept in self-contained commits so they
+can be offered back upstream.
+
 ## Attribution
 
-Built by Stu · [GitHub](https://github.com/StuartMeeks) · [Reddit](https://www.reddit.com/user/sherman384)
+FICSIT Foreman built by Stu · [GitHub](https://github.com/StuartMeeks) · [Reddit](https://www.reddit.com/user/sherman384)
+
+Gaffer maintained by Maxime Langlois-Morin · [GitHub](https://github.com/max-is-loud)
 
 ## Independent SML bridge prototype
 

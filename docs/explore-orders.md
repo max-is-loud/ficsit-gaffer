@@ -1,6 +1,6 @@
-# Explore orders (#207) + collectible re-upload reconciliation (#209-B)
+# Explore orders ([upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207)) + collectible re-upload reconciliation ([upstream upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209))
 
-> **Status:** Agreed design — the design of record for #207 and #209-B. Landed before code
+> **Status:** Agreed design — the design of record for [upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207) and [upstream upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209). Landed before code
 > per the spec-doc-per-feature convention. Where this conflicts with older notes, this wins.
 
 ## Problem
@@ -9,11 +9,11 @@ A work order is a **build contract** (steps → buildables → cost). Directing 
 "go grab those 8 power slugs / sweep the northern forest for hard drives" — is a fundamentally
 different shape: a **collection route** of waypoints, each with collectibles to pick up, no
 build cost, done when the chosen collectibles are collected. Forcing that into `buildSteps` is a
-poor fit, so #207 introduces a second order type, the **explore order**.
+poor fit, so [upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207) introduces a second order type, the **explore order**.
 
-#209-B then closes the loop: when the pioneer **re-uploads a save**, an active explore order's
+[upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209) then closes the loop: when the pioneer **re-uploads a save**, an active explore order's
 collectibles are **auto-reconciled** to what the save shows collected — progress tracks the game
-without manual ticking. (#209-A, the same for *buildables*, is **cancelled**: matching an
+without manual ticking. ([upstream #209-A](https://github.com/StuartMeeks/ficsit-foreman/issues/209), the same for *buildables*, is **cancelled**: matching an
 abstract buildable line to concrete save instances is heuristic; collectibles are identity-keyed,
 so their match is exact — the deterministic case is the one worth automating.)
 
@@ -49,8 +49,8 @@ type ExploreCollectible = {
   id: string;                     // stable world instance id — the reference the foreman supplies
   kind: CollectibleKind;          // mercerSphere | somersloop | powerSlug* | hardDrive | helmet | mtape
   guid?: string;                  // GUID-keyed kinds — the identity the save records on collection
-  schematic?: string;             // customizer helmet/mtape (#67) — no pickup GUID; keyed by unlocked schematic
-  collected: boolean;             // execution state (Pioneer-owned; #209-B may raise false→true)
+  schematic?: string;             // customizer helmet/mtape (upstream #67) — no pickup GUID; keyed by unlocked schematic
+  collected: boolean;             // execution state (Pioneer-owned; upstream #209-B may raise false→true)
   coordinates?: Coordinates;
   reason?: string;
   unlockCost?: UnlockCost;        // { item?: {itemClass, amount}, powerMW? } — what a pod/site needs to OPEN
@@ -58,14 +58,14 @@ type ExploreCollectible = {
 ```
 
 Reuses `CollectibleKind` / `Coordinates` / `UnlockCost` from the existing model — **no parallel
-enum**. Every collectible carries the identity key (`guid` else `schematic`) so #209-B matches
+enum**. Every collectible carries the identity key (`guid` else `schematic`) so [upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209) matches
 exactly.
 
 **Accurate-by-construction (same standard as work orders).** `kind`, `coordinates`, `guid` /
 `schematic`, and `unlockCost` are **not trusted from the model** — the foreman supplies each
 collectible's `id`, and the server **derives** those facts from the world dataset at ingest via
-`resolve_collectibles`, **rejecting** any `id` that isn't a real collectible (mirrors #220/#222
-name resolution and #228 rate derivation). Consequence: a hard-drive pod waypoint can **never**
+`resolve_collectibles`, **rejecting** any `id` that isn't a real collectible (mirrors [upstream #220](https://github.com/StuartMeeks/ficsit-foreman/issues/220)/[upstream upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222)
+name resolution and [upstream #228](https://github.com/StuartMeeks/ficsit-foreman/issues/228) rate derivation). Consequence: a hard-drive pod waypoint can **never**
 ship with a missing or wrong unlock cost — if the dataset says it costs power/items to open, the
 order carries that cost.
 
@@ -95,7 +95,7 @@ The foreman populates waypoints at issue time by joining MCP facts:
   from the dataset and rejects unknown ids — so the stored facts (crucially, a pod's open cost)
   are canonical, not transcribed.
 
-## #209-B — reconciliation on re-upload
+## [upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209) — reconciliation on re-upload
 
 Predicate (already implemented): `isCollected(c, collectedGuidSet(state),
 unlockedSchematicSet(state))` — GUID-keyed match against destroyed-pickups ∪ looted-pods, else
@@ -110,7 +110,7 @@ collected-identity set via a savePath-gated MCP tool (**`get_collected_identitie
 "Save synced: N collectibles collected" banner.
 
 ## Out of scope
-- Buildables reconciliation (#209-A) — cancelled (heuristic matching).
+- Buildables reconciliation ([upstream #209-A](https://github.com/StuartMeeks/ficsit-foreman/issues/209)) — cancelled (heuristic matching).
 - Map / route-geometry view — a plain ordered waypoint list for now.
 - Loose crash-site parts collection; explore-specific revision semantics beyond the reuse above.
 
@@ -118,6 +118,6 @@ collected-identity set via a savePath-gated MCP tool (**`get_collected_identitie
 1. **MCP identity plumbing** — `nearest_collectibles`/`list_collectibles` emit guid/schematic +
    unlock cost; new `resolve_collectibles` (canonical facts by id) and `get_collected_identities`;
    add `helmet`/`mtape` to the kind enums.
-2. **Explore-order variant (#207)** — model + migration, `create_explore_order` tool, REST
+2. **Explore-order variant ([upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207))** — model + migration, `create_explore_order` tool, REST
    mark-collected, `WaypointsSection` client view, `EO-` label, prompt.
-3. **Reconciliation (#209-B)** — hook `addVersion`, monotonic apply + audit + banner.
+3. **Reconciliation ([upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209))** — hook `addVersion`, monotonic apply + audit + banner.

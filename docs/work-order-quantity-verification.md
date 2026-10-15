@@ -1,14 +1,14 @@
-# Work-order quantity verification (#223)
+# Work-order quantity verification ([upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223))
 
-> **Status:** **Shipped** — the design of record for issues #223 and #228. Both slices
-> merged: slice 1 (power output verification, #227) and slice 2 (recipe-per-block model +
-> server-derived rates + output advisory + merged-order revise validation, #228/#229). Where
+> **Status:** **Shipped** — the design of record for issues [upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223) and [upstream #228](https://github.com/StuartMeeks/ficsit-foreman/issues/228). Both slices
+> merged: slice 1 (power output verification, [upstream #227](https://github.com/StuartMeeks/ficsit-foreman/issues/227)) and slice 2 (recipe-per-block model +
+> server-derived rates + output advisory + merged-order revise validation, [upstream #228](https://github.com/StuartMeeks/ficsit-foreman/issues/228)/[upstream #229](https://github.com/StuartMeeks/ficsit-foreman/issues/229)). Where
 > this conflicts with older notes, this wins.
 
 ## Problem
 
-[`docs/work-orders.md`](./work-orders.md) is the contract a work order fulfils; #220
-and #222 made every game-data **name** in a plan accurate-by-construction (resolve or
+[`docs/work-orders.md`](./work-orders.md) is the contract a work order fulfils; [upstream #220](https://github.com/StuartMeeks/ficsit-foreman/issues/220)
+and [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222) made every game-data **name** in a plan accurate-by-construction (resolve or
 reject at ingest — see [`SYSTEM_PROMPT.md`](../packages/ff-server/SYSTEM_PROMPT.md) for
 the soft guidance those issues hardened). Neither touched the **quantitative** content:
 
@@ -36,7 +36,7 @@ very different false-positive risk:
 | **Power output** (`megawatts` vs generators) | `Σ(requiredCount × powerProduction)` | **Deterministic** — generators can't be overclocked; `powerProduction` is fixed | **Hard reject** on under-provision |
 | **Manufacturing** (machine counts, rates) | `ingredient_tree` / `full_production_line` | **Uncertain** — graph maths are 100% clock, no somersloop/modifiers; plans carry no clock info | **Advisory only** (non-blocking note) |
 
-This is the "hybrid" of the options #223 raised: reject where we're certain, advise where
+This is the "hybrid" of the options [upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223) raised: reject where we're certain, advise where
 we're not. We explicitly reject **option 3 (server-computed fill)** — it fights legitimate
 overclock/alt-recipe intent and is the largest change for the least clear benefit.
 
@@ -63,7 +63,7 @@ Verification is a sibling pass to `resolvePlanReferences`
 (`packages/ff-server/src/tools/workOrderTools.ts`), called from `handleCreate`,
 `handleRevise`, and `handleCreateChild` immediately **after** name resolution (buildables
 already carry their resolved `buildingClass` by then) and **before** persist. ff-server
-holds no in-process game data — all lookups go through `mcp.callTool`, exactly as #222 does.
+holds no in-process game data — all lookups go through `mcp.callTool`, exactly as [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222) does.
 
 The only channel back to the model is the tool-result `text` string (`chat.ts` pushes
 `{ role: 'tool', content: outcome.text, isError }`); `WorkOrder` / `WorkOrderToolOutcome`
@@ -86,7 +86,7 @@ have no structured warnings field. Therefore:
    plan alone).
 4. **Reject iff `actualMW + ε < declaredMW`** — the plant can't produce what it claims.
    Over-provisioning (headroom) passes. Deterministic, so `ε` is only a float guard.
-5. Message is actionable (mirrors #222 rejections), e.g.:
+5. Message is actionable (mirrors [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222) rejections), e.g.:
    > Work order not created: it claims **1200 MW** but its **12× Coal-Powered Generator**
    > produce **900 MW** (75 MW each). For 1200 MW you need **16× Coal-Powered Generator**.
    > Adjust the count or the target and retry.
@@ -98,7 +98,7 @@ have no structured warnings field. Therefore:
 contains; if it can't see *both* a power output and generator buildables it skips — so a
 revise touching only the target, or only the buildables, is never falsely rejected.
 
-## Slice 2 — recipe-per-block model + server-derived rates + output advisory (#228)
+## Slice 2 — recipe-per-block model + server-derived rates + output advisory ([upstream #228](https://github.com/StuartMeeks/ficsit-foreman/issues/228))
 
 A design review found the plan model couldn't support a clean manufacturing check as-is:
 recipes lived both as an optional, unvalidated `buildables[].recipeName` string *and* as a
@@ -110,7 +110,7 @@ just checking it:
 1. **Recipe is a first-class property of each production buildable block.** A buildable is
    *N identical machines running one recipe* (e.g. `4 Constructors → Iron Plate`); mixed
    machines are split into one-recipe blocks. `buildables[].recipeName` is **resolved-or-
-   rejected at ingest** (extends #222; suggestions from `list_recipes`). Logistics buildables
+   rejected at ingest** (extends [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222); suggestions from `list_recipes`). Logistics buildables
    carry no recipe.
 2. **The server derives rates — the foreman never transcribes them.** `deriveRecipes(plan, mcp)`
    (`workOrderTools.ts`, a sibling to `resolvePlanReferences`, run in all three handlers) reads

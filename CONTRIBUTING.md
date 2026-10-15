@@ -1,11 +1,12 @@
-# Contributing to FICSIT Foreman
+# Contributing to Gaffer
 
 Thanks for helping out. This is a community-first project — contributions of
 code, docs, and game-data updates are all welcome.
 
 ## Conventions
 
-This file is the single home for our conventions (`CLAUDE.md` points here).
+This file is the single home for our conventions (`AGENTS.md`, which `CLAUDE.md`
+imports, points here).
 
 ### Commits — Conventional Commits, body required
 - Format `type(optional-scope): subject` — imperative, lowercase subject, no
@@ -35,15 +36,23 @@ This file is the single home for our conventions (`CLAUDE.md` points here).
   carefully.`
 
 ### Issues
-When you open an issue, label it and slot it onto the roadmap:
+Issues live in [Gaffer's tracker](https://github.com/max-is-loud/ficsit-foreman/issues),
+never upstream's. When you open an issue, label it and slot it onto the roadmap:
 - **One type label** — `enhancement` (a feature or capability), `bug`,
   `documentation`, or `question` (an open decision to settle).
-- **At least one `area:` label** for the package(s) it touches — `area:ff-client`,
-  `area:ff-server`, `area:sf-mcp`, `area:sf-game-data`, `area:sf-save-data`.
-- **A milestone**, so it lands on the roadmap (e.g. *Foundation — accounts &
-  persistence*, *Save subsystem*, *App features*, *Game-data (parallel)*,
-  *Tooling & maintenance (non-app)*). If none fits, leave it unset and explain
-  why in the body.
+- **At least one `area:` label** for the part(s) it touches — `area:ff-client`,
+  `area:ff-server`, `area:sf-mcp`, `area:sf-game-data`, `area:sf-save-data`,
+  `area:sf-flow`, `area:bridge` (SML plugin and receiver), or `area:repo` (docs,
+  tooling, CI and repository setup).
+- **A milestone** — *Foundations — identity & standards*, *Live world*, or
+  *Public release*. If none fits, leave it unset and explain why in the body.
+- **A card on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4)**
+  board. New cards start in **Backlog**; move them through **Todo** and
+  **In Progress** as work is scheduled and started. Closing the issue moves the
+  card to **Done**.
+
+References to the upstream FICSIT Foreman tracker are written as links labelled
+`upstream #N`; a bare `#N` always means a Gaffer issue or PR.
 
 ### Closing issues — keep the roadmap honest
 What actually ships often diverges from what an issue first proposed. When you
@@ -77,6 +86,17 @@ work you've absorbed, misleads the next reader.
 - Errors are logged with context, never silently swallowed.
 - Parser warnings are collected into `parseWarnings[]`, not thrown.
 - **British English** in all comments and documentation.
+
+### Contributing upstream
+Gaffer is derived from [FICSIT Foreman](https://github.com/StuartMeeks/ficsit-foreman)
+and stays on good terms with it. To keep offering fixes back possible:
+- Keep generally useful changes — especially in the `sf-*` libraries — in
+  **self-contained commits**, not mixed with Gaffer-only work.
+- The `upstream` remote is **read-only**: fetch from it and cherry-pick useful
+  upstream changes; never push to it or file anything on its tracker from here.
+- To offer a change back, fork upstream on GitHub, cherry-pick the commit onto a
+  branch from `upstream/main` in that fork, and open the PR there, following
+  upstream's own conventions.
 
 ## Development
 

@@ -23,7 +23,7 @@ requested one is absent) and reports the version from the dataset's top-level
 `gameVersion` / `build`.
 
 > Neither the raw `en-US.json` docs file nor the old `meta.json` sidecar is
-> committed (retired in #162). The offline extractor reads `en-US.json` from the
+> committed (retired in [upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)). The offline extractor reads `en-US.json` from the
 > game install and stamps `gameVersion`/`build` into the dataset, so
 > `sf-game-data.json` is the whole channel bundle. See
 > [`../../../docs/sf-game-data-extractor.md`](../../../docs/sf-game-data-extractor.md).
@@ -52,7 +52,7 @@ are well-formed and don't regress the channel.
 ## Biome regions (`biomes.json`)
 
 A separate, **build-independent** file `data/biomes.json` holds the hand-traced
-surface **biome regions** (#239): the 22 named biomes as polygons in Unreal world
+surface **biome regions** ([upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239)): the 22 named biomes as polygons in Unreal world
 units (cm), with the four pioneer starting biomes flagged. Unlike the per-channel
 `sf-game-data.json`, this is **not** produced by the extractor — biomes aren't a
 game asset, they're traced from the community biome map and validated against every
