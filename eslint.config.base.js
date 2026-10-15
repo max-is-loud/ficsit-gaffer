@@ -45,7 +45,14 @@ export default [
   },
   {
     // describe/it nesting and table-driven cases are how tests are meant to be written.
-    files: ['**/test/**', '**/*.test.*', '**/*.spec.*'],
+    files: [
+      '**/test/**',
+      '**/tests/**',
+      '**/Tests/**',
+      '**/*-tests/**',
+      '**/*.test.*',
+      '**/*.spec.*',
+    ],
     rules: {
       'max-lines-per-function': 'off',
       'max-depth': 'off',

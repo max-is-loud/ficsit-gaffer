@@ -10,9 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --max-warnings 0 && prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "lint": "eslint . --max-warnings 0 && prettier --check \"src/**/*.{ts,tsx,css}\" eslint.config.js",
     "lint:prune": "eslint . --prune-suppressions",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" eslint.config.js"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.3.0",

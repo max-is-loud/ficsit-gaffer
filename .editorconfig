@@ -17,7 +17,7 @@ indent_size = 2
 trim_trailing_whitespace = false
 
 # Matches the existing C# code: four-space indent, Allman braces, `System` usings first.
-# tools/sf-map-renderer/ has its own .editorconfig (root = true) that governs it; these three settings agree with it.
+# tools/sf-map-renderer/ has its own .editorconfig (root = true) that governs it; these settings agree with it.
 [*.cs]
 indent_style = space
 indent_size = 4

@@ -116,7 +116,7 @@ Tools check what they can; the rest is checked in review (see the PR template).
 
 #### How it's enforced
 
-**Source check** (`npm run check:source`) covers tracked `.ts`, `.tsx`, `.js`,
+**Source check** (`npm run check:source`) covers tracked and untracked (but not git-ignored) `.ts`, `.tsx`, `.js`,
 `.mjs`, `.cs`, `.cpp` and `.h` files, tests included (a test file is one under a `test`/`tests`/`Tests` folder or a
 folder ending `-tests`, or named `.test.` or `.spec.`). It counts physical
 lines (as `wc -l` does). Between 301 and 500 lines is a warning; over 500 fails. Every
@@ -140,11 +140,11 @@ existing curly, `no-explicit-any` and unused-variable rules:
 | `max-params` | 4 |
 | `id-length` | at least 2, except `i j k x y z _`; property names are ignored because game data and wire formats dictate them |
 
-Test files (`**/test/**`, `**/*.test.*`, `**/*.spec.*`) are exempt from the first
+Test files (`**/test/**`, `**/tests/**`, `**/Tests/**`, `**/*-tests/**`, `**/*.test.*`, `**/*.spec.*`) are exempt from the first
 three. Example: `Function 'build' has too many parameters (5). Maximum allowed is 4`
 
-**Prettier** (one root `.prettierrc.json`) checks TS/JS formatting in every
-package, the root config files, `scripts/` and `.github/scripts/` as part of
+**Prettier** (one root `.prettierrc.json`) checks TS formatting (plus each package's
+`eslint.config.js`) in every package, the root config files, `scripts/` and `.github/scripts/` as part of
 `npm run lint`. `npm run format` rewrites files to match. `.editorconfig` covers
 C#, and `tools/sf-map-renderer/` has its own. C++ has a `.clang-format`
 (`integrations/foreman-bridge/mod/`), not enforced until bridge v2

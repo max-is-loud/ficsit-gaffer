@@ -19,9 +19,9 @@
     "test:watch": "vitest",
     "inspect:game-data": "tsx src/scripts/inspectGameData.ts",
     "inspect:save": "tsx src/scripts/inspectSave.ts",
-    "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\"",
+    "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\" eslint.config.js",
     "lint:prune": "eslint . --prune-suppressions",
-    "format": "prettier --write \"{src,test}/**/*.ts\""
+    "format": "prettier --write \"{src,test}/**/*.ts\" eslint.config.js"
   },
   "dependencies": {
     "@foreman/sf-flow": "0.1.0",

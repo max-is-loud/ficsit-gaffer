@@ -20,9 +20,9 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\"",
+    "lint": "eslint . --max-warnings 0 && prettier --check \"{src,test}/**/*.ts\" eslint.config.js",
     "lint:prune": "eslint . --prune-suppressions",
-    "format": "prettier --write \"{src,test}/**/*.ts\""
+    "format": "prettier --write \"{src,test}/**/*.ts\" eslint.config.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
