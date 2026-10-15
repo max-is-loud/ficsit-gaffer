@@ -37,7 +37,7 @@ export function globToRegExp(glob) {
 const TEST_FOLDER = /^(?:tests?|.+-tests)$/i;
 
 /**
- * Whether a path is a test file: a test folder, a `-tests` folder, or `.test.`/`.spec.` in the name.
+ * Whether a path is a test file: in a test folder or a `-tests` folder, or named `.test.`/`.spec.`.
  * @param {string} filePath repo-relative POSIX path
  * @returns {boolean}
  */
