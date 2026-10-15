@@ -1,5 +1,6 @@
-// Backs find_bottlenecks: builds a flow network from the save graph (belts, pipes, splitter sort-rules, fluid head lift),
-// solves it with sf-flow, and classifies each producer as starved, unpowered, idle or unknown.
+// Backs find_bottlenecks: builds a flow network from the save graph (belts, pipes, splitter
+// sort-rules, fluid head lift), solves it with sf-flow, and classifies each producer as starved,
+// unpowered, idle or unknown.
 
 import { solveFlow, type FlowEdge, type FlowNetwork, type FlowNode } from '@foreman/sf-flow';
 import type { WorldLocations } from '@foreman/sf-game-data';

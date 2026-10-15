@@ -1,5 +1,5 @@
-// Resolves which SaveStore serves a request: the default store, or an LRU-cached per-path store restricted to the
-// allowed saves directory. Parsing and reload-on-change belong to saveStore.ts.
+// Resolves which SaveStore serves a request: the default store, or an LRU-cached per-path store
+// restricted to the allowed saves directory. Parsing and reload-on-change belong to saveStore.ts.
 
 import path from 'node:path';
 

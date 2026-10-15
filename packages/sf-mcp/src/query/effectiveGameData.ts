@@ -1,5 +1,6 @@
-// The accessor through which flow reasoning reads recipe rates and belt/pipe capacities, with save-specific modifiers
-// (currently the recipe parts cost multiplier) applied over the raw GameDataIndex.
+// The accessor through which flow reasoning reads recipe rates and belt/pipe capacities, with
+// save-specific modifiers (currently the recipe parts cost multiplier) applied over the raw
+// GameDataIndex.
 
 import type { ProducerLine, SaveState } from '@foreman/sf-save-data';
 
