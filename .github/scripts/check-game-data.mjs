@@ -163,7 +163,9 @@ function validateBundle(channel, channelDir) {
   // The bundle must be complete: every expected file present.
   for (const name of BUNDLE_FILES) {
     if (!fs.existsSync(path.join(channelDir, name))) {
-      fail(`${path.join(channelDir, name)} is missing — a channel bundle needs all of: ${BUNDLE_FILES.join(', ')}.`);
+      fail(
+        `${path.join(channelDir, name)} is missing — a channel bundle needs all of: ${BUNDLE_FILES.join(', ')}.`,
+      );
     }
   }
   validateDataset(channel, channelDir);

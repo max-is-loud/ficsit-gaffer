@@ -2,6 +2,7 @@
   "name": "foreman",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "FICSIT Foreman — AI companion for Satisfactory. MCP game-data server + foreman chat backend.",
   "license": "Apache-2.0",
   "author": "Stu",
@@ -12,10 +13,22 @@
     "node": ">=22",
     "npm": ">=11"
   },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "eslint": "^10.9.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.6"
+  },
   "scripts": {
     "build": "npm run build -w @foreman/sf-core && npm run build -w @foreman/sf-present && npm run build -w @foreman/sf-game-data && npm run build -w @foreman/sf-game-data-graph && npm run build -w @foreman/sf-save-data && npm run build -w @foreman/sf-save-data-graph && npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:scripts",
+    "test:scripts": "node --test scripts/source-check/test/*.test.mjs",
+    "lint": "npm run lint --workspaces --if-present && npm run lint:root",
+    "lint:root": "eslint .github/scripts scripts eslint.config.base.js eslint.config.js && prettier --check \"*.js\" \"scripts/**/*.mjs\" \".github/scripts/**/*.mjs\"",
+    "format": "npm run format --workspaces --if-present && prettier --write \"*.js\" \"scripts/**/*.mjs\" \".github/scripts/**/*.mjs\"",
+    "lint:prune": "eslint .github/scripts scripts eslint.config.base.js eslint.config.js --prune-suppressions",
     "dev": "npm run dev -w @foreman/sf-mcp",
     "dev:mcp": "npm run dev -w @foreman/sf-mcp",
     "dev:server": "npm run dev -w @foreman/ff-server",
@@ -23,7 +36,8 @@
     "start:mcp": "npm run start -w @foreman/sf-mcp",
     "start:server": "npm run start -w @foreman/ff-server",
     "inspect:game-data": "npm run inspect:game-data -w @foreman/sf-mcp --",
-    "inspect:save": "npm run inspect:save -w @foreman/sf-mcp --"
+    "inspect:save": "npm run inspect:save -w @foreman/sf-mcp --",
+    "check:source": "node scripts/check-source-files.mjs"
   },
   "overrides": {
     "@hono/node-server": "^1.19.13",

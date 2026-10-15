@@ -1,0 +1,276 @@
+{
+  "src/App.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/api/client.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 3
+    }
+  },
+  "src/api/sse.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "src/components/AccountSettingsDialog.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 9
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/AuthScreen.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 10
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/ChatColumn.tsx": {
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/DrawerDock.tsx": {
+    "id-length": {
+      "count": 6
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/ForemanLibrary.tsx": {
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/NewForemanModal.tsx": {
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/NewPlaythroughModal.tsx": {
+    "id-length": {
+      "count": 12
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/Onboarding.tsx": {
+    "id-length": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/PioneerProfile.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/components/PlaythroughSettingsDialog.tsx": {
+    "id-length": {
+      "count": 7
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/PlaythroughSwitcher.tsx": {
+    "id-length": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/ProfileSettings.tsx": {
+    "id-length": {
+      "count": 6
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/SaveDropZone.tsx": {
+    "id-length": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/SaveMatchModal.tsx": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/components/SaveWarningBanner.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/SecurityDialog.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 11
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/UserMenu.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/WorkHistoryDrawer.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/WorkOrderPanel.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 26
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/historyGraph.test.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "src/components/historyGraph.ts": {
+    "id-length": {
+      "count": 9
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/workOrderLabels.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/AuditView.tsx": {
+    "id-length": {
+      "count": 10
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/BuildStepsSection.tsx": {
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/DiffTable.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/ExpectedOutputsSection.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/LocationSections.tsx": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/OpportunitySections.tsx": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/RevisionsView.tsx": {
+    "id-length": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/components/workorder/WaypointsSection.tsx": {
+    "id-length": {
+      "count": 9
+    }
+  },
+  "src/components/workorder/format.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "src/foremanPresets.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/llmSettings.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "src/useForeman.ts": {
+    "id-length": {
+      "count": 19
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/workOrderCost.ts": {
+    "id-length": {
+      "count": 8
+    }
+  }
+}

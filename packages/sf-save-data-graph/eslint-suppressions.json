@@ -1,0 +1,29 @@
+{
+  "src/build.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/graph.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 8
+    },
+    "max-depth": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "test/graph.test.ts": {
+    "id-length": {
+      "count": 12
+    }
+  }
+}

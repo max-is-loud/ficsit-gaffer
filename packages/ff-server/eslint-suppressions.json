@@ -1,0 +1,150 @@
+{
+  "src/auth.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/bridge/client.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "src/index.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/llm/chat.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/llm/openai.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "id-length": {
+      "count": 2
+    }
+  },
+  "src/routes/chat.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/routes/playthroughs.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/routes/workOrders.ts": {
+    "id-length": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/services/saveService.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "src/services/workOrderCost.ts": {
+    "id-length": {
+      "count": 9
+    }
+  },
+  "src/services/workOrderService.ts": {
+    "complexity": {
+      "count": 7
+    },
+    "id-length": {
+      "count": 22
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 5
+    },
+    "max-params": {
+      "count": 7
+    }
+  },
+  "src/tools/workOrderTools.ts": {
+    "complexity": {
+      "count": 6
+    },
+    "id-length": {
+      "count": 33
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "test/anthropic.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "test/bridge-integration.test.ts": {
+    "id-length": {
+      "count": 5
+    }
+  },
+  "test/chat.test.ts": {
+    "id-length": {
+      "count": 6
+    }
+  },
+  "test/mcp-client.test.ts": {
+    "id-length": {
+      "count": 1
+    }
+  },
+  "test/mcpAggregate.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "test/openai-stream.test.ts": {
+    "id-length": {
+      "count": 3
+    }
+  },
+  "test/routes.test.ts": {
+    "id-length": {
+      "count": 7
+    }
+  },
+  "test/saveService.test.ts": {
+    "id-length": {
+      "count": 4
+    }
+  },
+  "test/twoFactor.test.ts": {
+    "id-length": {
+      "count": 2
+    }
+  },
+  "test/workOrderService.test.ts": {
+    "id-length": {
+      "count": 20
+    }
+  },
+  "test/workOrderTools.test.ts": {
+    "id-length": {
+      "count": 13
+    }
+  }
+}

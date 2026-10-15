@@ -40,7 +40,11 @@ function sortRules(rules: { itemClass: string; output: number }[]): unknown {
   };
 }
 
-function vec3(x: number, y: number, z: number): { translation: { x: number; y: number; z: number } } {
+function vec3(
+  x: number,
+  y: number,
+  z: number,
+): { translation: { x: number; y: number; z: number } } {
   return { translation: { x, y, z } };
 }
 
@@ -60,13 +64,19 @@ function obj(
 }
 
 // Class type-paths (the clean form the save uses).
-const T_CONSTRUCTOR = '/Game/FactoryGame/Buildable/Factory/ConstructorMk1/Build_ConstructorMk1.Build_ConstructorMk1_C';
-const T_BELT = '/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C';
-const T_STORAGE = '/Game/FactoryGame/Buildable/Storage/Build_StorageContainerMk1.Build_StorageContainerMk1_C';
-const T_GENERATOR = '/Game/FactoryGame/Buildable/Factory/GeneratorBiomass/Build_GeneratorBiomass_Automated.Build_GeneratorBiomass_Automated_C';
+const T_CONSTRUCTOR =
+  '/Game/FactoryGame/Buildable/Factory/ConstructorMk1/Build_ConstructorMk1.Build_ConstructorMk1_C';
+const T_BELT =
+  '/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C';
+const T_STORAGE =
+  '/Game/FactoryGame/Buildable/Storage/Build_StorageContainerMk1.Build_StorageContainerMk1_C';
+const T_GENERATOR =
+  '/Game/FactoryGame/Buildable/Factory/GeneratorBiomass/Build_GeneratorBiomass_Automated.Build_GeneratorBiomass_Automated_C';
 const T_MINER = '/Game/FactoryGame/Buildable/Factory/MinerMk2/Build_MinerMk2.Build_MinerMk2_C';
-const T_COAL = '/Game/FactoryGame/Buildable/Factory/GeneratorCoal/Build_GeneratorCoal.Build_GeneratorCoal_C';
-const T_PIPE = '/Game/FactoryGame/Buildable/Factory/Pipeline/Build_Pipeline_NoIndicator.Build_Pipeline_NoIndicator_C';
+const T_COAL =
+  '/Game/FactoryGame/Buildable/Factory/GeneratorCoal/Build_GeneratorCoal.Build_GeneratorCoal_C';
+const T_PIPE =
+  '/Game/FactoryGame/Buildable/Factory/Pipeline/Build_Pipeline_NoIndicator.Build_Pipeline_NoIndicator_C';
 const T_SMART_SPLITTER =
   '/Game/FactoryGame/Buildable/Factory/CA_Splitter/Build_ConveyorAttachmentSplitterSmart.Build_ConveyorAttachmentSplitterSmart_C';
 const T_FACTORY_CONN = '/Script/FactoryGame.FGFactoryConnectionComponent';

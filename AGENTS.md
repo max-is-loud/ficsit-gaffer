@@ -79,6 +79,24 @@ squash-merge; British English in comments and docs; AI-generated PRs open with t
 `🤖 AI-generated PR` line. When filing an issue, give it a type label, an `area:`
 label and a milestone.
 
+## Code standards — non-negotiable
+
+Full text, with the enforcement details, in
+[`CONTRIBUTING.md` › Code standards](./CONTRIBUTING.md#code-standards).
+
+1. Descriptive names; single letters only for `i j k x y z _`.
+2. Every non-test source file opens with a header comment; comments explain *why*, and non-obvious exports document their contract.
+3. One responsibility per file: over 300 lines is a warning, over 500 fails.
+4. Functions of at most 60 lines, depth 3, complexity 12 and 4 parameters.
+5. Add new kinds of thing as registry or table entries, not as new `if`/`switch` arms.
+
+Never add to a ratchet list (`source-limits.json`, `eslint-suppressions.json`),
+never raise a recorded count, and never add an ESLint suppression by hand. When
+you fix a violation, lower the record (`npm run check:source -- --update`,
+`npm run lint:prune` in the package you changed; the root script covers only
+root tooling). Run `npm run lint` and `npm run check:source` before
+committing.
+
 ## Gaffer is its own project — rules for agents
 
 - **Never create issues, PRs, comments, labels or board items on upstream**

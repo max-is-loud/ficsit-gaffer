@@ -61,9 +61,12 @@ describe('buildSaveGraph', () => {
   });
 
   it('models belts as nodes so a chain is traversable end to end', () => {
-    expect(graph.neighbours(BELT, 'conveyor').map((a) => a.instanceName).sort()).toEqual(
-      [CONSTRUCTOR, STORAGE].sort(),
-    );
+    expect(
+      graph
+        .neighbours(BELT, 'conveyor')
+        .map((a) => a.instanceName)
+        .sort(),
+    ).toEqual([CONSTRUCTOR, STORAGE].sort());
     // Constructor reaches storage only by passing through the belt node.
     expect(graph.traverse(CONSTRUCTOR, { kind: 'conveyor' })).toContain(STORAGE);
     expect(graph.traverse(CONSTRUCTOR, { kind: 'conveyor', maxDepth: 1 })).not.toContain(STORAGE);
@@ -124,9 +127,12 @@ describe('domain projection (nodes carry their typed save records)', () => {
   it('selects actors by domain role', () => {
     expect(graph.actorsByKind('extractor').map((a) => a.instanceName)).toEqual([MINER]);
     expect(graph.actorsByKind('storage').map((a) => a.instanceName)).toEqual([STORAGE]);
-    expect(graph.actorsByKind('generator').map((a) => a.instanceName).sort()).toEqual(
-      [COAL, GENERATOR].sort(),
-    );
+    expect(
+      graph
+        .actorsByKind('generator')
+        .map((a) => a.instanceName)
+        .sort(),
+    ).toEqual([COAL, GENERATOR].sort());
   });
 
   it('exposes the backing SaveState so every save fact is reachable from the graph', () => {
@@ -199,10 +205,26 @@ describe('directed-flow inference (feed-tracing substrate)', () => {
     const state = normaliseSave(
       makeSave({
         objects: [
-          obj('/Game/FactoryGame/Buildable/Factory/ConstructorMk1/Build_ConstructorMk1.Build_ConstructorMk1_C', {}, { instanceName: A, transform: vec3(0, 0, 0) }),
-          obj('/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C', {}, { instanceName: B1, transform: vec3(1, 0, 0) }),
-          obj('/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C', {}, { instanceName: B2, transform: vec3(2, 0, 0) }),
-          obj('/Game/FactoryGame/Buildable/Storage/Build_StorageContainerMk1.Build_StorageContainerMk1_C', {}, { instanceName: ST, transform: vec3(3, 0, 0) }),
+          obj(
+            '/Game/FactoryGame/Buildable/Factory/ConstructorMk1/Build_ConstructorMk1.Build_ConstructorMk1_C',
+            {},
+            { instanceName: A, transform: vec3(0, 0, 0) },
+          ),
+          obj(
+            '/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C',
+            {},
+            { instanceName: B1, transform: vec3(1, 0, 0) },
+          ),
+          obj(
+            '/Game/FactoryGame/Buildable/Factory/ConveyorBeltMk1/Build_ConveyorBeltMk1.Build_ConveyorBeltMk1_C',
+            {},
+            { instanceName: B2, transform: vec3(2, 0, 0) },
+          ),
+          obj(
+            '/Game/FactoryGame/Buildable/Storage/Build_StorageContainerMk1.Build_StorageContainerMk1_C',
+            {},
+            { instanceName: ST, transform: vec3(3, 0, 0) },
+          ),
           link(A, 'Output0', `${B1}.ConveyorAny0`),
           link(B1, 'ConveyorAny0', `${A}.Output0`),
           link(B1, 'ConveyorAny1', `${B2}.ConveyorAny0`), // ambiguous middle edge
@@ -232,8 +254,16 @@ describe('directed-flow inference (feed-tracing substrate)', () => {
     const state = normaliseSave(
       makeSave({
         objects: [
-          obj('/Game/FactoryGame/Buildable/Factory/AssemblerMk1/Build_AssemblerMk1.Build_AssemblerMk1_C', {}, { instanceName: M, transform: vec3(0, 0, 0) }),
-          obj('/Game/FactoryGame/Buildable/Factory/Pipeline/Build_Pipeline.Build_Pipeline_C', {}, { instanceName: PIPE2, transform: vec3(1, 0, 0) }),
+          obj(
+            '/Game/FactoryGame/Buildable/Factory/AssemblerMk1/Build_AssemblerMk1.Build_AssemblerMk1_C',
+            {},
+            { instanceName: M, transform: vec3(0, 0, 0) },
+          ),
+          obj(
+            '/Game/FactoryGame/Buildable/Factory/Pipeline/Build_Pipeline.Build_Pipeline_C',
+            {},
+            { instanceName: PIPE2, transform: vec3(1, 0, 0) },
+          ),
           // Ambiguous pipe edge (PipelineConnection both ends, no source seed → stays unresolved).
           c(M, 'PipelineConnection0', `${PIPE2}.PipelineConnection0`),
           c(PIPE2, 'PipelineConnection0', `${M}.PipelineConnection0`),

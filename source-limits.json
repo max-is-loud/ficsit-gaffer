@@ -1,0 +1,92 @@
+{
+  "$comment": "Ratchet list for npm run check:source. Entries may only be removed or lowered. See CONTRIBUTING.md › Code standards.",
+  "softLimit": 300,
+  "hardLimit": 500,
+  "ignore": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/src/generated/**",
+    "**/bin/**",
+    "**/obj/**",
+    "packages/sf-game-data/extract/CUE4Parse/**"
+  ],
+  "exemptDirectories": [
+    {
+      "path": "integrations/foreman-bridge/",
+      "issue": 10,
+      "reason": "Rewritten to the standard by bridge v2"
+    }
+  ],
+  "exemptFiles": [
+    {
+      "path": "packages/ff-server/src/tools/workOrderTools.ts",
+      "lines": 1629,
+      "issue": 18
+    },
+    {
+      "path": "packages/ff-server/test/workOrderTools.test.ts",
+      "lines": 1113,
+      "issue": 18
+    },
+    {
+      "path": "packages/ff-server/src/services/workOrderService.ts",
+      "lines": 1420,
+      "issue": 19
+    },
+    {
+      "path": "packages/sf-mcp/src/query/selectors.ts",
+      "lines": 1400,
+      "issue": 20
+    },
+    {
+      "path": "packages/ff-client/src/useForeman.ts",
+      "lines": 870,
+      "issue": 21
+    },
+    {
+      "path": "packages/ff-client/src/components/WorkOrderPanel.tsx",
+      "lines": 737,
+      "issue": 22
+    },
+    {
+      "path": "tools/sf-map-renderer/sf-map-renderer/Water/WaterModelBuilder.cs",
+      "lines": 676,
+      "issue": 23
+    },
+    {
+      "path": "packages/ff-server/test/routes.test.ts",
+      "lines": 624,
+      "issue": 24
+    },
+    {
+      "path": "packages/sf-save-data/test/normalise.test.ts",
+      "lines": 585,
+      "issue": 25
+    },
+    {
+      "path": "packages/ff-client/src/api/client.ts",
+      "lines": 560,
+      "issue": 26
+    },
+    {
+      "path": "packages/sf-mcp/src/query/bottlenecks.ts",
+      "lines": 550,
+      "issue": 27
+    },
+    {
+      "path": "packages/sf-mcp/test/bottlenecks.test.ts",
+      "lines": 527,
+      "issue": 27
+    },
+    {
+      "path": "packages/sf-game-data-graph/src/graph/queries/production.ts",
+      "lines": 541,
+      "issue": 28
+    },
+    {
+      "path": "tools/sf-map-renderer/sf-map-renderer/Collection/SceneCollector.cs",
+      "lines": 525,
+      "issue": 29
+    }
+  ]
+}

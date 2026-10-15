@@ -1,0 +1,25 @@
+# Formatter settings for editors and `dotnet format`. Prettier reads it only where .prettierrc.json is silent.
+# Not enforced in CI yet: C# enforcement is tracked in #30.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{ts,tsx,js,mjs,json,md,yml,yaml,css}]
+indent_style = space
+indent_size = 2
+
+# Trailing double-space is a Markdown hard line break.
+[*.md]
+trim_trailing_whitespace = false
+
+# Matches the existing C# code: four-space indent, Allman braces, `System` usings first.
+# tools/sf-map-renderer/ has its own .editorconfig (root = true) that governs it; these settings agree with it.
+[*.cs]
+indent_style = space
+indent_size = 4
+csharp_new_line_before_open_brace = all
+dotnet_sort_system_directives_first = true

@@ -41,5 +41,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Source check
+        run: npm run check:source
+
       - name: Test
         run: npm test
