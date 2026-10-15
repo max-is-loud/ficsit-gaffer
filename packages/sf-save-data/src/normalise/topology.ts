@@ -1,3 +1,7 @@
+// Extracts factory connectivity from a save: buildable actors, conveyor and pipe links, power
+// circuits and smart-splitter sort rules. Edge ordering and de-duplication are fixed here so the
+// output is deterministic.
+
 import {
   BUILDABLE_ACTOR,
   CIRCUIT_COMPONENTS_PROP,

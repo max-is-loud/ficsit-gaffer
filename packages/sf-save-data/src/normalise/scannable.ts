@@ -1,3 +1,6 @@
+// Extracts collected pickup and looted drop-pod GUIDs from the scannable subsystem, in the format
+// the world-locations dataset uses.
+
 import { FG_SCANNABLE_SUBSYSTEM } from '../constants.js';
 import type { RawObject } from '../parser/types.js';
 import { asArray, dig, propMap } from './util.js';

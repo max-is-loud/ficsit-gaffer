@@ -1,3 +1,6 @@
+// Building queries: look up a building's power profile and build cost, list buildable names,
+// and list power generators with their fuel rates.
+
 import type { Building, GeneratorFuel } from '@foreman/sf-game-data';
 import type { QueryContext } from '../context.js';
 import { displayForItem } from '../context.js';

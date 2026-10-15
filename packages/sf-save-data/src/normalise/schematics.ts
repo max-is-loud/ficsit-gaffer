@@ -1,3 +1,6 @@
+// Extracts progression from a save: purchased milestones, MAM research unlocks and the space
+// elevator assembly phase.
+
 import {
   CURRENT_PHASE_PROP,
   GAME_PHASE_MANAGER,

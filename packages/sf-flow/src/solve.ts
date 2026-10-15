@@ -1,3 +1,7 @@
+// solveFlow: the steady-state solver. Orders the network topologically, then iterates to a fixed
+// point, sharing each node's output across edges by downstream demand within edge capacities.
+// Pure maths over FlowNetwork; the network types are in types.ts.
+
 import type { FlowEdge, FlowNetwork, FlowResult, RateMap, SolveOptions } from './types.js';
 
 interface Indexed {

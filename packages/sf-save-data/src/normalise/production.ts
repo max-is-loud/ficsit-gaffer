@@ -1,3 +1,6 @@
+// Extracts the factory floor from a save: recipe-running machines, resource extractors, power
+// generators and batteries, as configuration only. Rates and power figures are derived elsewhere.
+
 import {
   CLOCK_SPEED_PROP,
   CURRENT_FUEL_PROP,

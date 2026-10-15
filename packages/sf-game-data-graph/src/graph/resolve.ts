@@ -1,3 +1,6 @@
+// Resolver: maps user-supplied display names or class names, case-insensitively, to canonical class
+// names for items, recipes, buildings and schematics.
+
 import type { GameData } from '@foreman/sf-game-data';
 
 /**

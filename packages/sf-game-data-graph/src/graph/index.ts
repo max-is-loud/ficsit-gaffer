@@ -1,3 +1,6 @@
+// GraphDB, the in-memory query facade that wires GameData, the resolver and the adjacency index
+// to the per-domain query functions in queries/, plus the initGraph factory.
+
 import type { GameData, Item, Recipe, Schematic } from '@foreman/sf-game-data';
 import type { QueryContext } from './context.js';
 import { buildGraphIndex } from './indexes.js';

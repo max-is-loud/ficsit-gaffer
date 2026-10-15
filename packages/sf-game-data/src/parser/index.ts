@@ -1,3 +1,6 @@
+// Parser-layer entry point: only emptyGameData, the empty GameData fallback used when no dataset
+// resolves. The GameData types are in types.ts.
+
 import type { GameData } from './types.js';
 
 /**

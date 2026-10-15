@@ -1,3 +1,6 @@
+// normaliseSave: turns a parsed RawSave into the SaveState model by indexing every object once and
+// delegating to the per-domain extractors in this directory.
+
 import type { RawObject, RawSave } from '../parser/types.js';
 import { extractCreativeMode, extractGameSettings } from './gameSettings.js';
 import { extractPlayer } from './player.js';

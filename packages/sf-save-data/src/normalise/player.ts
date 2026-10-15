@@ -1,3 +1,5 @@
+// Extracts the pioneer's location, HUB location and personal inventory from the player pawn.
+
 import { HUB_BUILDING, PLAYER_CHARACTER, PLAYER_INVENTORY_PROP } from '../constants.js';
 import type { RawObject } from '../parser/types.js';
 import { decodeInventoryComponent } from './inventories.js';

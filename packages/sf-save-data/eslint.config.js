@@ -1,3 +1,6 @@
+// ESLint flat config for sf-save-data: recommended JS and TypeScript rules over the package
+// sources.
+
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';

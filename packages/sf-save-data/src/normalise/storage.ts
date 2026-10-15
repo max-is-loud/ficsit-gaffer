@@ -1,3 +1,5 @@
+// Extracts storage containers (location and contents) and the dimensional depot from a save.
+
 import {
   CENTRAL_STORAGE_SUBSYSTEM,
   INVENTORY_STACKS_PROP,

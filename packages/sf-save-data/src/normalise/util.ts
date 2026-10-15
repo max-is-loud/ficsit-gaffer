@@ -1,3 +1,6 @@
+// Defensive readers for the parser's tagged-property shapes (scalars, structs, references, arrays,
+// translations) and the Warnings collector shared by every normaliser.
+
 import type { RawObject, RawVector } from '../parser/types.js';
 import type { Vec3 } from './types.js';
 

@@ -1,3 +1,6 @@
+// Item queries: look up an item or resource, list canonical item names for discovery, and find the
+// recipes that consume an item.
+
 import type { Item } from '@foreman/sf-game-data';
 import { type QueryContext, itemByClass } from '../context.js';
 

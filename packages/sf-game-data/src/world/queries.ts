@@ -1,3 +1,6 @@
+// WorldQueries: read-only spatial lookups over the world-location dataset (biomes, collectibles,
+// resource nodes, loot pickups), returning distances and display names rather than raw records.
+
 import type { GameData } from '../parser/types.js';
 import type {
   Biome,
