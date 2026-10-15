@@ -1,0 +1,4 @@
+integrations/foreman-bridge/
+**/dist/
+**/src/generated/
+packages/sf-game-data/data/
