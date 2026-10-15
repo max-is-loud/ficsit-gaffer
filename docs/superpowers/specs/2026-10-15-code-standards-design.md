@@ -2,7 +2,7 @@
 
 Date: 2026-10-15
 
-Status: Design approved in conversation; written spec awaiting the user's review.
+Status: Written spec approved by the user; implementation planning authorised.
 
 Issue: #9 (milestone *Foundations — identity & standards*).
 
