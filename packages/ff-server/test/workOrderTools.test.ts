@@ -1033,12 +1033,7 @@ describe('explore orders (#207)', () => {
 
   it('reconciles collectibles by identity on re-upload, monotonically (#209-B)', async () => {
     const playthrough = await seedPlaythrough();
-    const created = await handleWorkOrderTool(
-      playthrough,
-      CREATE_EXPLORE_ORDER,
-      explorePlan,
-      deps,
-    );
+    const created = await handleWorkOrderTool(playthrough, CREATE_EXPLORE_ORDER, explorePlan, deps);
     // The re-uploaded save shows the somersloop (G-SLOOP) collected; the pod (G-POD) not.
     const summary = await deps.workOrders.reconcileCollectibles(
       playthrough,

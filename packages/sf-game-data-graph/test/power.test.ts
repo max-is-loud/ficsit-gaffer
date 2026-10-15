@@ -17,8 +17,10 @@ beforeAll(async () => {
   graph = await initGraph(gameData);
 });
 
-const fuelFor = (fuels: GeneratorFuel[] | undefined, itemClass: string): GeneratorFuel | undefined =>
-  fuels?.find((f) => f.fuel.itemClassName === itemClass);
+const fuelFor = (
+  fuels: GeneratorFuel[] | undefined,
+  itemClass: string,
+): GeneratorFuel | undefined => fuels?.find((f) => f.fuel.itemClassName === itemClass);
 
 describe('get_building — power generators', () => {
   it('Coal-Powered Generator: 75 MW, 15 coal/min, 45 m³ water/min', () => {
@@ -139,6 +141,6 @@ describe('list_power_generators', () => {
 
     const nuke = generators.find((g) => g.displayName === 'Nuclear Power Plant');
     expect(nuke?.powerProduction).toBe(2500);
-    expect((nuke?.fuels.length ?? 0)).toBeGreaterThan(0);
+    expect(nuke?.fuels.length ?? 0).toBeGreaterThan(0);
   });
 });

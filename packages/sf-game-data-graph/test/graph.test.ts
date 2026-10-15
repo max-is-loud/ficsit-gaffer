@@ -189,7 +189,11 @@ describe('listRecipes', () => {
   it('narrows by search term', () => {
     const names = graph.listRecipes({ search: 'plate' }).map((r) => r.displayName);
     expect(names).toEqual(
-      expect.arrayContaining(['Iron Plate', 'Reinforced Iron Plate', 'Alternate: Bolted Iron Plate']),
+      expect.arrayContaining([
+        'Iron Plate',
+        'Reinforced Iron Plate',
+        'Alternate: Bolted Iron Plate',
+      ]),
     );
     expect(names).not.toContain('Screw');
   });
