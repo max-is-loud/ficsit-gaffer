@@ -117,8 +117,9 @@ Tools check what they can; the rest is checked in review (see the PR template).
 #### How it's enforced
 
 **Source check** (`npm run check:source`) covers tracked `.ts`, `.tsx`, `.js`,
-`.mjs`, `.cs`, `.cpp` and `.h` files, tests included. It counts physical lines
-(as `wc -l` does). Between 301 and 500 lines is a warning; over 500 fails. Every
+`.mjs`, `.cs`, `.cpp` and `.h` files, tests included (a test file is one under a `test`/`tests`/`Tests` folder or a
+folder ending `-tests`, or named `.test.` or `.spec.`). It counts physical
+lines (as `wc -l` does). Between 301 and 500 lines is a warning; over 500 fails. Every
 non-test file must open with a comment (`//`, `///`, `/*` or `/**`), after any
 shebang or `#pragma once`. Example messages:
 
@@ -142,7 +143,8 @@ existing curly, `no-explicit-any` and unused-variable rules:
 Test files (`**/test/**`, `**/*.test.*`, `**/*.spec.*`) are exempt from the first
 three. Example: `Function 'build' has too many parameters (5). Maximum allowed is 4`
 
-**Prettier** (one root `.prettierrc.json`) checks TS/JS formatting as part of
+**Prettier** (one root `.prettierrc.json`) checks TS/JS formatting in every
+package, the root config files, `scripts/` and `.github/scripts/` as part of
 `npm run lint`. `npm run format` rewrites files to match. `.editorconfig` covers
 C#, and `tools/sf-map-renderer/` has its own. C++ has a `.clang-format`
 (`integrations/foreman-bridge/mod/`), not enforced until bridge v2
@@ -160,8 +162,9 @@ two record files.
   lowers counts and removes entries.
 - `eslint-suppressions.json` (root and in each package) records existing ESLint
   violations. A new violation fails. A recorded violation you have fixed also
-  fails until you run `npm run lint:prune` (at the root, or `npm run lint:prune`
-  inside a package).
+  fails until you run `npm run lint:prune` in the package you changed (or
+  `npm run lint:prune -w <package>` from the root). The root `lint:prune` covers
+  only the root tooling: `scripts/`, `.github/scripts/` and the root ESLint configs.
 
 **Never add an exemption or suppression by hand, never re-run `--suppress-all`,
 and never raise a recorded count.** If a change needs more room, split the code.

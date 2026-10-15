@@ -93,7 +93,8 @@ Full text, with the enforcement details, in
 Never add to a ratchet list (`source-limits.json`, `eslint-suppressions.json`),
 never raise a recorded count, and never add an ESLint suppression by hand. When
 you fix a violation, lower the record (`npm run check:source -- --update`,
-`npm run lint:prune`). Run `npm run lint` and `npm run check:source` before
+`npm run lint:prune` in the package you changed; the root script covers only
+root tooling). Run `npm run lint` and `npm run check:source` before
 committing.
 
 ## Gaffer is its own project — rules for agents
