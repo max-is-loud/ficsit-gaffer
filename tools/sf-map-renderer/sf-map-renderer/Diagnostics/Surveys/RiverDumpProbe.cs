@@ -1,3 +1,6 @@
+// Standalone survey: dumps the structure of the first BP_River actor (root, spline and spline-mesh
+// parameters).
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

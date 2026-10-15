@@ -1,3 +1,6 @@
+// Wraps the CUE4Parse file provider over a local Satisfactory install and lists the package groups
+// the renderer scans: generated World-Partition cells, the persistent level, and all game levels.
+
 using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;

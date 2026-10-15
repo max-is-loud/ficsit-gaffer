@@ -1,3 +1,6 @@
+// Accumulates dense ground-cover foliage (grass, ferns, small plants) as per-cell colour and blends
+// it into the terrain so vegetated ground reads green from above.
+
 using SfMapRenderer.Configuration;
 
 namespace SfMapRenderer.Terrain;

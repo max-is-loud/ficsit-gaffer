@@ -1,3 +1,6 @@
+// Presentational grid of the starting foreman personas from foremanPresets. The
+// parent owns which one is selected.
+
 import { FOREMAN_PRESETS, type ForemanPreset } from '../foremanPresets.js';
 
 interface ForemanPresetGridProps {

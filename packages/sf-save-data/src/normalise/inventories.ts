@@ -1,3 +1,6 @@
+// Decodes inventory data from a save into per-item quantities: inventory components (stacks)
+// and the dimensional depot's stored items.
+
 import { INVENTORY_STACKS_PROP, STORED_ITEMS_PROP } from '../constants.js';
 import type { RawObject } from '../parser/types.js';
 import { classNameFromPath } from './classRef.js';

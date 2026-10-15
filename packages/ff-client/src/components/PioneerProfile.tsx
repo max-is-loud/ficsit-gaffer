@@ -1,3 +1,7 @@
+// The pioneer play-style questions as segmented selects (PioneerQuestions), plus
+// an editor (PioneerProfileFields) that composes the answers into editable
+// profile text. Question definitions live in foremanPresets.
+
 import { useState } from 'react';
 
 import { PIONEER_QUESTIONS, composeProfile } from '../foremanPresets.js';

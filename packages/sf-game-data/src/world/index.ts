@@ -1,3 +1,7 @@
+// Loads the merged sf-game-data.json (game data plus world locations) from SF_GAME_DATA_PATH or the
+// bundled channel, degrading to empty data with a warning rather than throwing. Also re-exports the
+// world-location types.
+
 import fs from 'node:fs';
 import path from 'node:path';
 

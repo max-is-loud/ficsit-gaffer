@@ -1,3 +1,6 @@
+// Keeps each playthrough's running summary up to date in the background so context survives beyond
+// the chat history window.
+
 import type { PlaythroughService } from '../services/playthroughService.js';
 import type { ChatMessage } from '../types.js';
 import { logger } from '../logger.js';

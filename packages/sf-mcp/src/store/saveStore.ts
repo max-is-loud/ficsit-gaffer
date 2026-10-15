@@ -1,3 +1,7 @@
+// Holds one save file’s parsed SaveState and connection graph, re-parsing only when the file’s
+// mtime changes and keeping the previous state if a parse fails; the registry that picks a store
+// per request is in registry.ts.
+
 import path from 'node:path';
 
 import { logger } from '../logger.js';

@@ -1,3 +1,5 @@
+// Standalone survey: reports which FGWaterVolume covers each coordinate and its authored surface Z.
+
 using SfMapRenderer.Assets;
 using SfMapRenderer.Geometry;
 

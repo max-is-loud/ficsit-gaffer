@@ -1,3 +1,6 @@
+// Renders chat message text as Markdown (GFM) without raw HTML, so streamed and
+// reloaded messages share one safe render path.
+
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 

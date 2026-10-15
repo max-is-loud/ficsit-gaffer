@@ -1,3 +1,6 @@
+// Shared query plumbing: the QueryContext every query function takes, plus item lookup,
+// display-name, unit and rounding helpers used across the query modules.
+
 import type { GameData, IngredientUnit, Item } from '@foreman/sf-game-data';
 import type { GraphIndex } from './indexes.js';
 import type { Resolver } from './resolve.js';

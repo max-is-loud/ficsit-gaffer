@@ -1,3 +1,6 @@
+// Bounds and parsing for the conversation history window setting, so the account
+// settings form and the request code agree on the accepted range.
+
 /** Server default conversation history window (kept in sync with the backend). */
 export const DEFAULT_HISTORY_WINDOW = 20;
 export const MIN_HISTORY_WINDOW = 2;

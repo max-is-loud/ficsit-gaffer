@@ -1,3 +1,6 @@
+// Entry point of the offline extractor: resolves --flags and environment variables, runs the world
+// extraction and the en-US.json parse, then writes one merged sf-game-data.json.
+
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;

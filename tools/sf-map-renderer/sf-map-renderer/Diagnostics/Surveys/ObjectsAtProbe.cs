@@ -1,3 +1,6 @@
+// Standalone survey: reports the placed objects near each coordinate, as a histogram or a
+// per-instance list.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

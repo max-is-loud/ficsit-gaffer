@@ -1,3 +1,7 @@
+// Body of the Save History drawer: the playthrough's uploaded saves, newest
+// first, with the current one badged and older ones activatable or deletable
+// through callbacks.
+
 import { useEffect } from 'react';
 
 import type { Save } from '../api/types.js';

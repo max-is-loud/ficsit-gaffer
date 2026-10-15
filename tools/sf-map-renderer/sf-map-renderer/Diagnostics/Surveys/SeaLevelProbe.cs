@@ -1,3 +1,6 @@
+// Standalone survey: lists the root Z and scale Z of every water-plane and ocean volume in the
+// persistent level.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

@@ -1,3 +1,8 @@
+// Top-level shell. Gates on auth state, boot and onboarding, then lays out the
+// header, the resizable chat/work-order split (width persisted in localStorage),
+// the drawer dock and the settings and new-playthrough dialogs. All state and
+// server calls come from useForeman.
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AuthScreen } from './components/AuthScreen.js';

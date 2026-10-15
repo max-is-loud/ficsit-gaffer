@@ -1,3 +1,6 @@
+// Provider-neutral message, turn, stream-event and runtime-config types shared by the chat loop and
+// the provider adapters.
+
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages';
 
 import type { ToolDefinition } from '../mcp/client.js';

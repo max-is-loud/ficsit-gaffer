@@ -1,3 +1,6 @@
+// Normalises Unreal's string encodings: parses ingredient and product lists, scales fluid amounts
+// from thousandths of a cubic metre to m³, and derives per-minute rates.
+
 using System.Globalization;
 using System.Text.RegularExpressions;
 

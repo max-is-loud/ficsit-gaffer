@@ -1,3 +1,6 @@
+// Builds the Better Auth instance (email and password with TOTP two-factor) over a Prisma client,
+// and resolves its signing secret and the per-request set of trusted origins.
+
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,3 +1,7 @@
+// Reads a Satisfactory install through CUE4Parse and extracts the world dataset: collectibles,
+// resource nodes, loose crash-site parts, drop-pod unlock costs and project-assembly phase costs.
+// It returns the dataset to its caller and writes nothing itself; Program.cs owns the output file.
+
 using System.Text.RegularExpressions;
 using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;

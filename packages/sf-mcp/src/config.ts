@@ -1,3 +1,7 @@
+// Environment-driven configuration for the sf-mcp server: transport (stdio or HTTP), bind address
+// and saves directory, plus resolving SAVE_FILE_PATH; game-data dataset resolution lives in
+// @foreman/sf-game-data.
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

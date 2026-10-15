@@ -1,3 +1,6 @@
+// The render CLI command: mounts the game assets and runs RenderPipeline with the options and
+// probes parsed from RenderSettings.
+
 using SfMapRenderer.Pipeline;
 
 using Spectre.Console.Cli;

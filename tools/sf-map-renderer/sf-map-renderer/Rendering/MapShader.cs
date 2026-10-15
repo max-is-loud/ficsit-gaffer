@@ -1,3 +1,6 @@
+// Turns the render state into colour: the hillshaded surface raster, the object raster, and the
+// composite with objects drawn over the ground.
+
 using SfMapRenderer.Configuration;
 
 namespace SfMapRenderer.Rendering;

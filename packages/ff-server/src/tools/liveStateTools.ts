@@ -1,3 +1,7 @@
+// The server-local live-bridge tool: advertises it only to the bound playthrough, queries the
+// receiver for Constructor observations and formats the result, with its status caveats, for the
+// model.
+
 import { z } from 'zod';
 
 import {

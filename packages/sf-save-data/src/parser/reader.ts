@@ -1,3 +1,5 @@
+// Disk access for save files: reads a .sav into an ArrayBuffer and reports its modification time.
+
 import fs from 'node:fs';
 
 /** Reads a `.sav` file into an ArrayBuffer (the shape the parser expects). */

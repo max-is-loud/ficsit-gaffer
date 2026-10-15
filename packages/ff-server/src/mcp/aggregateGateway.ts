@@ -1,3 +1,6 @@
+// An McpGateway that merges the tools of several MCP servers behind one interface and routes each
+// tool call to the server that owns it.
+
 import { logger } from '../logger.js';
 import type {
   McpGateway,

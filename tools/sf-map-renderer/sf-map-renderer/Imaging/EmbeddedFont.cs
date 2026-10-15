@@ -1,3 +1,6 @@
+// Loads the embedded Lato Regular font for overlay labels, and exposes its raw bytes for embedding
+// in the HTML artifact.
+
 using SixLabors.Fonts;
 
 namespace SfMapRenderer.Imaging;

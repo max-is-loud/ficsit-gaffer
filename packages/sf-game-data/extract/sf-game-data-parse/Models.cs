@@ -1,3 +1,6 @@
+// Output model of the docs parse (Item, Recipe, Building, Schematic, GameData and their parts),
+// mirroring the TypeScript GameData types so the serialised JSON has the same shape.
+
 namespace SfGameData.Parse;
 
 // Parser output model, ported 1:1 from the TypeScript types in

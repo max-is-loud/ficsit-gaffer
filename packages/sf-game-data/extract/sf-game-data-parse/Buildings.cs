@@ -1,3 +1,7 @@
+// Builds Building records from raw docs classes: power consumption and production, generator fuels
+// with per-minute consumption, and belt, pipe, pump and extractor throughput. Build costs are
+// attached later by GameDataParser from the build-gun recipes.
+
 using System.Text.Json;
 
 namespace SfGameData.Parse;

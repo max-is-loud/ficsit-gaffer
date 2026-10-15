@@ -1,3 +1,6 @@
+// Standalone survey: dumps the first landscape component's material: property names, material
+// chain, referenced textures and parameter names, to map each weightmap layer to a diffuse texture.
+
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;

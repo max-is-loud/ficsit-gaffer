@@ -1,3 +1,7 @@
+// Plan-only sections for recipe assignments with per-minute rates, and for the
+// opportunities the foreman spotted: collectibles, overclocking, AWESOME-shop
+// suggestions and notes.
+
 import type {
   CollectibleOpportunity,
   RecipeAssignment,

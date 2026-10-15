@@ -1,3 +1,7 @@
+// Extracts the 1.2 Game Modes settings from a save: Advanced Game Settings, per-node resource
+// overrides and the creative-mode cheat and rule flags. Records save facts only; applying them is
+// left to the consumer.
+
 import {
   CHEAT_NO_FUEL_PROP,
   CHEAT_NO_POWER_PROP,

@@ -1,3 +1,6 @@
+// Collapsed-by-default section wrapper built on native details/summary, used for
+// secondary work-order sections.
+
 /** A collapsed-by-default secondary section (native details/summary). */
 export function Collapsible({
   label,

@@ -1,3 +1,6 @@
+// Builds the item-to-recipe adjacency maps (producers and consumers per item) from GameData
+// once, so relationship queries do not rescan every recipe.
+
 import type { GameData, Recipe } from '@foreman/sf-game-data';
 
 /**

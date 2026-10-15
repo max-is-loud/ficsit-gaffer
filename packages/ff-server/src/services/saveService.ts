@@ -1,3 +1,7 @@
+// Stores each playthrough's uploaded save versions on disk and in the database, reads their
+// metadata through the MCP, raises re-upload warnings, syncs collectibles and matches an upload to
+// existing playthroughs.
+
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

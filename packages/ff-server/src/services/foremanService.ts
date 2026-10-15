@@ -1,3 +1,5 @@
+// Database access for foremen, the reusable personas a user can attach to playthroughs.
+
 import type { PrismaClient, Foreman as ForemanRow } from '@prisma/client';
 
 import type { Foreman } from '../types.js';

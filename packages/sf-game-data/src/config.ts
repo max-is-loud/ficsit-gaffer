@@ -1,3 +1,6 @@
+// Game-channel names (stable, experimental), '~' expansion for paths, and the location of the
+// bundled per-channel data directory. Dataset file resolution lives in world/index.ts.
+
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

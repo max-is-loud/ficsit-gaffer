@@ -1,3 +1,6 @@
+// The mutable per-cell canvas the pipeline stages fill in turn: height grids, terrain colour,
+// object masks and the water classification, as flat arrays.
+
 using SfMapRenderer.Configuration;
 
 namespace SfMapRenderer.Rendering;

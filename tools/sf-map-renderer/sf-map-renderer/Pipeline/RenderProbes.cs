@@ -1,3 +1,6 @@
+// The optional diagnostic probe requests that ride on a render, held as raw world coordinates until
+// the pipeline has a grid frame to map them onto.
+
 namespace SfMapRenderer.Pipeline;
 
 /// <summary>

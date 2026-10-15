@@ -1,3 +1,6 @@
+// Applies the water model to the render state in the game's order: ocean-void flood, water-volume
+// rasterise, margin override, river ribbons, shallow ponds and the wet-sand shelf.
+
 using SfMapRenderer.Collection;
 using SfMapRenderer.Configuration;
 using SfMapRenderer.Geometry;

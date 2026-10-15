@@ -1,3 +1,6 @@
+// REST routes for a playthrough's work orders: creation and reads, plan edits, transitions,
+// revisions, audit trail and the Pioneer's execution progress.
+
 import { Router, type Response } from 'express';
 
 import type { AppDeps } from '../deps.js';

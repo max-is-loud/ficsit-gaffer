@@ -1,3 +1,7 @@
+// Persistence and lifecycle for work orders: creation, queries, state transitions, plan revisions
+// and reverts, execution progress, collectible reconciliation, audit events, and conversion between
+// database rows and API shapes.
+
 import { randomUUID } from 'node:crypto';
 
 import type {

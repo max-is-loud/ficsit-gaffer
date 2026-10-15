@@ -1,3 +1,6 @@
+// Standalone survey: histograms each landscape streaming proxy's root Z and scale Z, to confirm the
+// height decode needs no per-proxy Z.
+
 using System.Globalization;
 
 using SfMapRenderer.Assets;

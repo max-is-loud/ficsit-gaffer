@@ -1,3 +1,7 @@
+// Header dropdown for switching playthroughs and opening new-playthrough and
+// settings. Also exports playthroughLabel, the display-name fallback used by
+// other components.
+
 import { useEffect, useState } from 'react';
 
 import type { Playthrough } from '../api/types.js';

@@ -1,3 +1,6 @@
+// Holds the JSON serialiser options (camelCase, nulls omitted, relaxed escaping) used to write the
+// parsed GameData.
+
 using System.Text.Encodings.Web;
 using System.Text.Json;
 

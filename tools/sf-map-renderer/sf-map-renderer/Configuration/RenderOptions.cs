@@ -1,3 +1,7 @@
+// Every render tunable in one typed class (downsample, rock and flora handling, ground cover, water
+// and ocean levels), with defaults that reproduce the original tool's output, plus the tree-part
+// and exclusion types.
+
 namespace SfMapRenderer.Configuration;
 
 /// <summary>Which sections of a tree mesh to rasterise.</summary>

@@ -1,3 +1,6 @@
+// Standalone survey: dumps the properties of item-pickup, hatcher and creature-spawner actors near
+// a coordinate.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

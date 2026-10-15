@@ -1,3 +1,7 @@
+// Derives each weightmap layer's terrain colour from the landscape material, by averaging its
+// diffuse texture and applying the layer tint, and falls back to TerrainPalette for layers it
+// cannot sample.
+
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.Math;

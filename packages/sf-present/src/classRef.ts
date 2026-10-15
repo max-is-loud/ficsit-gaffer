@@ -1,3 +1,6 @@
+// Display-name fallback for a class that has no authored game-data name: strips Unreal prefixes and
+// suffixes and spaces out camel case.
+
 /**
  * Best-effort human-readable name for a class, used as a display-name fallback
  * when a class is referenced but has no authored game-data name. Strips the common

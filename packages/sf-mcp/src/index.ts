@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// Entry point for the unified sf-mcp server: loads the game-data dataset and graph and the save
+// store registry, then serves the game-data and save tools over stdio, or over HTTP via http.ts
+// when MCP_TRANSPORT=http.
+
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

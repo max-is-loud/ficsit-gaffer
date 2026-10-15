@@ -1,3 +1,6 @@
+// Orchestrates the docs parse: buckets raw classes by category, runs the item, building, recipe and
+// schematic extractors in dependency order, and returns GameData with collected warnings.
+
 using System.Text.Json;
 
 namespace SfGameData.Parse;

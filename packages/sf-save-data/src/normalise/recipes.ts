@@ -1,3 +1,5 @@
+// Extracts the unlocked recipes from the recipe manager, flagging alternates by class name.
+
 import { ALTERNATE_RECIPE, AVAILABLE_RECIPES_PROP, RECIPE_MANAGER } from '../constants.js';
 import type { RawObject } from '../parser/types.js';
 import { classNameFromPath } from './classRef.js';

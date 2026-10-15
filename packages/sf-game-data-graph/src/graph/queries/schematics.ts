@@ -1,3 +1,6 @@
+// Schematic queries: list milestones and MAM nodes (filterable by tier or search text) with unlock
+// counts, and fetch one schematic in full.
+
 import type { Schematic } from '@foreman/sf-game-data';
 import type { QueryContext } from '../context.js';
 

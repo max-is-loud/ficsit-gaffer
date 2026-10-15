@@ -1,3 +1,6 @@
+// The work-order state machine: which actions are legal from which states and for which actor, and
+// the audit event each transition records. It holds no persistence.
+
 import type { TerminalWorkOrderState, WorkOrderActor, WorkOrderState } from '../types.js';
 
 /**

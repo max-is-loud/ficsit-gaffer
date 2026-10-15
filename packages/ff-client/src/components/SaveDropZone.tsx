@@ -1,3 +1,7 @@
+// Compact header drop-zone and file picker for uploading a newer .sav to the
+// active playthrough. It reports upload status and errors; the upload itself is a
+// callback.
+
 import { useRef, useState } from 'react';
 
 interface SaveDropZoneProps {

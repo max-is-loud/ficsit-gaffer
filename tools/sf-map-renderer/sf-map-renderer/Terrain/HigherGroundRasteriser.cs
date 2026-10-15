@@ -1,3 +1,7 @@
+// The higher-ground pass: rasterises placed rock and flora mesh tops into the height grid with a
+// max-Z buffer and records the topmost object per cell, leaving water classification to the
+// pre-rock seabed.
+
 using SfMapRenderer.Collection;
 using SfMapRenderer.Configuration;
 using SfMapRenderer.Diagnostics;

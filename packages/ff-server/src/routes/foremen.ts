@@ -1,3 +1,5 @@
+// REST routes for the user's foreman library (create, list, fetch, update and delete personas).
+
 import { Router, type Request } from 'express';
 
 import type { AppDeps } from '../deps.js';

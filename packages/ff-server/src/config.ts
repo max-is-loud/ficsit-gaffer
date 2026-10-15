@@ -1,3 +1,6 @@
+// Resolves the server's runtime configuration from environment variables, and derives the
+// per-request LLM runtime config from the server defaults and any client override.
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -1,3 +1,6 @@
+// The chat pane: scrolling list of messages rendered through MarkdownMessage,
+// with the composer that sends the pioneer's text.
+
 import { useEffect, useRef, useState } from 'react';
 
 import type { ChatMsg } from '../useForeman.js';

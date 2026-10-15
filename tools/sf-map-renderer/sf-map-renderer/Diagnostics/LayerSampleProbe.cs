@@ -1,3 +1,6 @@
+// The LAYERAT probe: records and prints the material layers and weights at chosen cells during the
+// landscape decode, to confirm what a cell is painted with.
+
 using SfMapRenderer.Configuration;
 using SfMapRenderer.Landscape;
 

@@ -1,3 +1,7 @@
+// Builds map-layers.html, an interactive page of toggleable layers stacked in one pan/zoom frame:
+// raster layers from the surface and object rasters, vector biome edges and grid, and positioned
+// biome-name text.
+
 using System.Globalization;
 using System.Text;
 

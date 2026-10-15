@@ -1,3 +1,7 @@
+// Sign-in, sign-up and second-factor (TOTP or backup code) screen shown to
+// signed-out users. It collects credentials and reports errors; the actual auth
+// calls are passed in as props.
+
 import { useState } from 'react';
 
 interface AuthScreenProps {

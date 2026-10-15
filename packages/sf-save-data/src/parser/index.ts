@@ -1,3 +1,6 @@
+// The single boundary against @etothepii/satisfactory-file-parser: parses a save buffer or
+// file into the local RawSave shape, keeping the library's console output off stdout.
+
 import { Parser } from '@etothepii/satisfactory-file-parser';
 
 import { readSaveFile } from './reader.js';

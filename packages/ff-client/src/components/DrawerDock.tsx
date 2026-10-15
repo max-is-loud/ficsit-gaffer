@@ -1,3 +1,7 @@
+// Generic right-edge drawer dock: a rail of tabs, one open drawer at a time, pin
+// and auto-hide behaviour, and the open state persisted in localStorage. It knows
+// nothing about drawer contents, which callers supply through DrawerDef.
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** API handed to a drawer's render fn so its content can drive the dock. */

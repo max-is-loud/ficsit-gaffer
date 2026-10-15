@@ -1,3 +1,7 @@
+// First-run wizard that collects the foreman personality and the pioneer profile,
+// then hands both strings to the parent to create the first foreman and
+// playthrough.
+
 import { useState } from 'react';
 
 import { PIONEER_QUESTIONS, composeProfile, type ForemanPreset } from '../foremanPresets.js';

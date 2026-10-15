@@ -1,3 +1,7 @@
+// Pass A of the render: accumulates landscape tiles, placed rock and flora meshes, water volumes,
+// rivers and shallow-water seeds as RenderPipeline feeds it each package's exports through the
+// TryAdd* methods. The package sweep itself lives in RenderPipeline.
+
 using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;

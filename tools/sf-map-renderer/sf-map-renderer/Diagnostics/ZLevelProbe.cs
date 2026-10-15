@@ -1,3 +1,6 @@
+// The ztest probe: compares the decoded terrain Z at each known collectible with its real Z and
+// reports the mean offset, as a sanity check on the height decode.
+
 using System.Text.Json;
 
 using SfMapRenderer.Rendering;

@@ -1,3 +1,7 @@
+// Production-planning queries: the recursive ingredient tree, total raw inputs, a costed full
+// production line (machines, extractors, estimated logistics) and the items buildable from given
+// raw resources.
+
 import type { IngredientUnit } from '@foreman/sf-game-data';
 import {
   type QueryContext,

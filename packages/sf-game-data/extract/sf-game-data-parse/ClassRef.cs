@@ -1,3 +1,6 @@
+// Extracts the *_C class-name tokens from a raw Unreal class-reference string, de-duplicated and in
+// their original order.
+
 using System.Text.RegularExpressions;
 
 namespace SfGameData.Parse;

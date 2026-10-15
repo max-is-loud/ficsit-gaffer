@@ -1,3 +1,5 @@
+// Standalone survey: reports the distribution of FGWaterVolume surface Z across the world.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

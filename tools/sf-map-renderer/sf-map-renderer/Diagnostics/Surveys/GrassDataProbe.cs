@@ -1,3 +1,6 @@
+// Standalone survey: reads the baked landscape grass density for the component covering a
+// coordinate, per grass type, to show where grass grows even when the weightmap is sand.
+
 using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 
 using SfMapRenderer.Assets;

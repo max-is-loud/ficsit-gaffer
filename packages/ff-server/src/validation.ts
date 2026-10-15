@@ -1,3 +1,6 @@
+// Shared zod schemas for REST request bodies and foreman tool inputs, so both validate against
+// identical shapes.
+
 import { z } from 'zod';
 
 /**

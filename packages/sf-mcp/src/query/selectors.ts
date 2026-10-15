@@ -1,3 +1,7 @@
+// Pure read-model functions behind the save tools: turn a SaveState, save graph and game-data index
+// into the model-facing views (player, recipes, milestones, storage, collectibles, nearby,
+// production, power, material coverage).
+
 import {
   type Building,
   type Collectible,

@@ -1,3 +1,5 @@
+// Reads the binary P6 PPM rasters the renderer writes, since ImageSharp has no Netpbm codec.
+
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 

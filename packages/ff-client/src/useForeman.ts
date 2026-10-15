@@ -1,3 +1,8 @@
+// The client's single state hook: auth and session, playthroughs, the foreman
+// library, saves, the chat stream, work-order state and mutations, and the
+// browser-held LLM settings. Components receive everything through the
+// ForemanState it returns; HTTP lives in api/client.ts and api/auth.ts.
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {

@@ -1,3 +1,6 @@
+// Recipe queries: look up a recipe, list canonical recipe names, find the recipes that produce an
+// item, and compare standard against alternate recipes for it.
+
 import type { GameData, Ingredient, Recipe } from '@foreman/sf-game-data';
 import { type QueryContext, machineForRecipe, round } from '../context.js';
 import type {

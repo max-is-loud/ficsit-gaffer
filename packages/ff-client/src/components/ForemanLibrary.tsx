@@ -1,3 +1,7 @@
+// The account-wide list of foreman personas with inline edit, create and delete.
+// Persistence is done by callbacks from the parent, and personas in use by a
+// playthrough cannot be deleted.
+
 import { useState } from 'react';
 
 import type { Foreman } from '../api/types.js';

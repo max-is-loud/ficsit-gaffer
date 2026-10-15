@@ -1,3 +1,5 @@
+// Helper that turns an Express response into a Server-Sent Events channel.
+
 import type { Response } from 'express';
 
 /** A Server-Sent Events channel over an Express response. */

@@ -1,3 +1,6 @@
+// Result shapes returned by the recipe and production queries: recipe views, ingredient trees,
+// full-production-line costings and alternate-recipe comparisons. Types only; no logic.
+
 import type { IngredientUnit } from '@foreman/sf-game-data';
 
 /** A single ingredient/product line as returned by recipe queries. */

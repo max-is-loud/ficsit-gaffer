@@ -1,3 +1,6 @@
+// The CELLS probe: reports land, sea, lake and void percentages for named cells of the coarse 20x17
+// lettered grid, once the render state has the water classified.
+
 using System.Globalization;
 
 using SfMapRenderer.Rendering;

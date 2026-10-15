@@ -1,3 +1,9 @@
+// The work-order cockpit. It switches between the live order, revision snapshots
+// and the audit log, loads revisions, diffs and audit events, and wires the
+// lifecycle controls (state transitions, close-out feedback, hours, acknowledge
+// or revert revision) and execution toggles to the actions from useForeman. The
+// plan sections themselves are the plan-only components in workorder/.
+
 import { useEffect, useRef, useState } from 'react';
 
 import { getAuditTrail, getRevisionDiff, getRevisions } from '../api/client.js';

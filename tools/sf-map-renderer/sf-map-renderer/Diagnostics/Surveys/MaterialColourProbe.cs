@@ -1,3 +1,6 @@
+// Standalone survey: samples and prints the average albedo of each material on the first mesh of
+// named families, as a smoke test for texture decoding.
+
 using CUE4Parse.UE4.Assets.Exports.Material;
 
 using SfMapRenderer.Assets;

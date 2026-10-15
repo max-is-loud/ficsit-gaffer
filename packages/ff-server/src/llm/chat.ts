@@ -1,3 +1,7 @@
+// The server-side chat turn loop: builds the system prompt and windowed history, calls the
+// provider, runs the tools it asks for and repeats until the model gives a final answer. Provider
+// wire formats live in the adapters.
+
 import type { McpGateway, ToolDefinition } from '../mcp/client.js';
 import type { PlaythroughService } from '../services/playthroughService.js';
 import type { WorkOrderService } from '../services/workOrderService.js';

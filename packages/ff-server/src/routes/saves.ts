@@ -1,3 +1,6 @@
+// The user-scoped save route that previews an uploaded save against the caller's existing
+// playthroughs.
+
 import { Router } from 'express';
 import multer from 'multer';
 

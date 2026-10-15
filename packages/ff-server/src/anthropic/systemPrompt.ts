@@ -1,3 +1,6 @@
+// Loads the foreman system prompt template from SYSTEM_PROMPT.md and fills in its personality,
+// pioneer-profile and session-summary placeholders for each chat turn.
+
 import fs from 'node:fs';
 
 /**

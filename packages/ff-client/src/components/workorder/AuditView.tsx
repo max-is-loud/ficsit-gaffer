@@ -1,3 +1,6 @@
+// Audit-trail tab of the work-order panel: events newest first, filterable by
+// actor and event type, with links to revision snapshots.
+
 import { useMemo, useState } from 'react';
 
 import type {
