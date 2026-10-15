@@ -8,7 +8,7 @@ feedback to a fixed point.
 It is deliberately **game-agnostic**: nodes carry per-item `supply`/`demand` rates and
 edges carry a throughput `capacity` plus an optional item `allow` filter (and an
 `overflow` flag) — all plain numbers. No game data, no save types, no I/O. The `sf-mcp`
-adapter maps the save connection graph (#142) + the effective game data (recipe rates,
+adapter maps the save connection graph ([upstream #142](https://github.com/StuartMeeks/ficsit-foreman/issues/142)) + the effective game data (recipe rates,
 belt/pipe caps, pump head lift) onto this model, and applies fluid head-lift limits as a
 zeroed edge capacity, so the solver never needs geometry. See
 [`docs/flow-solver.md`](../../docs/flow-solver.md).

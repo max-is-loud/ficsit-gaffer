@@ -1,4 +1,4 @@
-# Crash-site loot & drop-pod unlock costs (#107)
+# Crash-site loot & drop-pod unlock costs ([upstream #107](https://github.com/StuartMeeks/ficsit-foreman/issues/107))
 
 > Status: **shipped** — the datasets and MCP tools below (`list_parts` / `nearest_parts`,
 > `get_nearby_parts`, drop-pod `unlockCost`) are live. Retained as the design of record.
@@ -125,7 +125,7 @@ A thin `packages/ff-server` passthrough is added only if the client cannot reach
 
 ## Out of scope / non-goals
 
-- No client UI here — that is the collectibles/explore work (#118) consuming these tools.
+- No client UI here — that is the collectibles/explore work ([upstream #118](https://github.com/StuartMeeks/ficsit-foreman/issues/118)) consuming these tools.
 - `CostType` is deliberately not stored (unreliable; presence of sub-fields is the source of truth).
 - Coordinates stay in centimetres in the dataset (the MCP layer converts to metres, as today).
 

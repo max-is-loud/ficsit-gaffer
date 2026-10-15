@@ -1,10 +1,10 @@
-# Save Subsystem — design & roadmap (#76)
+# Save Subsystem — design & roadmap ([upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76))
 
 > **Status: shipped.** All three PRs below (build-version awareness, re-upload
 > history, same-game recognition) have merged. This document is retained as the
 > design of record.
 
-The minimal save upload shipped first in #61 (PR #97). Saves are now stored
+The minimal save upload shipped first in [upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61) (PR [upstream #97](https://github.com/StuartMeeks/ficsit-foreman/issues/97)). Saves are now stored
 **per-version** on a shared volume (`${SAVE_DATA_DIR}/<playthroughId>/<saveId>.sav`),
 with a separate "current" pointer per playthrough, and metadata parsed on upload
 via the save-game MCP's `describe_save` tool. The save-game MCP is
@@ -116,7 +116,7 @@ prerequisite for PR3.
 
 ## Considered & deferred — live-watch folder mode
 
-**Decision: out of scope for #76.** The idea was a power-user mode where the
+**Decision: out of scope for [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76).** The idea was a power-user mode where the
 save-game MCP points at a live Satisfactory SaveGames *folder* and serves the
 newest save per session. It's deferred because:
 
@@ -126,7 +126,7 @@ newest save per session. It's deferred because:
 - It only helps a narrow niche — the MCP running on the gaming machine pointed
   straight at the live folder — which contradicts the actual deployment: the app
   runs on a VM that **cannot see the Windows game files** (saves are copied over
-  manually; see `CLAUDE.md`).
+  manually; see `AGENTS.md`).
 - The cost (folder scanning, filename parsing, a folder-backed store, multi-base
   path validation, a session-listing tool) is disproportionate to that value.
 

@@ -5,8 +5,8 @@
 > the source of truth for all implementation sessions. Where this conflicts with
 > older notes, this wins.
 
-> **Related:** ingest-time resolution of the plan's game-data **names** (#220, #222)
-> and verification of its **quantities** (#223 — power reject + manufacturing advisory)
+> **Related:** ingest-time resolution of the plan's game-data **names** ([upstream #220](https://github.com/StuartMeeks/ficsit-foreman/issues/220), [upstream upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222))
+> and verification of its **quantities** ([upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223) — power reject + manufacturing advisory)
 > are specified in [`work-order-quantity-verification.md`](./work-order-quantity-verification.md).
 
 ## Purpose
@@ -360,7 +360,7 @@ schema), but the domain supports:
 type WorkOrder = {
   id: string;
   playthroughId: string;
-  orderType: 'build' | 'explore';  // #207 — default 'build'
+  orderType: 'build' | 'explore';  // upstream #207 — default 'build'
   sequenceNumber: number;        // rendered WO-001 (build) / EO-001 (explore)
   version: string;               // game-data version this order was built for
 
@@ -374,10 +374,10 @@ type WorkOrder = {
   notes?: string[];              // freeform foreman build notes
   locationRecommendation?: LocationRecommendation;
   resourceNodes?: ResourceNodeReference[];
-  recipes: RecipeAssignment[];   // server-derived from per-buildable recipe × count (#228)
+  recipes: RecipeAssignment[];   // server-derived from per-buildable recipe × count (upstream #228)
   expectedOutputs: ExpectedOutput[];
   buildSteps: WorkOrderStep[];   // build orders — each step nests the buildables it requires
-  waypoints?: ExploreWaypoint[]; // explore orders — the ordered collection route (#207)
+  waypoints?: ExploreWaypoint[]; // explore orders — the ordered collection route (upstream #207)
   opportunities?: WorkOrderOpportunities;
   blockedReason?: string;
   blockedResolutionHint?: string;
@@ -467,7 +467,7 @@ Alternate recipe choices are resolved *before* a production/build work order is
 issued; an issued order contains selected recipes, not unresolved options. Recipe
 is a first-class property of each production buildable block; the foreman annotates
 recipe + count, and the server **derives** the `recipes[]` array and its per-minute
-rates from recipe × count (#228) — the model no longer authors rates. A
+rates from recipe × count ([upstream #228](https://github.com/StuartMeeks/ficsit-foreman/issues/228)) — the model no longer authors rates. A
 building↔recipe mismatch is hard-rejected at ingest. See
 [`work-order-quantity-verification.md`](./work-order-quantity-verification.md).
 
@@ -503,7 +503,7 @@ type ResourceNodeReference = {
 
 > Names (`itemName`, `machineName`, `recipeName`, `resourceName`) are resolved
 > against the game-data MCP's `displayName`/`className` lookups **at ingest, and
-> the order is rejected if any reference is unresolvable** (#222) — the foreman
+> the order is rejected if any reference is unresolvable** ([upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222)) — the foreman
 > gets one message grouping the misses by kind, with best-match suggestions.
 > Quantities are verified too (power over-provision is hard-rejected; recipes and
 > per-minute rates are server-derived — see
@@ -526,7 +526,7 @@ type WorkOrderOpportunities = {
 // REUSE CollectibleKind from @foreman/sf-game-data — do not invent a parallel
 // enum. It is: mercerSphere | somersloop | powerSlugBlue | powerSlugYellow |
 // powerSlugPurple | hardDrive | helmet | mtape (the last two are customizer
-// pickups, schematic-keyed — #67).
+// pickups, schematic-keyed — upstream #67).
 type CollectibleOpportunity = {
   id?: string;
   kind: CollectibleKind;
@@ -627,7 +627,7 @@ type WorkOrderAuditEventType =
   | 'child_work_order_completed'
   | 'step_checked' | 'step_unchecked'
   | 'buildable_built_count_changed'
-  | 'collectible_collected'         // explore orders — Pioneer or System (#207/#209)
+  | 'collectible_collected'         // explore orders — Pioneer or System (upstream #207/#209)
   | 'hours_logged'
   | 'recipe_choice_changed'
   | 'build_plan_adapted'
@@ -701,7 +701,7 @@ than the single panel that ships today. The goal is that the entire `WorkOrder`,
 `WorkOrderRevision`, and `WorkOrderAuditEvent` shape is surfaced somewhere — the
 active panel stays low-cognitive-load, while the richer detail lives in views the
 Pioneer opens deliberately. Tracked as a field-by-field checklist in
-[#206](https://github.com/StuartMeeks/ficsit-foreman/issues/206).
+[upstream [upstream #206](https://github.com/StuartMeeks/ficsit-foreman/issues/206)](https://github.com/StuartMeeks/ficsit-foreman/issues/206).
 
 **Layout principle — briefing first.** Every view leads with the goal/summary/
 action material: header + state, attention banners, the narrative (objective,
@@ -727,8 +727,8 @@ below the fold under the step ledger.
 
 * No separate MCP server for work orders.
 * No automatic **buildable-count** detection / save-game reconciliation — built
-  counts are manual (buildable→save-instance matching is heuristic; #209-A was
-  cancelled). Note: this non-goal is **narrowed** by #209-B, which *does* auto-
+  counts are manual (buildable→save-instance matching is heuristic; [upstream #209-A](https://github.com/StuartMeeks/ficsit-foreman/issues/209) was
+  cancelled). Note: this non-goal is **narrowed** by [upstream #209-B](https://github.com/StuartMeeks/ficsit-foreman/issues/209), which *does* auto-
   reconcile **explore-order collectibles** on re-upload — those are identity-keyed
   (GUID/schematic), so the match is exact. See
   [`explore-orders.md`](./explore-orders.md).

@@ -1,12 +1,12 @@
 # Playthroughs & Foremen — domain model
 
-> **Status: shipped (#86, #61, #76).** The domain model and data-preserving migration
+> **Status: shipped ([upstream #86](https://github.com/StuartMeeks/ficsit-foreman/issues/86), [upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61), [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)).** The domain model and data-preserving migration
 > landed — the schema has `Foreman` and `Playthrough` (the former `Session`), and the
 > server speaks "playthrough" with Foreman CRUD + a playthrough list (see
 > [`packages/ff-server/prisma/schema.prisma`](../packages/ff-server/prisma/schema.prisma)).
-> The playthrough switcher / foreman library UI (#61) and the save subsystem — including
-> per-version re-upload history (#76) — also shipped; see [`save-subsystem.md`](./save-subsystem.md).
-> Retained as the design of record. It supersedes the original framing of #61 and #76.
+> The playthrough switcher / foreman library UI ([upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61)) and the save subsystem — including
+> per-version re-upload history ([upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)) — also shipped; see [`save-subsystem.md`](./save-subsystem.md).
+> Retained as the design of record. It supersedes the original framing of [upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61) and [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76).
 
 ## Why
 
@@ -55,7 +55,7 @@ One save's journey: a chosen foreman + the pioneer's play style + the conversati
 `pioneerProfile` lives **here, not on the user**, because play style varies per run (a relaxed
 build vs a min-max sprint).
 
-### Save *(new — mechanics owned by #76)*
+### Save *(new — mechanics owned by [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76))*
 The uploaded `.sav` for a playthrough.
 
 | Field | Notes |
@@ -63,10 +63,10 @@ The uploaded `.sav` for a playthrough.
 | `id` | |
 | `playthroughId` | owning playthrough (→ `Playthrough`) |
 | metadata | parsed world/save name, game version, uploaded-at |
-| file reference | how/where the `.sav` is stored — **decided in #76** (data-volume path vs object store) |
+| file reference | how/where the `.sav` is stored — **decided in [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)** (data-volume path vs object store) |
 
 The model defines that a playthrough *has* a **current** save; the upload pipeline, per-version
-storage and re-upload history are #76 (shipped). Re-uploading adds a new version and makes it
+storage and re-upload history are [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76) (shipped). Re-uploading adds a new version and makes it
 current; earlier versions are retained and can be re-activated or deleted.
 
 ## Relationships
@@ -111,15 +111,15 @@ User ──1:*── Foreman ──1:*── Playthrough ──1:1── Save (c
 1. **Domain model + migration** *(foundational — do first).* Schema (Foreman, Playthrough rename,
    Save table), the data migration, and the server rename `session`→`playthrough` across
    services/routes, plus Foreman CRUD and the playthrough list endpoint.
-2. **Playthrough switcher + foreman library + sectioned settings + minimal save upload** *(#61).*
+2. **Playthrough switcher + foreman library + sectioned settings + minimal save upload** *([upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61)).*
    List / switch / new / rename / delete playthroughs (resuming chat **and** work orders); a foreman
    library; the sectioned Settings dialog (Foreman / Pioneer / LLM / billing placeholder); **and** a
-   minimal-but-functional save upload pulled forward from #76 — the new-playthrough modal optionally
+   minimal-but-functional save upload pulled forward from [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76) — the new-playthrough modal optionally
    takes a `.sav` (drag-drop or file dialog), stored one-per-playthrough on a shared data volume,
    parsed for metadata (seeds the playthrough name). The save-game MCP gained an optional, host-
    injected `savePath` (per-path LRU of mtime-gated parses) so it answers about the active
    playthrough's save; the server overrides `savePath` on save-routed tool calls.
-3. **Save subsystem: re-upload history + load-model refactor** *(refocused #76).* Re-upload-over-time
+3. **Save subsystem: re-upload history + load-model refactor** *(refocused [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)).* Re-upload-over-time
    with per-version history, the save-game MCP folder/newest-per-playthrough load-model refactor,
    and extracting the save parse/normalise layer into a shared lib.
 
@@ -128,7 +128,7 @@ User ──1:*── Foreman ──1:*── Playthrough ──1:1── Save (c
 - Design-first; this spec is signed off before implementation.
 - `pioneerProfile` lives on the **Playthrough**.
 - A save is **optional** to start a playthrough.
-- Minimal upload + storage + the per-call `savePath` MCP mechanism landed in **#61**; the
-  load-model refactor + per-version re-upload history landed in **#76**.
+- Minimal upload + storage + the per-call `savePath` MCP mechanism landed in **[upstream #61](https://github.com/StuartMeeks/ficsit-foreman/issues/61)**; the
+  load-model refactor + per-version re-upload history landed in **[upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)**.
 - Foremen are seeded by **deduping** existing personalities on migration; new users get a foreman
   from their chosen onboarding preset.

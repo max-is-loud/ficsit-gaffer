@@ -145,4 +145,5 @@ audit trail, and parent/child relationships. The canonical design is
 Built in phases: **1** (game-data MCP) and **2** (backend & foreman chat) are
 complete; **3** (web UI) is in progress; the **save-game MCP** (originally Phase 4)
 shipped v1 early. Live, per-component work is tracked in the
-[issue tracker](https://github.com/StuartMeeks/ficsit-foreman/issues).
+[issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4); work from before
+the split is in the [upstream tracker](https://github.com/StuartMeeks/ficsit-foreman/issues).

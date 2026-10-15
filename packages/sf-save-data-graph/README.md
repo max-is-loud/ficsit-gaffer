@@ -7,8 +7,8 @@ circuits) and joins each node to its typed domain record. It holds **no facts of
 own** — `@foreman/sf-save-data` is the single source of truth; this is the queryable
 lens. It is the substrate every *relational* save question is answered over:
 
-- **Power** (#68) — circuits are pre-grouped by the game, so this is mostly aggregation.
-- **Production feed-tracing & real bottlenecks** (#126) — directed traversal over belts/pipes.
+- **Power** ([upstream #68](https://github.com/StuartMeeks/ficsit-foreman/issues/68)) — circuits are pre-grouped by the game, so this is mostly aggregation.
+- **Production feed-tracing & real bottlenecks** ([upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126)) — directed traversal over belts/pipes.
 - Logistics and map adjacency.
 
 It sits in the same domain layer as `@foreman/sf-save-data` and mirrors the
@@ -59,11 +59,11 @@ graph.warnings;                           // → the save's non-fatal issues (ne
 The relational facts themselves live in `SaveState.topology` (produced by the
 `sf-save-data` normaliser, which also owns canonical edge ordering and dedup). This
 package only **indexes** them. Direction inference and belt-chain collapsing are
-**consumer** concerns (#126).
+**consumer** concerns ([upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126)).
 
 ## Backend & the in-memory-vs-Kùzu spike
 
-The graph is backed by **in-memory adjacency maps**. The issue (#122) called for a
+The graph is backed by **in-memory adjacency maps**. The issue ([upstream #122](https://github.com/StuartMeeks/ficsit-foreman/issues/122)) called for a
 spike between this and a Kùzu-per-save database. Measured on a real mid save
 (`~/saves/sam-good-12.sav`, 51,523 objects):
 

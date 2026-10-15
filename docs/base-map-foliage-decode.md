@@ -1,7 +1,7 @@
-# FGFoliage decode — rendering the missing world foliage (#246 slice: "other trees")
+# FGFoliage decode — rendering the missing world foliage ([upstream #246](https://github.com/StuartMeeks/ficsit-foreman/issues/246) slice: "other trees")
 
 > **Status:** spec / agreed design, pre-implementation.
-> **Parent:** [#246 base-map renderer](./base-map-renderer.md) — this is the "other tree species"
+> **Parent:** [base-map renderer](./base-map-renderer.md) ([upstream #246](https://github.com/StuartMeeks/ficsit-foreman/issues/246)) — this is the "other tree species"
 > follow-up called out in §6 (Flora). **Host-build only** (CUE4Parse + a game install; see the
 > renderer doc for the winbuild workflow).
 

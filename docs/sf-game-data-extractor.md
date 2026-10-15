@@ -1,9 +1,9 @@
 # `sf-game-data-extractor` — single-producer game-data pipeline
 
-**Status:** **shipped** (epic #164, #158–#162). The offline C# extractor lives at
+**Status:** **shipped** (epic [upstream #164](https://github.com/StuartMeeks/ficsit-foreman/issues/164), [upstream #158](https://github.com/StuartMeeks/ficsit-foreman/issues/158)–[upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)). The offline C# extractor lives at
 `packages/sf-game-data/extract/`, each channel ships a single
-`data/<channel>/sf-game-data.json`, the TS parser was retired (#162), and neither
-`en-US.json` nor `meta.json` is committed. Run mode (b) — open-PR automation (#163)
+`data/<channel>/sf-game-data.json`, the TS parser was retired ([upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)), and neither
+`en-US.json` nor `meta.json` is committed. Run mode (b) — open-PR automation ([upstream #163](https://github.com/StuartMeeks/ficsit-foreman/issues/163))
 — was skipped. This doc is retained as the design of record.
 **Supersedes:** the split pipeline (runtime `en-US.json` parse + offline `fg-extract`).
 
@@ -131,7 +131,7 @@ Producing the file was only half the work. `@foreman/sf-game-data` no longer par
   in `world/index.ts`).
 - `sf-mcp` and other consumers use item/recipe/world data as before; only the
   *source* changed from "parse on startup" to "load JSON".
-- The TS parser was removed once the C# port passed the golden-diff gate (#162);
+- The TS parser was removed once the C# port passed the golden-diff gate ([upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162));
   `packages/sf-game-data/src/parser/` now holds only the `GameData` types + an
   `emptyGameData` fallback.
 
@@ -155,8 +155,8 @@ Producing the file was only half the work. `@foreman/sf-game-data` no longer par
 3. ✅ Merged the parsed `gameData` into the output file; updated the CI gate and
    the `KNOWN_COLLECTIBLE_TOTALS` paths.
 4. ✅ Switched `@foreman/sf-game-data` to load the merged file; collapsed the loaders.
-5. ✅ Retired the TS parser (#162) and stopped committing `en-US.json`.
-6. ⏭️ Run mode (b) — open-PR automation (#163) — **skipped** (not built).
+5. ✅ Retired the TS parser ([upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)) and stopped committing `en-US.json`.
+6. ⏭️ Run mode (b) — open-PR automation ([upstream #163](https://github.com/StuartMeeks/ficsit-foreman/issues/163)) — **skipped** (not built).
 
 ## Resolved decisions
 

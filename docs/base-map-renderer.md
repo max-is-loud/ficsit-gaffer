@@ -1,4 +1,4 @@
-# Base-map renderer (#246)
+# Base-map renderer ([upstream #246](https://github.com/StuartMeeks/ficsit-foreman/issues/246))
 
 > Status: **in progress — rendering end-to-end; committed tool.** A first-party, top-down base
 > map of the *Satisfactory* world renders correctly: landscape relief, terrain colour, rock
@@ -7,7 +7,7 @@
 > toggleable-layer** HTML artifact (the step toward the eventual rotatable/tiltable 3D layered
 > map). The tool lives in the repo at `tools/sf-map-renderer/` and runs **offline** on the Windows
 > host against a real game install via CUE4Parse. Remaining: the other tree species, per-mesh
-> **textures**, and wiring the output into the interactive map (#64) and #239 coastline. This
+> **textures**, and wiring the output into the interactive map ([upstream #64](https://github.com/StuartMeeks/ficsit-foreman/issues/64)) and [upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239) coastline. This
 > document records the approach, the decode maths, every mechanism, and the diagnostic/override
 > surface so the work can resume cold.
 >
@@ -18,9 +18,9 @@
 
 ## Why this exists
 
-The interactive map (#64) and the biome/coastline work (#239) need a base raster of the world:
+The interactive map ([upstream #64](https://github.com/StuartMeeks/ficsit-foreman/issues/64)) and the biome/coastline work ([upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239)) need a base raster of the world:
 a land/water/void mask plus relief and terrain colour. The obvious source — community maps
-(SCIM and the "topological map") — is **licensing-encumbered** and is the very thing #246
+(SCIM and the "topological map") — is **licensing-encumbered** and is the very thing [upstream #246](https://github.com/StuartMeeks/ficsit-foreman/issues/246)
 exists to avoid. So we derive everything from the shipped game assets ourselves: the cooked
 landscape, the placed rock meshes, and the water-volume geometry. The pipeline is
 **deterministic and topo-free** — no community asset is baked into the output. (A community
@@ -72,7 +72,7 @@ is a **128×128** vertex tile (`ComponentSizeQuads = 127`, `NumSubsections = 1`)
 
 ## 2. World alignment (coordinate frames)
 
-The landscape sits in the same world-cm frame as collectibles and biomes (#239), so alignment
+The landscape sits in the same world-cm frame as collectibles and biomes ([upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239)), so alignment
 is essentially free once the transform is right.
 
 - **Proxy → world:** `worldX = ACTOR_X + SectionBaseX · SCALE`, `worldY = ACTOR_Y + SectionBaseY · SCALE`,
@@ -280,7 +280,7 @@ PNG and rebuilds the (tiny) HTML.
 
 A single **C#-only** console program (CUE4Parse + `EGame.GAME_UE5_6`), committed at
 **`tools/sf-map-renderer/`**. It builds/runs **only on the Windows game host** (`ssh winbuild`); the
-VM has no game files (see the dev-environment note in `CLAUDE.md`). It needs the CUE4Parse clone at
+VM has no game files (see the dev-environment note in `AGENTS.md`). It needs the CUE4Parse clone at
 `packages/sf-game-data/extract/CUE4Parse/` (same as the extractor) + the Oodle DLL from the game
 install. The imaging that used to live in the Python companions (`overlay.py`/`layers.py`, Pillow +
 numpy) is now done in-process with **SixLabors.ImageSharp** (the Apache-2.0 line: ImageSharp 2.x +
@@ -349,7 +349,7 @@ Standalone surveys are **`probe <name>`**: `meshes`, `landscape-layers` (was `MO
   full forest canopy (denser + slower, same proven path).
 - **Per-mesh textures** — replace the placeholder flora/rock colours by sampling each mesh's
   material/texture for a realistic top-down look (a layer in its own right).
-- **Wire the output into #64** (interactive map base layer) and the **#239** coastline; decide the
+- **Wire the output into [upstream #64](https://github.com/StuartMeeks/ficsit-foreman/issues/64)** (interactive map base layer) and the **[upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239)** coastline; decide the
   shipped output format (rasters vs a land/water/void mask + relief).
 - **True per-pixel multi-depth compositing** for the rotatable/tiltable 3D layered map (canvas/
   WebGL), superseding the won-cells layer model.
@@ -358,6 +358,6 @@ Standalone surveys are **`probe <name>`**: `meshes`, `landscape-layers` (was `MO
 
 ## Related
 
-- Decode/alignment share the world-cm frame with the **biome overlay (#239)** and collectibles.
+- Decode/alignment share the world-cm frame with the **biome overlay ([upstream #239](https://github.com/StuartMeeks/ficsit-foreman/issues/239))** and collectibles.
 - The offline-extractor host mechanics mirror the **single-producer pipeline
-  (`sf-game-data-extractor`, #164)** — same `ssh winbuild` CUE4Parse setup.
+  (`sf-game-data-extractor`, [upstream #164](https://github.com/StuartMeeks/ficsit-foreman/issues/164))** — same `ssh winbuild` CUE4Parse setup.

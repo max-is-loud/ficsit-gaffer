@@ -1,4 +1,4 @@
-# sf-map-renderer — offline base-map renderer (#246)
+# sf-map-renderer — offline base-map renderer ([upstream #246](https://github.com/StuartMeeks/ficsit-foreman/issues/246))
 
 A single C#-only console tool that renders a first-party, top-down base map of the *Satisfactory*
 world directly from the shipped game assets, via CUE4Parse. It decodes the landscape heightmap,
@@ -12,7 +12,7 @@ an interactive, toggleable-layer HTML artifact.
 ## Prerequisites
 
 This tool builds and runs on the **Windows host with a game install** — the dev VM has no game
-files (see the dev-environment note in the repo `CLAUDE.md`). It needs:
+files (see the dev-environment note in the repo `AGENTS.md`). It needs:
 
 - **.NET 10 SDK.**
 - **A CUE4Parse clone** at `packages/sf-game-data/extract/CUE4Parse/` — the same clone the game-data

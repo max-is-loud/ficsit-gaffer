@@ -1,0 +1,19 @@
+Gaffer for Satisfactory
+Copyright 2026 Maxime Langlois-Morin
+
+This product is derived from FICSIT Foreman
+(https://github.com/StuartMeeks/ficsit-foreman), Copyright Stuart Meeks,
+licensed under the Apache License, Version 2.0. Gaffer diverged from
+FICSIT Foreman at upstream commit 3514182 (2026-10-01); files present at
+that commit are FICSIT Foreman's work, and later changes to them, and files
+added since, are Gaffer's. The git history records each change.
+
+Issue and pull-request numbers in commit messages before that commit refer
+to the FICSIT Foreman tracker, not to Gaffer's.
+
+Gaffer is an unofficial, community-made tool, not affiliated with, endorsed
+by, or sponsored by Coffee Stain Studios. Satisfactory, FICSIT and related
+names are trademarks or property of Coffee Stain Studios.
+
+The SML companion bridge in integrations/foreman-bridge has its own licensing
+boundary and third-party attributions; see integrations/foreman-bridge/NOTICE.md.

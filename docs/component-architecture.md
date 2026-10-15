@@ -112,7 +112,7 @@ arrows are runtime edges (`ff-client → ff-server` over HTTP/SSE, `ff-server �
 the MCP transport via the gateway — `ff-server` does not `import` `sf-mcp`). Every `sf-*`
 package is now **pure TypeScript with no native dependency**: both graph libraries are
 in-memory projections over their source data (the game-data graph dropped its embedded
-Kùzu engine in #243), so no native addon reaches any package.
+Kùzu engine in [upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243)), so no native addon reaches any package.
 
 ```mermaid
 graph TD
@@ -196,10 +196,10 @@ by `sf-mcp` (it also imports `sf-game-data`/`sf-save-data` directly for their lo
 - Licensing of the **bundled game data** (Coffee Stain's `Docs.json` / `en-US.json` in
   `sf-game-data`) — what can ship standalone. (The save parser is resolved: MIT.)
 - ~~The save graph's **build/cache lifecycle** — Kùzu-per-save vs an in-memory adjacency
-  structure.~~ ✅ Resolved (#122): a pure **in-memory** projection (rebuilt per parse,
+  structure.~~ ✅ Resolved ([upstream #122](https://github.com/StuartMeeks/ficsit-foreman/issues/122)): a pure **in-memory** projection (rebuilt per parse,
   mtime-gated), ~150 ms vs ~5 s for Kùzu — so the save graph carries no native deps.
 - ~~Whether the **game-data graph** needs its embedded **Kùzu** engine.~~ ✅ Resolved
-  (#243): dropped for in-memory item→recipe adjacency maps — every query already re-derived
+  ([upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243)): dropped for in-memory item→recipe adjacency maps — every query already re-derived
   data present on `GameData`, and Kùzu cost ~3 s per boot + a ~541 MB native addon for no
   capability the foreman used. No `sf-*` package carries a native dependency now.
 
@@ -214,9 +214,10 @@ Foreman-first. The path that got here (all shipped):
 2. ✅ **Power** — the first, cheapest consumer (`FGPowerCircuit` pre-groups circuits).
 3. ✅ **Actual production accounting** — the steady-state flow engine (`sf-flow` + the
    `find_bottlenecks` adapter: feed-tracing over belts/splitters/pipes with splitter
-   filters + fluid head lift). Closed #148 / #126 / #190.
+   filters + fluid head lift). Closed [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148) / [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126) / [upstream #190](https://github.com/StuartMeeks/ficsit-foreman/issues/190).
 4. ✅ **Package restructure** — the `sf-*`/`ff-*` split is in place.
 
-Remaining: the **per-repo split** (still monorepo) and the #172 Advanced-Game-Settings
+Remaining: the **per-repo split** (still monorepo) and the [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172) Advanced-Game-Settings
 modifier overlay. Live work is tracked in the
-[issue tracker](https://github.com/StuartMeeks/ficsit-foreman/issues).
+[issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4); work from before
+the split is in the [upstream tracker](https://github.com/StuartMeeks/ficsit-foreman/issues).

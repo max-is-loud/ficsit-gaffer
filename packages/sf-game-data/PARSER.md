@@ -7,7 +7,7 @@ This document describes the design of:
 
 > **The parser is C#.** It was a hand-written TypeScript parser originally; that was
 > ported 1:1 to C# (validated by a golden-diff against the TS version at port time)
-> and the TS parser was then retired (#159/#162). The parser now runs **offline**
+> and the TS parser was then retired ([upstream #159](https://github.com/StuartMeeks/ficsit-foreman/issues/159)/[upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)). The parser now runs **offline**
 > inside the `sf-game-data-extractor` tool, which writes the merged
 > `sf-game-data.json` the runtime loads — it is **not** run at runtime, and the raw
 > `en-US.json` is never committed. See
@@ -204,7 +204,7 @@ packages/sf-game-data-graph/src/
   them so producer/consumer lookups are O(1).
 - The recursive work — ingredient-tree demand roll-up, topological ordering,
   cycle-breaking, the buildable-with fixpoint closure — runs in TypeScript.
-- (Historically this layer used an embedded Kùzu graph DB; it was dropped in #243
+- (Historically this layer used an embedded Kùzu graph DB; it was dropped in [upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243)
   — the dataset is tiny (~320 recipes) and the native dependency wasn't earning
   its keep. See `docs/architecture.md`.)
 
@@ -257,7 +257,7 @@ never throws.
 - The C# parser was validated at port time by a **golden-diff**: parse the same
   `en-US.json` with both the original TS parser and the C# port and assert the
   results are structurally identical (by value). That harness was retired with the TS
-  parser (#162) — its job was done.
+  parser ([upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)) — its job was done.
 - **Ongoing:** every bundled-data PR runs `validate-game-data`, which checks the
   dataset's `gameData` is present and non-empty and re-verifies the world totals
   against fixed known counts — so a broken parse fails CI.

@@ -1,13 +1,13 @@
-# Flow solver — steady-state production reconciliation (#148 + #126)
+# Flow solver — steady-state production reconciliation ([upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148) + [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126))
 
-> Status: **shipped** (#148 + #126 closed). The engine and `find_bottlenecks` are live, now
+> Status: **shipped** ([upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148) + [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126) closed). The engine and `find_bottlenecks` are live, now
 > **honouring smart/programmable splitter sort-rules** (item filters / any / overflow /
 > any-undefined, via the verified `outputIndex = OutputN − 1` mapping and an sf-flow edge
 > `deny` list) **and fluid head lift** (a leg rising above its pipe network's *shared* head
 > lift — `max(elevation + maxHeadLift)` over the connected component's sources/pumps/buffers —
 > is cut; uses each building's *maximum* head lift so it only blocks the genuinely-unreachable).
-> Remaining: 1.2 recipe/power modifiers via #172's effective-game-data seam. Supersedes the
-> separate framing of #148/#126 — they are one engine.
+> Remaining: 1.2 recipe/power modifiers via [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172)'s effective-game-data seam. Supersedes the
+> separate framing of [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148)/[upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126) — they are one engine.
 
 ## Problem
 
@@ -50,7 +50,7 @@ Three pieces, keeping the neutral libs game-data-free:
    Stays game-data-free.
 3. **`sf-mcp` — the adapter + tool.** Builds the abstract network from the graph + the
    **effective-game-data seam** (`getEffectiveGameData`: recipe in/out rates, belt/extractor
-   rates; #172 later multiplies modifiers in here), runs the solver, and shapes the
+   rates; [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172) later multiplies modifiers in here), runs the solver, and shapes the
    `find_bottlenecks` response.
 
 ## Algorithm (fixed-point iteration)
@@ -107,12 +107,12 @@ Deferred (not blocking): finer **per-instance** pump/valve modelling from the sa
 building-max approximation. Confirmed save shapes if pursued: valve `mDefaultFlowLimit`
 (Float), pump/valve `mFluidBox`, pump `mIsProducing`.
 
-## Delivery (all shipped — closed #148 + #126)
+## Delivery (all shipped — closed [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148) + [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126))
 
 1. **Directed-flow substrate** — `upstreamOf`/`downstreamOf` in `sf-save-data-graph`. ✅
 2. **`@foreman/sf-flow`** — the pure solver + a fixture test-suite (chains, splits, merges,
    contention, smart-filter, belt-cap, head-lift-limited leg, loop→unknown). ✅
-3. **effective-game-data seam** in `sf-mcp` (recipe rates today; #172 fills 1.2 modifiers
+3. **effective-game-data seam** in `sf-mcp` (recipe rates today; [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172) fills 1.2 modifiers
    behind the same seam). ✅
 4. **Head-lift data** — the C# extractor now emits `Building.headLiftMetres`; the solver
    honours shared-network head lift. ✅ (Per-instance pump/valve save modelling deferred.)

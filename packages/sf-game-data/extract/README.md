@@ -9,17 +9,17 @@ It is three projects (see [`../../../docs/sf-game-data-extractor.md`](../../../d
 
 - **`sf-game-data-extraction/`** — a class library holding the CUE4Parse world
   extraction (`WorldExtractor.Extract`). This was the standalone `fg-extract`
-  program, repackaged as a library (#158).
+  program, repackaged as a library ([upstream #158](https://github.com/StuartMeeks/ficsit-foreman/issues/158)).
 - **`sf-game-data-parse/`** — a **CUE4Parse-free** class library: the `en-US.json`
   parser. Ported 1:1 from the original hand-written TypeScript parser (validated at
-  port time by a golden-diff against it, #159) and **became the canonical parser**
-  when the TypeScript one was retired (#162). Zero dependencies, so it builds and
+  port time by a golden-diff against it, [upstream #159](https://github.com/StuartMeeks/ficsit-foreman/issues/159)) and **became the canonical parser**
+  when the TypeScript one was retired ([upstream #162](https://github.com/StuartMeeks/ficsit-foreman/issues/162)). Zero dependencies, so it builds and
   runs anywhere.
 - **`sf-game-data-extractor/`** — the console tool you run. Extracts the world data
   (via `sf-game-data-extraction`) **and** parses `en-US.json` (via
   `sf-game-data-parse`), writing one merged `sf-game-data.json`: the world fields
-  plus a top-level `gameData` object, with `gameVersion`/`build` stamped in (#160).
-  The runtime loads this file directly (#161).
+  plus a top-level `gameData` object, with `gameVersion`/`build` stamped in ([upstream #160](https://github.com/StuartMeeks/ficsit-foreman/issues/160)).
+  The runtime loads this file directly ([upstream #161](https://github.com/StuartMeeks/ficsit-foreman/issues/161)).
 
 It reads coordinates straight out of the **packaged game level files** with
 [CUE4Parse](https://github.com/FabianFG/CUE4Parse), using the `FactoryGame.usmap`

@@ -1,9 +1,9 @@
-# Advanced Game Settings — parse & overlay (#172)
+# Advanced Game Settings — parse & overlay ([upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172))
 
 > Status: **largely shipped** — slices A/B/C/E merged and D's numeric/state surfaces landed
 > (build-cost/unlock overlays deliberately deferred as flags — see Scope D). Every persistence
 > location, property type and enum value below is verified against real 1.2 saves on the VM
-> (see _Test fixtures_). Design of record for #172.
+> (see _Test fixtures_). Design of record for [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172).
 
 ## Problem
 
@@ -118,7 +118,7 @@ runtime `instanceName` is not stable against static extraction), matched by near
 ## Scope B — overlay Game Modes (`sf-mcp`)
 
 Behind the existing **`getEffectiveGameData(state, game)`** seam
-(`sf-mcp/src/query/effectiveGameData.ts`, introduced by #148):
+(`sf-mcp/src/query/effectiveGameData.ts`, introduced by [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148)):
 
 - **Recipe parts ×** — multiply `requiredInputs` (ingredient rates) by `recipeCostMultiplier`;
   outputs unchanged. *(shipped — in the seam)*
@@ -226,9 +226,9 @@ the pioneer never actually researched. A non-creative save leaves every overlay 
 ## Plan (slices)
 
 1. **A** — parse Game Modes → `advancedGameSettings` + `resourceNodeOverrides` (+ all-default
-   no-op test). ✅ shipped (#198)
+   no-op test). ✅ shipped ([upstream #198](https://github.com/StuartMeeks/ficsit-foreman/issues/198))
 2. **C** — parse Creative Mode → `creativeMode` (per-property defaults, local-player rules).
-   ✅ shipped (#199)
+   ✅ shipped ([upstream #199](https://github.com/StuartMeeks/ficsit-foreman/issues/199))
 3. **B** — Game Modes overlay in `getEffectiveGameData` (recipe×, power×, node type/purity).
    ✅ shipped — space-elevator× split to E.
 4. **D** — Creative overlay. ✅ shipped (numeric/state surfaces): `effectivePowerMultiplier`
@@ -239,5 +239,5 @@ the pioneer never actually researched. A non-creative save leaves every overlay 
    game-data extractor → `gameData.projectAssemblyPhases`, surface in `get_milestones`, apply
    `spaceElevatorCostMultiplier`. ✅ shipped — dataset regenerated (v1.2.3.1 / build 495413).
 
-Each slice is its own PR linking #172; A and C are independent (parallelisable), B depends on
+Each slice is its own PR linking [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172); A and C are independent (parallelisable), B depends on
 A, D depends on C; E depends on a game-data extractor change + dataset regen.
