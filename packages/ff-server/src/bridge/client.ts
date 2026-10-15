@@ -1,3 +1,7 @@
+// HTTPS client for the live bridge receiver's read-only Constructor query. It validates each
+// response against a strict schema and the configured binding, and turns every failure into a
+// classified BridgeQueryError.
+
 import { request } from 'node:https';
 
 import { z } from 'zod';

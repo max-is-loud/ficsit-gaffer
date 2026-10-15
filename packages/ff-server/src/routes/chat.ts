@@ -1,3 +1,6 @@
+// The chat endpoint: resolves the LLM settings for the request and streams the foreman's reply over
+// SSE.
+
 import { Router } from 'express';
 
 import type { AppDeps } from '../deps.js';

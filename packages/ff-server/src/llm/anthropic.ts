@@ -1,3 +1,6 @@
+// LlmProvider adapter for the native Anthropic Messages API. It streams a turn, replays native
+// content blocks across tool rounds and marks the stable prompt prefix for caching.
+
 import Anthropic from '@anthropic-ai/sdk';
 
 import { logger } from '../logger.js';

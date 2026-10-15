@@ -1,3 +1,6 @@
+// Prisma CLI configuration: tells `prisma generate` and `prisma migrate` where the schema, the
+// migrations and the datasource URL are.
+
 import { defineConfig } from 'prisma/config';
 
 /**

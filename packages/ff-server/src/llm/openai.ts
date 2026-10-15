@@ -1,3 +1,7 @@
+// LlmProvider adapter for OpenAI Chat Completions-compatible APIs. It translates neutral history to
+// chat messages and assembles streamed fragments (including tool-call arguments) into a normalised
+// turn result.
+
 import OpenAI from 'openai';
 
 import { logger } from '../logger.js';

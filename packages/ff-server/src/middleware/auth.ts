@@ -1,3 +1,6 @@
+// Express middleware that requires a Better Auth session and checks that the caller owns the
+// playthrough or foreman named in the route.
+
 import { fromNodeHeaders } from 'better-auth/node';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 

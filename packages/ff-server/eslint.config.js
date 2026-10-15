@@ -1,3 +1,7 @@
+// ESLint flat config for ff-server: the recommended rule sets plus typescript-eslint rules that
+// forbid `any`, require braces on every control statement and allow unused names only with a
+// leading underscore.
+
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';

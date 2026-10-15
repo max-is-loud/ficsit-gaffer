@@ -1,3 +1,6 @@
+// REST routes for playthroughs: lifecycle and claiming, message history, and the upload, listing,
+// activation and deletion of save versions.
+
 import { Router, type Request } from 'express';
 import multer from 'multer';
 

@@ -1,3 +1,6 @@
+// Declares AppDeps, the bundle of services and settings that startup hands to the Express app and
+// its routers.
+
 import type { Auth } from './auth.js';
 import type { ServerConfig } from './config.js';
 import type { LlmProviderFactory } from './llm/provider.js';

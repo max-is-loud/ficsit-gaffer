@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// Server entry point: loads .env, wires the configuration, services and MCP client into AppDeps,
+// starts the HTTP listener and shuts down gracefully on SIGTERM and SIGINT.
+
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

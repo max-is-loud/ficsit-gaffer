@@ -1,3 +1,7 @@
+// The server-local work-order tools the foreman calls: their JSON Schema definitions and handlers,
+// plus the checks run when a plan is ingested (game-data name resolution, recipe derivation, power
+// verification).
+
 import { randomUUID } from 'node:crypto';
 
 import type { McpGateway, ToolDefinition } from '../mcp/client.js';

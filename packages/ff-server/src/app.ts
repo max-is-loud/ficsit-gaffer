@@ -1,3 +1,7 @@
+// Assembles the Express application: mounts Better Auth, the health endpoint, the authenticated
+// /api routers and the 404 and error handlers. Route logic lives in routes/; startup wiring lives
+// in index.ts.
+
 import { toNodeHandler } from 'better-auth/node';
 import express, { type Express } from 'express';
 

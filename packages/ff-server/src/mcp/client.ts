@@ -1,3 +1,6 @@
+// The MCP gateway interface the chat loop depends on, and its Streamable HTTP implementation that
+// connects to sf-mcp, lists and calls tools, and reads the game data version.
+
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 

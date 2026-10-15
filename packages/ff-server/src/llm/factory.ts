@@ -1,3 +1,5 @@
+// Maps a resolved LLM runtime config to the matching provider adapter.
+
 import { AnthropicProvider } from './anthropic.js';
 import { OpenAiCompatibleProvider } from './openai.js';
 import type { LlmProvider, LlmProviderFactory } from './provider.js';

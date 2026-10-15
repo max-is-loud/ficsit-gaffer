@@ -1,3 +1,6 @@
+// The provider interface the chat loop and summariser depend on, and the factory type that builds
+// one from a runtime config.
+
 import type {
   LlmCompletionRequest,
   LlmRequest,

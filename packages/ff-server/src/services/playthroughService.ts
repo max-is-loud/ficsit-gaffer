@@ -1,3 +1,6 @@
+// Database access for playthroughs and their chat messages, including ownership lookup, claiming
+// and the running summary.
+
 import { randomUUID } from 'node:crypto';
 
 import type { PrismaClient, Playthrough as PlaythroughRow, Save as SaveRow } from '@prisma/client';

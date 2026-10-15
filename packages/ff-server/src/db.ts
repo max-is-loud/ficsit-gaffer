@@ -1,3 +1,6 @@
+// Creates the process-wide Prisma client over the better-sqlite3 driver adapter and provides the
+// shutdown hook that closes it.
+
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 

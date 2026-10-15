@@ -1,3 +1,6 @@
+// Reads the optional FOREMAN_BRIDGE_* environment variables into a validated BridgeBinding,
+// treating a partial or malformed binding as a configuration error.
+
 import type { BridgeBinding } from './types.js';
 
 const VARIABLES = {
