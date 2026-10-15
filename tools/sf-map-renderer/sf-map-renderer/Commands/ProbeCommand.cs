@@ -1,3 +1,7 @@
+// The probe CLI command: its settings, and the dispatch from a survey name to the matching probe in
+// Diagnostics/Surveys, with coordinate and list parsing for the --at, --radius and --substr
+// options.
+
 using System.ComponentModel;
 using System.Globalization;
 

@@ -1,3 +1,6 @@
+// Interface through which the landscape decode reports per-cell weightmap samples to the LAYERAT
+// probe, keeping the decoder independent of the diagnostics layer.
+
 namespace SfMapRenderer.Landscape;
 
 /// <summary>

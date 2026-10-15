@@ -1,3 +1,5 @@
+// Standalone survey: lists the water-like actors nearest a coordinate.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

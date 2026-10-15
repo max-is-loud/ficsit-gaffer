@@ -1,3 +1,6 @@
+// Standalone survey: writes every ocean and water surface feature (position, Z and type) to
+// oceandump.tsv.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

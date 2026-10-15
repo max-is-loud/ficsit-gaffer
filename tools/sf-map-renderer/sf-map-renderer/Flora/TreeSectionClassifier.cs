@@ -1,3 +1,6 @@
+// Classifies a tree mesh's material sections as foliage or trunk by material name, so trunks and
+// canopy can render as separate layers.
+
 namespace SfMapRenderer.Flora;
 
 /// <summary>

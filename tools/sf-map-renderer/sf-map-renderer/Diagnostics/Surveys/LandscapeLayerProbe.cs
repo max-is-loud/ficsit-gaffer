@@ -1,3 +1,5 @@
+// Standalone survey: histograms the distinct landscape material layers across all generated cells.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

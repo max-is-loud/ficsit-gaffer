@@ -1,3 +1,5 @@
+// Standalone survey: histograms placed static meshes by folder and by asset name.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

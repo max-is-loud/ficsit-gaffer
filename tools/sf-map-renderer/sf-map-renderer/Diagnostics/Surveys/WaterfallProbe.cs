@@ -1,3 +1,6 @@
+// Standalone survey: dumps the structure of the waterfall tool actors nearest a coordinate, to
+// decide how to render a waterfall's flowing water.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

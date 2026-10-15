@@ -1,3 +1,6 @@
+// Standalone survey: dumps the transform, parent chain and local bounds of placed meshes matching a
+// path substring near a coordinate, for debugging flora sizing.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

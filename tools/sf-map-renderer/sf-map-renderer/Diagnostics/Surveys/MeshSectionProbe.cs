@@ -1,3 +1,6 @@
+// Standalone survey: dumps a mesh's material sections (slot, triangle count, Z range) for named
+// tree families, showing how trunk and foliage split.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

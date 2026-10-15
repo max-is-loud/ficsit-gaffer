@@ -1,3 +1,6 @@
+// Builds Schematic records from docs classes: type, tier, cost and the recipes, items and buildings
+// each one unlocks.
+
 using System.Text.Json;
 
 namespace SfGameData.Parse;

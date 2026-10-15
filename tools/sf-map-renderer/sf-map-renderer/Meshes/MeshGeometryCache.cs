@@ -1,3 +1,6 @@
+// Loads and caches the LOD0 geometry of static meshes by asset path, classifying each triangle as
+// foliage or trunk and attaching a sampled base colour per material section.
+
 using CUE4Parse.UE4.Assets.Exports.Material;
 
 using SfMapRenderer.Flora;

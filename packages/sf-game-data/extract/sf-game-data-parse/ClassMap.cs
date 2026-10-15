@@ -1,3 +1,6 @@
+// Maps the NativeClass names in the docs file to the Category (item, resource, recipe, building,
+// schematic) that decides which extractor handles each raw class.
+
 using System.Text.RegularExpressions;
 
 namespace SfGameData.Parse;

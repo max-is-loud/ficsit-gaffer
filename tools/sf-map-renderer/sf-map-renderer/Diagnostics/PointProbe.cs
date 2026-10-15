@@ -1,3 +1,6 @@
+// The PROBEXY probe: for each world coordinate, reports the seabed and rock heights, the water
+// classification and the predicted render, to settle land, water or void disputes.
+
 using System.Globalization;
 
 using SfMapRenderer.Rendering;

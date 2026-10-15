@@ -1,3 +1,5 @@
+// Standalone survey: reports the world-XY footprints of the open-ocean water-plane meshes.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

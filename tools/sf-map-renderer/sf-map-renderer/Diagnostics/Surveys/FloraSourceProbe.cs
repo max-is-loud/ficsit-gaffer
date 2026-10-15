@@ -1,3 +1,6 @@
+// Standalone survey: tallies flora instances by component type and reports mesh paths planted from
+// more than one source, which would render twice on the map.
+
 using CUE4Parse.UE4.Assets.Exports.Component.StaticMesh;
 
 using SfMapRenderer.Assets;

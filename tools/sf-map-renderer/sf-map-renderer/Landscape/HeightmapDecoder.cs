@@ -1,3 +1,7 @@
+// Pass B of the render: decodes each landscape tile's height texture into the height grid, blends
+// the weightmaps into terrain colour, records the wet-sand signal and nulls visibility holes to
+// void.
+
 using System.Globalization;
 
 using SfMapRenderer.Collection;

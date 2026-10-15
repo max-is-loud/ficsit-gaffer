@@ -1,3 +1,6 @@
+// CLI settings shared by every command that reads the game files (Paks directory and usmap path,
+// defaulting to SF_PAKS, SF_USMAP or a Steam install), plus the helper that mounts them.
+
 using System.ComponentModel;
 
 using SfMapRenderer.Assets;

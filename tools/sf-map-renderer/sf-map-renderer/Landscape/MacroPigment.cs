@@ -1,3 +1,6 @@
+// Samples the landscape material's world-aligned macro-variation colour map (PigmentMap) to tint
+// terrain and rock regionally, scaled by a strength setting.
+
 using CUE4Parse.UE4.Assets.Exports.Texture;
 
 using SfMapRenderer.Meshes;

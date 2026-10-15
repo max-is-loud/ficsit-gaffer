@@ -1,3 +1,6 @@
+// Even-odd point-in-polygon test on world-XY polygons, used by the water-volume rasterise and the
+// probes.
+
 namespace SfMapRenderer.Geometry;
 
 /// <summary>World-XY polygon tests.</summary>

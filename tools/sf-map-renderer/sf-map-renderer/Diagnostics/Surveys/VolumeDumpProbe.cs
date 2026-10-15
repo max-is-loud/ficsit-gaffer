@@ -1,3 +1,6 @@
+// Standalone survey: transforms every FGWaterVolume brush to world space and writes its bounding
+// box and surface Z to voldump.tsv.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

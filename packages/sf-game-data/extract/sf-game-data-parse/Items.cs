@@ -1,3 +1,6 @@
+// Builds Item records (and raw resources) from docs classes: form, stack size, sink points and
+// energy value.
+
 using System.Text.Json;
 
 namespace SfGameData.Parse;

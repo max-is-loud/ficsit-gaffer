@@ -1,3 +1,6 @@
+// Samples a representative albedo colour for a material by decoding a small mip of its diffuse
+// texture and averaging the opaque pixels, caching the result per material.
+
 using AssetRipper.TextureDecoder.Bc;
 using AssetRipper.TextureDecoder.Rgb.Formats;
 

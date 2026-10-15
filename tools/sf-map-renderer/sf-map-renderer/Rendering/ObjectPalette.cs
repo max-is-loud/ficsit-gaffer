@@ -1,3 +1,6 @@
+// Placeholder base colours for placed trees, coral and rock, chosen by family from the mesh asset
+// path, used when no sampled material colour is available.
+
 using SfMapRenderer.Collection;
 
 namespace SfMapRenderer.Rendering;

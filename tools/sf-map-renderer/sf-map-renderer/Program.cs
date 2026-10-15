@@ -1,3 +1,6 @@
+// Entry point of sf-map-renderer: registers the render, probe, overlay and layers commands with the
+// Spectre.Console command app.
+
 using SfMapRenderer.Commands;
 
 using Spectre.Console.Cli;

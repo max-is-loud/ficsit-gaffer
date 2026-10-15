@@ -1,3 +1,6 @@
+// Annotates a flat render with biome outlines, biome names and the 40x34 coordinate grid, writing a
+// labelled PNG and an embed JPEG next to the source PPM.
+
 using SfMapRenderer.Imaging;
 
 using SixLabors.Fonts;

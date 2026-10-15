@@ -1,3 +1,6 @@
+// The overlay and layers CLI commands, with their settings and the default biomes.json path. Each
+// hands its inputs to ReviewOverlayRenderer or LayeredMapArtifactBuilder.
+
 using System.ComponentModel;
 
 using SfMapRenderer.Artifacts;

@@ -1,3 +1,6 @@
+// The ROCKAT probe: during the rock pass, records which mesh instances rasterise onto each target
+// cell, so a rendered landmass can be traced to the instances to exclude.
+
 namespace SfMapRenderer.Diagnostics;
 
 /// <summary>

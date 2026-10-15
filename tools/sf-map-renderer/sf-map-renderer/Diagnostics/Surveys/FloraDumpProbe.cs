@@ -1,3 +1,6 @@
+// Standalone survey: shows how flora is placed (individual components or instanced foliage) and
+// whether the instanced transforms can be read.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

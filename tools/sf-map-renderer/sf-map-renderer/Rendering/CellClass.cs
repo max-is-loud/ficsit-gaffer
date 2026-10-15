@@ -1,3 +1,6 @@
+// Surface and object class enums, and the packing of a cell's class into the single byte stored in
+// the map.layers sidecar.
+
 namespace SfMapRenderer.Rendering;
 
 /// <summary>Surface class of an output cell (bits 0–1 of the packed layer byte).</summary>

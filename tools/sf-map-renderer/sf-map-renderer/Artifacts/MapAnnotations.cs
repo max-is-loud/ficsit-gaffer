@@ -1,3 +1,7 @@
+// Shared helpers for the review overlay and the layered artifact: world-to-pixel mapping, the
+// A1..AN34 grid labels and cell centres, biome label anchors, and centred or haloed text and
+// polyline drawing.
+
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;

@@ -1,3 +1,7 @@
+// Loads the canonical biome dataset (biomes.json) into Biome records: polygon rings in world
+// centimetres, label cells, start indices, label colours and named sub-areas. Shared by the review
+// overlay and the layered artifact.
+
 using System.Text.Json;
 
 namespace SfMapRenderer.Artifacts;

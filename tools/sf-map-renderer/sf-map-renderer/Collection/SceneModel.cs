@@ -1,3 +1,6 @@
+// Plain data types handed from scene collection to the later passes: landscape tiles with their
+// height and weightmap textures, placed meshes, water bodies and volume faces, and river actors.
+
 namespace SfMapRenderer.Collection;
 
 /// <summary>One weightmap layer allocation: layer name → weightmap texture index + channel.</summary>

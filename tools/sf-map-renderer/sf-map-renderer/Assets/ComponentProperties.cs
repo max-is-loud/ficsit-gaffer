@@ -1,3 +1,6 @@
+// Extension methods that read a scene component's relative location, scale, rotation, yaw and mesh
+// reference, falling back to the game's defaults when a property is absent.
+
 namespace SfMapRenderer.Assets;
 
 /// <summary>

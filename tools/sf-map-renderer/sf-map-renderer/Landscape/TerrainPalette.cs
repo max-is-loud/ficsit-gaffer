@@ -1,3 +1,6 @@
+// Fallback terrain colours chosen by keyword in a landscape layer name, used when the real material
+// colour cannot be sampled.
+
 namespace SfMapRenderer.Landscape;
 
 /// <summary>Approximate real-world terrain colours for landscape material layers, keyed by layer name.</summary>

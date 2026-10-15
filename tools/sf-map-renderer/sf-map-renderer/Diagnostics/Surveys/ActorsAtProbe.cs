@@ -1,3 +1,6 @@
+// Standalone survey: an unfiltered census of every actor near a coordinate, with an ExportType
+// histogram and the nearest water-like actors, for spotting water actor types not yet handled.
+
 using SfMapRenderer.Assets;
 
 namespace SfMapRenderer.Diagnostics.Surveys;

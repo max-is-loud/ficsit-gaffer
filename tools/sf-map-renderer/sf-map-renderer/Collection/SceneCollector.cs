@@ -1,3 +1,7 @@
+// Pass A of the render: sweeps the level packages and accumulates landscape tiles, placed rock and
+// flora meshes, water volumes, rivers and shallow-water seeds, in the order the later passes depend
+// on.
+
 using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;

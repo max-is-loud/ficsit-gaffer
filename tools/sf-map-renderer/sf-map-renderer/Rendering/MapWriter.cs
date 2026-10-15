@@ -1,3 +1,6 @@
+// Writes the render outputs to the working directory: map.ppm, optionally the surface and object
+// rasters with map.layers, and the map-bounds.txt sidecar.
+
 using System.Text;
 
 using SfMapRenderer.Configuration;

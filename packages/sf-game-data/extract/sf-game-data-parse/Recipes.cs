@@ -1,3 +1,6 @@
+// Builds Recipe records from docs classes, with ingredient and product amounts scaled for fluids,
+// and resolves build-gun recipes into the building they construct and its cost.
+
 using System.Text.Json;
 
 namespace SfGameData.Parse;

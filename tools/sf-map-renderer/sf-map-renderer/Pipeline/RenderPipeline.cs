@@ -1,3 +1,7 @@
+// The ordered stages of a full render: collect the scene, build the grid frame, decode the
+// landscape, raise rock and flora, lay the water model, shade and write the outputs, firing
+// diagnostic probes at their stage.
+
 using SfMapRenderer.Assets;
 using SfMapRenderer.Collection;
 using SfMapRenderer.Configuration;

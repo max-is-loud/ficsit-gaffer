@@ -1,3 +1,6 @@
+// A deterministic per-instance brightness and warm/cool colour jitter for placed rock, hashed from
+// world position so renders are repeatable.
+
 namespace SfMapRenderer.Terrain;
 
 /// <summary>

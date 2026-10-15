@@ -1,3 +1,6 @@
+// The world-centimetre coordinate frame shared by landscape, collectibles and biomes, and the
+// output grid it maps onto. All world-to-cell and height-to-Z conversions live here.
+
 namespace SfMapRenderer.Configuration;
 
 /// <summary>

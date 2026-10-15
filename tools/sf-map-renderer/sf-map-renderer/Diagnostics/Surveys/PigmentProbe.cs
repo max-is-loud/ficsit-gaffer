@@ -1,3 +1,6 @@
+// Standalone survey: investigates the landscape material's world-aligned macro-variation
+// (PigmentMap), dumping its size and parameters and writing the decoded texture to pigment.ppm.
+
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 

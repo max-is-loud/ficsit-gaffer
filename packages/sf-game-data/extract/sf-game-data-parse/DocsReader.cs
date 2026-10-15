@@ -1,3 +1,6 @@
+// Reads the game's en-US.json docs file: detects its encoding (UTF-16 LE or UTF-8, with or without
+// a BOM), decodes it and hands the parsed JSON to GameDataParser.
+
 using System.Text;
 using System.Text.Json;
 

@@ -1,3 +1,6 @@
+// Tolerant readers for fields of a raw docs JSON object: strings, numbers (which the docs often
+// store as strings) and sub-elements, each with a default when absent or malformed.
+
 using System.Globalization;
 using System.Text.Json;
 

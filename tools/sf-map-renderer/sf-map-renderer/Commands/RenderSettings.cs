@@ -1,3 +1,6 @@
+// CLI settings for the render command, one option per render tunable, plus the --probe-* diagnostic
+// options. Converts them into RenderOptions and RenderProbes.
+
 using System.ComponentModel;
 using System.Globalization;
 
