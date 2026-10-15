@@ -27,6 +27,7 @@
     "test:scripts": "node --test scripts/source-check/test/*.test.mjs",
     "lint": "npm run lint --workspaces --if-present && npm run lint:root",
     "lint:root": "eslint .github/scripts scripts eslint.config.base.js eslint.config.js && prettier --check \"*.js\" \"scripts/**/*.mjs\"",
+    "format": "npm run format --workspaces --if-present && prettier --write \"*.js\" \"scripts/**/*.mjs\"",
     "lint:prune": "eslint .github/scripts scripts eslint.config.base.js eslint.config.js --prune-suppressions",
     "dev": "npm run dev -w @foreman/sf-mcp",
     "dev:mcp": "npm run dev -w @foreman/sf-mcp",

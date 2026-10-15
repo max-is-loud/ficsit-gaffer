@@ -80,12 +80,92 @@ work you've absorbed, misleads the next reader.
   issue was closed without a linked PR, add a comment pointing at the PR/commit.
 
 ### Code standards
-- Always use curly braces, even for single-line `if`/`else`/loops.
-- Explicit return types on all exported functions.
-- No `any` — use `unknown` and narrow it.
-- Errors are logged with context, never silently swallowed.
-- Parser warnings are collected into `parseWarnings[]`, not thrown.
-- **British English** in all comments and documentation.
+The reasoning behind these rules is in the
+[design spec](./docs/superpowers/specs/2026-10-15-code-standards-design.md).
+Tools check what they can; the rest is checked in review (see the PR template).
+
+1. **Readable by default.** Use descriptive names. Single letters are for loop
+   indices and coordinates (`i`, `j`, `k`, `x`, `y`, `z`) and ignored values
+   (`_`). One statement per line. Formatting is the formatter's job: Prettier
+   for JS/TS, `.editorconfig` for C#, `.clang-format` (Unreal style) for C++.
+2. **Comments explain why.** Every non-test source file opens with a header of
+   one to three sentences: what the file is responsible for and, where useful,
+   what it leaves to other files. Comment anything a reader couldn't see from
+   the code: a protocol rule, a game or engine workaround, an ordering or
+   concurrency guarantee, a unit convention. Exported functions, classes and
+   types whose behaviour isn't evident from their name and types get a doc
+   comment stating the contract (inputs, units, errors, side effects). A comment
+   that restates the code is removed, not kept.
+3. **No god files.** One responsibility per file. Over 300 lines is a prompt to
+   check the file still does one thing; over 500 lines fails CI. If the header
+   can only be honest by joining unrelated jobs with "and", split the file.
+4. **Small, flat functions.** At most 60 lines (blank lines and comments not
+   counted), nesting depth 3, complexity 12 and 4 parameters. Pass an options
+   object instead of a fifth parameter.
+5. **Extend with data, not branches.** Add a new kind of thing (building
+   category, event type, tool definition) as an entry in a registry or table,
+   not as another arm of a growing `if`/`switch` chain.
+6. **Existing rules stay.**
+   - Always use curly braces, even for single-line `if`/`else`/loops.
+   - Explicit return types on all exported functions.
+   - No `any`: use `unknown` and narrow it.
+   - Errors are logged with context, never silently swallowed.
+   - Parser warnings are collected into `parseWarnings[]`, not thrown.
+   - **British English** in all comments and documentation.
+7. **Enforced in CI; the rest in review.** See below.
+
+#### How it's enforced
+
+**Source check** (`npm run check:source`) covers tracked `.ts`, `.tsx`, `.js`,
+`.mjs`, `.cs`, `.cpp` and `.h` files, tests included. It counts physical lines
+(as `wc -l` does). Between 301 and 500 lines is a warning; over 500 fails. Every
+non-test file must open with a comment (`//`, `///`, `/*` or `/**`), after any
+shebang or `#pragma once`. Example messages:
+
+```text
+packages/ff-server/src/x.ts: 512 lines (limit 500). Split it by responsibility — see CONTRIBUTING.md › Code standards.
+packages/ff-server/src/y.ts: no file header. Start the file with a comment saying what it is responsible for.
+```
+
+**ESLint** (shared rules in `eslint.config.base.js`; each package's
+`eslint.config.js` re-exports them) reports these as errors, alongside the
+existing curly, `no-explicit-any` and unused-variable rules:
+
+| Rule | Limit |
+|---|---|
+| `max-lines-per-function` | 60 (blank lines and comments skipped) |
+| `max-depth` | 3 |
+| `complexity` | 12 |
+| `max-params` | 4 |
+| `id-length` | at least 2, except `i j k x y z _`; property names are ignored because game data and wire formats dictate them |
+
+Test files (`**/test/**`, `**/*.test.*`, `**/*.spec.*`) are exempt from the first
+three. Example: `Function 'build' has too many parameters (5). Maximum allowed is 4`
+
+**Prettier** (one root `.prettierrc.json`) checks TS/JS formatting as part of
+`npm run lint`. `npm run format` rewrites files to match. `.editorconfig` covers
+C#, and `tools/sf-map-renderer/` has its own. C++ has a `.clang-format`
+(`integrations/foreman-bridge/mod/`), not enforced until bridge v2
+([#10](https://github.com/max-is-loud/ficsit-foreman/issues/10)). C# formatting
+enforcement is tracked in [#30](https://github.com/max-is-loud/ficsit-foreman/issues/30).
+
+**The ratchet.** Code that predates the standard is recorded, not excused:
+nothing new may be added to the record, and the record can only shrink. There are
+two record files.
+
+- `source-limits.json` (root) lists files over 500 lines with their line counts
+  and refactor issues, plus `integrations/foreman-bridge/` (exempt until bridge
+  v2, #10). An exempt file may not grow. If it shrinks, or drops under 500 lines,
+  the check fails until you run `npm run check:source -- --update`, which only
+  lowers counts and removes entries.
+- `eslint-suppressions.json` (root and in each package) records existing ESLint
+  violations. A new violation fails. A recorded violation you have fixed also
+  fails until you run `npm run lint:prune` (at the root, or `npm run lint:prune`
+  inside a package).
+
+**Never add an exemption or suppression by hand, never re-run `--suppress-all`,
+and never raise a recorded count.** If a change needs more room, split the code.
+Reviewers will reject a record file that grew.
 
 ### Contributing upstream
 Gaffer is derived from [FICSIT Foreman](https://github.com/StuartMeeks/ficsit-foreman)
@@ -104,10 +184,12 @@ and stays on good terms with it. To keep offering fixes back possible:
 npm install
 npm run build      # type-check / build the workspaces
 npm run lint       # ESLint + Prettier
-npm test           # Vitest
+npm run check:source  # file size and header rules
+npm run format     # apply Prettier
+npm test           # Vitest + source-check tests
 ```
 
-CI (`build` + `lint` + `test`) runs on every PR and must pass before merge.
+CI (`build` + `lint` + `check:source` + `test`) runs on every PR and must pass before merge.
 Docker image builds run only when image-relevant files change.
 
 ## Supplying game data (the channel bundle)
