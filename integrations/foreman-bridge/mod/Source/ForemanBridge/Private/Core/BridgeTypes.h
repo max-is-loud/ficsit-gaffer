@@ -1,3 +1,6 @@
+// Engine-independent bridge data types shared by State, Delivery and the wire
+// codec: rows (with protocol v2 per-category configuration), events, snapshots
+// and limits.
 #pragma once
 #include <array>
 #include <cstddef>
@@ -20,13 +23,47 @@ struct Player {
     std::string platform, accountId, displayName;
     bool operator==(const Player&) const = default;
 };
+// Protocol v2 categories. The Config variant's alternative index IS the
+// category, so a row can never carry a configuration of the wrong kind.
+enum class Category { Manufacturer, Extractor, Generator, Storage };
+enum class Purity { Impure, Normal, Pure };
+// Every field is optional: unset means the game could not say (JSON null).
+struct ManufacturerConfig {
+    std::optional<std::string> recipe;
+    std::optional<double> clockSpeed, productionBoost;
+    std::optional<uint32_t> powerShards, somersloops;
+    std::optional<bool> paused;
+    bool operator==(const ManufacturerConfig&) const = default;
+};
+struct ExtractorConfig {
+    std::optional<std::string> resource;
+    std::optional<Purity> purity;
+    std::optional<std::string> node;
+    std::optional<double> clockSpeed;
+    std::optional<uint32_t> powerShards;
+    std::optional<bool> paused;
+    bool operator==(const ExtractorConfig&) const = default;
+};
+struct GeneratorConfig {
+    std::optional<std::string> fuel;
+    std::optional<double> clockSpeed;
+    std::optional<uint32_t> powerShards;
+    std::optional<bool> paused;
+    bool operator==(const GeneratorConfig&) const = default;
+};
+struct StorageConfig {
+    bool operator==(const StorageConfig&) const = default;
+};
+using Config = std::variant<ManufacturerConfig, ExtractorConfig, GeneratorConfig, StorageConfig>;
+inline Category CategoryOf(const Config& config) { return static_cast<Category>(config.index()); }
 struct Row {
     std::string entityId, actorPath, classPath;
+    Config config;
     Transform transform;
     std::optional<Player> player;
     bool operator==(const Row&) const = default;
 };
-enum class Origin { Placed, Reconciled };
+enum class Origin { Placed, Reconciled, Reconfigured };
 enum class EventType { Upsert, Remove };
 struct Event {
     uint64_t seq = 0;

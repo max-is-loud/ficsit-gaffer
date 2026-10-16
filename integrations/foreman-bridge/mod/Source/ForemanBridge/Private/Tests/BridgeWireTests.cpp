@@ -22,10 +22,31 @@ foreman::Envelope FixtureEnvelope(const TSharedPtr<FJsonObject>& Object) {
     return E;
 }
 }
+// Protocol v2 rows: exact round-trip per category and the decoded configuration values.
+static void CheckV2Row(FAutomationTestBase& Test,const FString& Name,const foreman::Request& Request,foreman::RequestKind Kind) {
+    const auto& Row=*std::get<foreman::Exchange>(Request.body).events[0].row;
+    const auto Again=FBridgeWire::DecodeRequest(Kind,FBridgeWire::EncodeRequest(Request));
+    Test.TestTrue(*(Name+TEXT(" row round-trips exactly")),Again.IsSet()&&*std::get<foreman::Exchange>(Again->body).events[0].row==Row);
+    if(Name==TEXT("v2ManufacturerNullRecipe")) {
+        const auto& Config=std::get<foreman::ManufacturerConfig>(Row.config);
+        Test.TestTrue(TEXT("Null recipe stays unset"),!Config.recipe.has_value()&&!Config.clockSpeed.has_value());
+        Test.TestTrue(TEXT("Somersloops decoded"),Config.somersloops==0u);
+    }
+    if(Name==TEXT("v2Extractor")) {
+        Test.TestTrue(TEXT("Extractor category"),foreman::CategoryOf(Row.config)==foreman::Category::Extractor);
+        const auto& Config=std::get<foreman::ExtractorConfig>(Row.config);
+        Test.TestTrue(TEXT("Pure purity"),Config.purity==foreman::Purity::Pure);
+        Test.TestTrue(TEXT("Clock speed 2.5"),Config.clockSpeed==2.5);
+    }
+    if(Name==TEXT("v2Storage")) { Test.TestTrue(TEXT("Storage category"),foreman::CategoryOf(Row.config)==foreman::Category::Storage); }
+    if(Name==TEXT("v2Reconfigured")) {
+        Test.TestTrue(TEXT("Reconfigured origin"),std::get<foreman::Exchange>(Request.body).events[0].origin==foreman::Origin::Reconfigured);
+    }
+}
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBridgeWireFixtures,"ForemanBridge.Wire.SharedFixtures",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FBridgeWireFixtures::RunTest(const FString&) {
     const FString Root=IPluginManager::Get().FindPlugin(TEXT("ForemanBridge"))->GetBaseDir();
-    FString Source; if(!TestTrue(TEXT("Load shared fixtures"),FFileHelper::LoadFileToString(Source,*(Root/TEXT("Tests/fixtures/v1.json"))))) { return false; }
+    FString Source; if(!TestTrue(TEXT("Load shared fixtures"),FFileHelper::LoadFileToString(Source,*(Root/TEXT("Tests/fixtures/v2.json"))))) { return false; }
     TSharedPtr<FJsonObject> Fixtures;
     if(!TestTrue(TEXT("Parse fixture container"),FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Source),Fixtures))) { return false; }
     TArray<TSharedPtr<FJsonValue>> Encoded;
@@ -45,6 +66,7 @@ bool FBridgeWireFixtures::RunTest(const FString&) {
                 auto Item=MakeShared<FJsonObject>(); Item->SetStringField(TEXT("name"),Name);
                 Item->SetStringField(TEXT("hex"),BytesToHex(Output.GetData(),Output.Num()));
                 Encoded.Add(MakeShared<FJsonValueObject>(Item));
+                if(Name.StartsWith(TEXT("v2"))) { CheckV2Row(*this,Name,Request.GetValue(),Kind); }
                 if(Name==TEXT("validLargeSeq")) {
                     TestTrue(TEXT("Exact large sequence"),std::get<foreman::Exchange>(Request->body).events[0].seq==9007199254740993ULL);
                     auto Invalid=Request.GetValue();

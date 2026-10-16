@@ -42,7 +42,7 @@ void FBridgeTransport::Send(foreman::Request Request,TFunction<void(foreman::Out
         };
         auto Bytes=FBridgeWire::EncodeRequest(Request);if(Bytes.IsEmpty()){foreman::Outcome O;O.httpStatus=426;Finish(std::move(O));return;}
         const auto Kind=static_cast<foreman::RequestKind>(Request.body.index());
-        const TCHAR* Path=Kind==foreman::RequestKind::Hello?TEXT("/v1/hello"):Kind==foreman::RequestKind::SnapshotChunk?TEXT("/v1/snapshot/chunk"):Kind==foreman::RequestKind::SnapshotCommit?TEXT("/v1/snapshot/commit"):TEXT("/v1/exchange");
+        const TCHAR* Path=Kind==foreman::RequestKind::Hello?TEXT("/v2/hello"):Kind==foreman::RequestKind::SnapshotChunk?TEXT("/v2/snapshot/chunk"):Kind==foreman::RequestKind::SnapshotCommit?TEXT("/v2/snapshot/commit"):TEXT("/v2/exchange");
         auto Http=FHttpModule::Get().CreateRequest();
         // CURLOPT_FOLLOWLOCATION is otherwise hardcoded to 1 in this engine.
         CURL* Handle=static_cast<FCurlHttpRequest*>(&Http.Get())->GetEasyHandle();

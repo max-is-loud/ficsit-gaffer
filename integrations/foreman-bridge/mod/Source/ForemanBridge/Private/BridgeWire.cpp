@@ -1,4 +1,9 @@
+// Protocol v2 wire codec: envelopes, the four producer requests and their
+// replies, snapshot preparation and digests. Rows are encoded by
+// Wire/RowCodec; JSON primitives live in Wire/JsonFields.
 #include "BridgeWire.h"
+#include "Wire/JsonFields.h"
+#include "Wire/RowCodec.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
@@ -15,90 +20,21 @@ THIRD_PARTY_INCLUDES_END
 #include <limits>
 
 namespace {
-using Object = TSharedPtr<FJsonObject>;
-using Value = TSharedPtr<FJsonValue>;
+using namespace BridgeJson;
 using namespace foreman;
-FString Wide(const std::string& Text) { FUTF8ToTCHAR Utf8(Text.data(),static_cast<int32>(Text.size())); return FString(Utf8.Length(),Utf8.Get()); }
-std::string Narrow(const FString& Text) { FTCHARToUTF8 Utf8(*Text,Text.Len()); return std::string(Utf8.Get(),Utf8.Length()); }
-TArray<uint8> BytesOf(const FString& Text) {
-    FTCHARToUTF8 Utf8(*Text,Text.Len()); TArray<uint8> Bytes;
-    Bytes.Append(reinterpret_cast<const uint8*>(Utf8.Get()),Utf8.Length()); return Bytes;
-}
-Value Field(const Object& O,const TCHAR* Key) { if(!O) { return {}; } const auto* Found=O->Values.Find(Key); return Found?*Found:Value{}; }
-bool Text(const Object& O,const TCHAR* Key,std::string& Out,size_t Max=4096,bool Empty=false) {
-    const auto V=Field(O,Key); if(!V || V->Type!=EJson::String) { return false; }
-    Out=Narrow(V->AsString()); return (Empty || !Out.empty()) && Out.size()<=Max;
-}
-Object Child(const Object& O,const TCHAR* Key) { const auto V=Field(O,Key); return V && V->Type==EJson::Object ? V->AsObject():Object{}; }
-bool Fields(const Object& O,std::initializer_list<const TCHAR*> Required,std::initializer_list<const TCHAR*> Optional={}) {
-    if(!O) { return false; }
-    for(const auto* Key:Required) { if(!O->HasField(Key)) { return false; } }
-    for(const auto& Pair:O->Values) {
-        bool Found=false;
-        for(const auto* Key:Required) { Found|=Pair.Key==Key; }
-        for(const auto* Key:Optional) { Found|=Pair.Key==Key; }
-        if(!Found) { return false; }
-    }
-    return true;
-}
-bool Hex(const std::string& S,size_t Length) {
-    if(S.size()!=Length) { return false; }
-    for(char C:S) { if(!((C>='0'&&C<='9')||(C>='a'&&C<='f'))) { return false; } } return true;
-}
-bool Uuid(const std::string& S) {
-    if(S.size()!=36) { return false; }
-    for(size_t I=0;I<S.size();++I) {
-        if(I==8||I==13||I==18||I==23) { if(S[I]!='-') { return false; } }
-        else if(!((S[I]>='0'&&S[I]<='9')||(S[I]>='a'&&S[I]<='f'))) { return false; }
-    } return true;
-}
-bool Id(const Object& O,const TCHAR* Key,std::string& Out) { return Text(O,Key,Out,36)&&Uuid(Out); }
-bool SeqText(const std::string& S,uint64_t& Out,bool Zero=true) {
-    if(S.empty()||S.size()>20||(S.size()>1&&S[0]=='0')) { return false; }
-    uint64_t N=0;
-    for(char C:S) {
-        if(C<'0'||C>'9') { return false; }
-        const uint64_t Digit=C-'0';
-        if(N>(std::numeric_limits<uint64_t>::max()-Digit)/10) { return false; }
-        N=N*10+Digit;
-    }
-    if(!Zero&&N==0) { return false; } Out=N;return true;
-}
-bool Seq(const Object& O,const TCHAR* Key,uint64_t& Out,bool Zero=true) { std::string S;return Text(O,Key,S,20)&&SeqText(S,Out,Zero); }
-bool Number(const Value& V,double& Out) { if(!V||V->Type!=EJson::Number) { return false; } Out=V->AsNumber();return FMath::IsFinite(Out); }
-bool UInt(const Object& O,const TCHAR* Key,uint32_t& Out) {
-    double N; if(!Number(Field(O,Key),N)||N<0||N>4294967295.0||N!=FMath::FloorToDouble(N)) { return false; }
-    Out=static_cast<uint32_t>(N);return true;
+// Wire names, indexed by the enum they name.
+const char* const EVENT_TYPES[] = {"buildable.upsert", "buildable.remove"};
+const char* const ORIGINS[] = {"placed", "reconciled", "reconfigured"};
+template <typename Enum, size_t Count>
+bool EnumNamed(const char* const (&Names)[Count], const std::string& Name, Enum& Out) {
+    for (size_t Index = 0; Index < Count; ++Index) { if (Name == Names[Index]) { Out = static_cast<Enum>(Index); return true; } }
+    return false;
 }
 bool EnvelopeOf(const Object& O,Envelope& E,bool Connected) {
     double Protocol;
-    return Number(Field(O,TEXT("protocol")),Protocol)&&Protocol==1&&Id(O,TEXT("serverId"),E.serverId)
+    return Number(Field(O,TEXT("protocol")),Protocol)&&Protocol==2&&Id(O,TEXT("serverId"),E.serverId)
         &&Id(O,TEXT("worldId"),E.worldId)&&Id(O,TEXT("epoch"),E.epoch)&&Id(O,TEXT("requestId"),E.requestId)
         &&(!Connected||Id(O,TEXT("connectionId"),E.connectionId));
-}
-// Validate UTF-8 scalars before Unreal conversion, which may otherwise replace invalid input.
-bool Scalars(TConstArrayView<uint8> Bytes,TArray<uint32>* Out=nullptr) {
-    for(int32 I=0;I<Bytes.Num();) {
-        const uint8 First=Bytes[I++];uint32 Code=First,Minimum=0;int32 More=0;
-        if(First>=0xc2&&First<=0xdf) { Code=First&31;More=1;Minimum=0x80; }
-        else if(First>=0xe0&&First<=0xef) { Code=First&15;More=2;Minimum=0x800; }
-        else if(First>=0xf0&&First<=0xf4) { Code=First&7;More=3;Minimum=0x10000; }
-        else if(First>=0x80) { return false; }
-        if(I+More>Bytes.Num()) { return false; }
-        while(More-->0) { uint8 C=Bytes[I++];if((C&0xc0)!=0x80) { return false; } Code=(Code<<6)|(C&63); }
-        if(Code<Minimum||Code>0x10ffff||(Code>=0xd800&&Code<=0xdfff)) { return false; }
-        if(Out) { Out->Add(Code); }
-    } return true;
-}
-bool ValidString(const std::string& S) {
-    return S.size()<=Limits::MaxBodyBytes && Scalars(TConstArrayView<uint8>(reinterpret_cast<const uint8*>(S.data()),static_cast<int32>(S.size())));
-}
-bool ValidRowInput(const Row& R) {
-    if(!ValidString(R.entityId)||!ValidString(R.actorPath)||!ValidString(R.classPath)) { return false; }
-    for(const auto& V:{R.transform.position,R.transform.rotation,R.transform.scale}) {
-        for(double N:V) { if(!FMath::IsFinite(N)) { return false; } }
-    }
-    return !R.player || (ValidString(R.player->platform)&&ValidString(R.player->accountId)&&ValidString(R.player->displayName));
 }
 bool ValidRequestInput(const Request& R) {
     const auto& E=R.envelope;
@@ -111,68 +47,17 @@ bool ValidRequestInput(const Request& R) {
     if(const auto* C=std::get_if<SnapshotCommit>(&R.body)) { return ValidString(C->snapshotId)&&ValidString(C->sha256); }
     const auto& X=std::get<foreman::Exchange>(R.body);
     if(X.events.size()>Limits::MaxBatchEvents||X.commandResults.size()>Limits::MaxBatchEvents) { return false; }
-    for(const auto& EventValue:X.events) { if(!ValidString(EventValue.entityId)||(EventValue.row&&!ValidRowInput(*EventValue.row))) { return false; } }
+    for(const auto& EventValue:X.events) { if(!ValidString(EventValue.entityId)||(EventValue.row&&!BridgeRows::ValidRow(*EventValue.row))) { return false; } }
     for(const auto& Result:X.commandResults) { if(!ValidString(Result.commandId)) { return false; } }
     return true;
 }
-int32 HexDigit(uint8 C) { if(C>='0'&&C<='9') { return C-'0'; } if(C>='a'&&C<='f') { return C-'a'+10; } if(C>='A'&&C<='F') { return C-'A'+10; } return -1; }
-bool EscapeCode(TConstArrayView<uint8> B,int32 Start,uint32& Code) {
-    if(Start+4>B.Num()) { return false; }Code=0;
-    for(int32 I=Start;I<Start+4;++I) { int32 D=HexDigit(B[I]);if(D<0) { return false; }Code=Code*16+D; } return true;
-}
-bool JsonUnicode(TConstArrayView<uint8> B) {
-    if(!Scalars(B)) { return false; }
-    bool InString=false;int32 Depth=0;
-    for(int32 I=0;I<B.Num();++I) {
-        uint8 C=B[I];
-        if(C=='"') { InString=!InString; }
-        else if(InString&&C=='\\') {
-            if(++I>=B.Num()) { return false; }
-            if(B[I]=='u') {
-                uint32 Code;if(!EscapeCode(B,I+1,Code)) { return false; }I+=4;
-                if(Code>=0xd800&&Code<=0xdbff) {
-                    if(I+6>=B.Num()||B[I+1]!='\\'||B[I+2]!='u') { return false; }
-                    uint32 Low;if(!EscapeCode(B,I+3,Low)||Low<0xdc00||Low>0xdfff) { return false; } I+=6;
-                } else if(Code>=0xdc00&&Code<=0xdfff) { return false; }
-            }
-        } else if(!InString) {
-            if(C=='{'||C=='[') { if(++Depth>32) { return false; } }
-            else if(C=='}'||C==']') { --Depth; }
-        }
-    }return true;
-}
-Object Parse(TConstArrayView<uint8> B) {
-    if(B.Num()==0||B.Num()>static_cast<int32>(Limits::MaxBodyBytes)||!JsonUnicode(B)) { return {}; }
-    FUTF8ToTCHAR Utf8(reinterpret_cast<const ANSICHAR*>(B.GetData()),B.Num());
-    FString Source(Utf8.Length(),Utf8.Get());Object O;
-    if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Source),O)) { return {}; }return O;
-}
-bool Vector(const Object& O,const TCHAR* Key,std::array<double,3>& Out) {
-    auto V=Field(O,Key);if(!V||V->Type!=EJson::Array||V->AsArray().Num()!=3) { return false; }
-    for(int I=0;I<3;++I) { if(!Number(V->AsArray()[I],Out[I])) { return false; } }return true;
-}
-bool RowOf(const Object& O,Row& R) {
-    if(!Fields(O,{TEXT("entityId"),TEXT("actorPath"),TEXT("classPath"),TEXT("transform"),TEXT("player")})
-        ||!Id(O,TEXT("entityId"),R.entityId)||!Text(O,TEXT("actorPath"),R.actorPath)||!Text(O,TEXT("classPath"),R.classPath)) { return false; }
-    auto T=Child(O,TEXT("transform"));
-    if(!Fields(T,{TEXT("position"),TEXT("rotation"),TEXT("scale")})||!Vector(T,TEXT("position"),R.transform.position)
-        ||!Vector(T,TEXT("rotation"),R.transform.rotation)||!Vector(T,TEXT("scale"),R.transform.scale)) { return false; }
-    auto P=Field(O,TEXT("player"));if(P->Type==EJson::Null) { return true; }
-    Player Person;auto PO=Child(O,TEXT("player"));
-    if(!Fields(PO,{TEXT("platform"),TEXT("accountId"),TEXT("displayName")})||!Text(PO,TEXT("platform"),Person.platform,1024)
-        ||!Text(PO,TEXT("accountId"),Person.accountId,1024)||!Text(PO,TEXT("displayName"),Person.displayName,1024)) { return false; }
-    R.player=std::move(Person);return true;
-}
 bool EventOf(const Object& O,Event& E) {
     std::string Type,OriginText;
-    if(!Text(O,TEXT("type"),Type)||!Text(O,TEXT("origin"),OriginText)||!Seq(O,TEXT("seq"),E.seq,false)||!Id(O,TEXT("entityId"),E.entityId)) { return false; }
-    if(OriginText!="placed"&&OriginText!="reconciled") { return false; }E.origin=OriginText=="placed"?Origin::Placed:Origin::Reconciled;
-    if(Type=="constructor.upsert") {
-        if(!Fields(O,{TEXT("seq"),TEXT("type"),TEXT("entityId"),TEXT("origin"),TEXT("row")})) { return false; }
-        Row R;if(!RowOf(Child(O,TEXT("row")),R)||R.entityId!=E.entityId) { return false; }E.row=std::move(R);E.type=EventType::Upsert;
-    } else if(Type=="constructor.remove") {
-        if(!Fields(O,{TEXT("seq"),TEXT("type"),TEXT("entityId"),TEXT("origin")})) { return false; }E.type=EventType::Remove;
-    } else { return false; }return true;
+    if(!Text(O,TEXT("type"),Type)||!Text(O,TEXT("origin"),OriginText)||!Seq(O,TEXT("seq"),E.seq,false)||!Id(O,TEXT("entityId"),E.entityId)
+        ||!EnumNamed(ORIGINS,OriginText,E.origin)||!EnumNamed(EVENT_TYPES,Type,E.type)) { return false; }
+    if(E.type==EventType::Remove) { return Fields(O,{TEXT("seq"),TEXT("type"),TEXT("entityId"),TEXT("origin")}); }
+    if(!Fields(O,{TEXT("seq"),TEXT("type"),TEXT("entityId"),TEXT("origin"),TEXT("row")})) { return false; }
+    Row R;if(!BridgeRows::RowFromJson(Child(O,TEXT("row")),R)||R.entityId!=E.entityId) { return false; }E.row=std::move(R);return true;
 }
 bool CommandIdentity(const std::string& IdText,const Envelope& E,std::optional<uint64_t> Causal={}) {
     const std::string Prefix=E.worldId+"/"+E.epoch+"/";
@@ -214,20 +99,9 @@ bool ArrayOf(const Object& O,const TCHAR* Key,const TArray<Value>*& Out) {
 Object ValueObject(const Value& V) { return V&&V->Type==EJson::Object?V->AsObject():Object{}; }
 #define ENV_KEYS TEXT("protocol"),TEXT("serverId"),TEXT("worldId"),TEXT("epoch"),TEXT("requestId")
 #define CONNECTED_KEYS ENV_KEYS,TEXT("connectionId")
-void Put(const Object& O,const TCHAR* Key,const std::string& S) { O->SetStringField(Key,Wide(S)); }
-void PutSeq(const Object& O,const TCHAR* Key,uint64_t N) { Put(O,Key,std::to_string(N)); }
 Object EnvelopeJson(const Envelope& E,bool Connected) {
-    auto O=MakeShared<FJsonObject>();O->SetNumberField(TEXT("protocol"),1);Put(O,TEXT("serverId"),E.serverId);Put(O,TEXT("worldId"),E.worldId);
+    auto O=MakeShared<FJsonObject>();O->SetNumberField(TEXT("protocol"),2);Put(O,TEXT("serverId"),E.serverId);Put(O,TEXT("worldId"),E.worldId);
     Put(O,TEXT("epoch"),E.epoch);Put(O,TEXT("requestId"),E.requestId);if(Connected) { Put(O,TEXT("connectionId"),E.connectionId); }return O;
-}
-void PutVector(const Object& O,const TCHAR* Key,const std::array<double,3>& V) {
-    TArray<Value> Values;for(double N:V) { Values.Add(MakeShared<FJsonValueNumber>(N)); }O->SetArrayField(Key,Values);
-}
-Object RowJson(const Row& R) {
-    auto O=MakeShared<FJsonObject>();Put(O,TEXT("entityId"),R.entityId);Put(O,TEXT("actorPath"),R.actorPath);Put(O,TEXT("classPath"),R.classPath);
-    auto T=MakeShared<FJsonObject>();PutVector(T,TEXT("position"),R.transform.position);PutVector(T,TEXT("rotation"),R.transform.rotation);PutVector(T,TEXT("scale"),R.transform.scale);O->SetObjectField(TEXT("transform"),T);
-    if(R.player) { auto P=MakeShared<FJsonObject>();Put(P,TEXT("platform"),R.player->platform);Put(P,TEXT("accountId"),R.player->accountId);Put(P,TEXT("displayName"),R.player->displayName);O->SetObjectField(TEXT("player"),P); }
-    else { O->SetField(TEXT("player"),MakeShared<FJsonValueNull>()); }return O;
 }
 }
 foreman::RequestKind FBridgeWire::Kind(const std::string& Name) {
@@ -261,7 +135,7 @@ TOptional<foreman::Request> FBridgeWire::DecodeRequest(foreman::RequestKind Kind
         size_t Start=0;std::string Previous;
         while(Start<C.data.size()) {
             const size_t End=C.data.find('\n',Start);const auto Line=C.data.substr(Start,End-Start);Row RowValue;
-            if(!RowOf(Parse(TConstArrayView<uint8>(reinterpret_cast<const uint8*>(Line.data()),static_cast<int32>(Line.size()))),RowValue)||RowValue.entityId<=Previous) { return {}; }
+            if(!BridgeRows::RowFromJson(Parse(TConstArrayView<uint8>(reinterpret_cast<const uint8*>(Line.data()),static_cast<int32>(Line.size()))),RowValue)||RowValue.entityId<=Previous) { return {}; }
             Previous=RowValue.entityId;Start=End+1;
         }R.body=std::move(C);
     } else if(KindValue==RequestKind::SnapshotCommit) {
@@ -310,9 +184,9 @@ TArray<uint8> FBridgeWire::EncodeRequest(const foreman::Request& R) {
         K=RequestKind::Exchange;TArray<Value> Events,Results;
         for(const auto& E:X->events) {
             auto Item=MakeShared<FJsonObject>();PutSeq(Item,TEXT("seq"),E.seq);Put(Item,TEXT("entityId"),E.entityId);
-            Item->SetStringField(TEXT("type"),E.type==EventType::Upsert?TEXT("constructor.upsert"):TEXT("constructor.remove"));
-            Item->SetStringField(TEXT("origin"),E.origin==Origin::Placed?TEXT("placed"):TEXT("reconciled"));
-            if(E.row) { Item->SetObjectField(TEXT("row"),RowJson(*E.row)); }Events.Add(MakeShared<FJsonValueObject>(Item));
+            Item->SetStringField(TEXT("type"),UTF8_TO_TCHAR(EVENT_TYPES[static_cast<int32>(E.type)]));
+            Item->SetStringField(TEXT("origin"),UTF8_TO_TCHAR(ORIGINS[static_cast<int32>(E.origin)]));
+            if(E.row) { Item->SetObjectField(TEXT("row"),BridgeRows::RowToJson(*E.row)); }Events.Add(MakeShared<FJsonValueObject>(Item));
         }
         for(const auto& Result:X->commandResults) { auto Item=MakeShared<FJsonObject>();Put(Item,TEXT("commandId"),Result.commandId);Item->SetStringField(TEXT("status"),StatusText(Result.status));Results.Add(MakeShared<FJsonValueObject>(Item)); }
         O->SetArrayField(TEXT("events"),Events);O->SetArrayField(TEXT("commandResults"),Results);
@@ -338,7 +212,7 @@ TOptional<foreman::PreparedSnapshot> FBridgeWire::PrepareSnapshot(const foreman:
     auto Flush=[&]{if(!Chunk.empty()){TArray<uint8> Bytes;Bytes.Append(reinterpret_cast<const uint8*>(Chunk.data()),static_cast<int32>(Chunk.size()));HashChunks.Add(std::move(Bytes));Result.chunks.push_back(std::move(Chunk));Chunk.clear();}};
     for(const auto& Row:Snapshot.rows) {
         FString Json;auto Writer=TJsonWriterFactory<TCHAR,TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
-        if(!FJsonSerializer::Serialize(RowJson(Row).ToSharedRef(),Writer))return {};
+        if(!FJsonSerializer::Serialize(BridgeRows::RowToJson(Row).ToSharedRef(),Writer))return {};
         std::string Line=Narrow(Json)+"\n";
         // Sixfold worst-case outer JSON escaping plus envelope remains below 256 KiB.
         if(Line.size()>32000)return {};
