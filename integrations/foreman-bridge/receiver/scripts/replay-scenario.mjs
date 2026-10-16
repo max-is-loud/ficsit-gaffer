@@ -15,8 +15,8 @@ import {snapshotDigest,MAX_BODY_BYTES} from '../src/protocol.mjs';
 
 const scenarios=['duplicate','outage','snapshot-race','receiver-restart'];
 const provenance={gameVersion:'513885',smlVersion:'3.12.0',bridgeVersion:'0.1.0',starterCommit:'0'.repeat(40),bridgeSourceSha256:'0'.repeat(64)};
-const row=()=>{const entityId=randomUUID();return {entityId,actorPath:'/Replay/'+entityId,classPath:'/Replay/Constructor',transform:{position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]},player:null};};
-const up=(seq,r)=>({seq:String(seq),entityId:r.entityId,type:'constructor.upsert',origin:'placed',row:r});
+const row=()=>{const entityId=randomUUID();return {entityId,actorPath:'/Replay/'+entityId,classPath:'/Replay/Build_Replay.Build_Replay_C',category:'storage',config:{},transform:{position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]},player:null};};
+const up=(seq,r)=>({seq:String(seq),entityId:r.entityId,type:'buildable.upsert',origin:'placed',row:r});
 
 /** Owns a temporary database and loopback HTTPS listener; never opens config.databasePath.
  * This exercises the real receiver, not gameplay or the native delivery state machine.
@@ -25,7 +25,7 @@ export async function runScenario(config,scenario) {
  if(!scenarios.includes(scenario))throw Error('Unknown scenario');
  const dir=mkdtempSync(join(tmpdir(),'foreman-replay-'));let databasePath=join(dir,'receiver.db');
  let store,server,port;
- const context={protocol:1,serverId:config.serverId,worldId:config.worldId,epoch:randomUUID()};
+ const context={protocol:2,serverId:config.serverId,worldId:config.worldId,epoch:randomUUID()};
  const q=extra=>({...context,requestId:randomUUID(),...extra});
  async function start() {
   store=openStore(databasePath);server=createReceiver({...config,host:'127.0.0.1',port:0},store);
@@ -37,7 +37,7 @@ export async function runScenario(config,scenario) {
  }
  function send(path,body) {
   return new Promise((resolve,reject)=>{
-   const req=request({host:'127.0.0.1',port,path:'/v1/'+path,method:'POST',ca:config.ca,timeout:5000,headers:{authorization:'Bearer '+config.token,'content-type':'application/json'}},res=>{
+   const req=request({host:'127.0.0.1',port,path:'/v2/'+path,method:'POST',ca:config.ca,timeout:5000,headers:{authorization:'Bearer '+config.token,'content-type':'application/json'}},res=>{
     let length=0;const chunks=[];res.on('data',c=>{length+=c.length;if(length>MAX_BODY_BYTES)res.destroy(Error('Response limit'));else chunks.push(c);});
     res.on('error',reject);res.on('end',()=>{try{resolve({status:res.statusCode,body:JSON.parse(Buffer.concat(chunks).toString())});}catch(e){reject(e);}});
    });req.on('error',reject);req.on('timeout',()=>req.destroy(Error('Request timeout')));req.end(JSON.stringify(body));
@@ -54,7 +54,7 @@ export async function runScenario(config,scenario) {
  const snapshot=async(rows,watermark)=>ok('snapshot/commit',await stage(rows,watermark));
  const exchange=(events=[],commandResults=[])=>ok('exchange',q({events,commandResults}));
  const count=()=>store.current(context.worldId).length;
- const status=()=>store.queryConstructors({serverId:context.serverId,worldId:context.worldId},{});
+ const status=()=>store.queryBuildables({serverId:context.serverId,worldId:context.worldId},{});
  function inspect() {
   const db=new DatabaseSync(databasePath,{readOnly:true});
   try {return {eventReceipts:db.prepare("SELECT count(*) AS n FROM receipts WHERE kind='event'").get().n,commands:db.prepare('SELECT count(*) AS n FROM commands').get().n,executedCommands:db.prepare("SELECT count(*) AS n FROM commands WHERE status='executed'").get().n};}finally{db.close();}
@@ -64,6 +64,8 @@ export async function runScenario(config,scenario) {
   const a=row(),event=up(1,a);await exchange([event]);
   const result={scenario,epoch:context.epoch};
   if(scenario==='duplicate') {
+   // Placements queue no chat in v2; queue one line directly to exercise command delivery.
+   store.queueChat({worldId:context.worldId,epoch:context.epoch,causalSeq:'1',text:'Foreman bridge: replay check'},Date.now());
    const retry=await exchange([event]);assert.equal(retry.ackSeq,'1');assert.equal(retry.commands.length,1);
    const receipts=[{commandId:retry.commands[0].commandId,status:'executed'}];
    await exchange([event],receipts);const final=await exchange([event],receipts);

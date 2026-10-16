@@ -1,16 +1,17 @@
-# Receiver query contract v1
+# Receiver query contract v2
 
-A read-only application query over the receiver's **committed** Constructor
-projection for its single configured server/world. It is independent of the
-native ingestion protocol ([`protocol-v1.md`](../../mod/docs/protocol-v1.md)),
-which is unchanged. Staged snapshot rows are never visible here.
+A read-only application query over the receiver's **committed** buildable
+projection for its single configured server/world (bridge v2, #10). It is
+independent of the native ingestion protocol
+([`protocol-v2.md`](../../mod/docs/protocol-v2.md)). Staged snapshot rows are
+never visible here. Version 1 (`/query/v1/constructors`) is removed.
 
 ## Credentials
 
 | Credential | Config field | May call | May not call |
 | --- | --- | --- | --- |
-| Producer | `token` | `/v1/hello`, `/v1/snapshot/chunk`, `/v1/snapshot/commit`, `/v1/exchange` | `/query/v1/constructors` |
-| Read-only query | `queryToken` (optional) | `/query/v1/constructors` | every ingestion route |
+| Producer | `token` | `/v2/hello`, `/v2/snapshot/chunk`, `/v2/snapshot/commit`, `/v2/exchange` | `/query/v2/buildables` |
+| Read-only query | `queryToken` (optional) | `/query/v2/buildables` | every ingestion route |
 
 Both use the existing token format (`[A-Za-z0-9_-]{32,256}`) and must differ;
 configuring equal values fails startup. Omitting `queryToken` disables the query
@@ -22,28 +23,37 @@ constant-time SHA-256 digest and authentication happens before any body is read.
 ## Request
 
 ```http
-POST /query/v1/constructors
+POST /query/v2/buildables
 Authorization: Bearer <queryToken>
 Content-Type: application/json
 ```
 
 ```ts
-type ConstructorQuery = {
-  includeLocations?: boolean; // default false: count only
-  limit?: number;             // integer 1..100, default 50; ignored for count-only
-  cursor?: string;            // only with includeLocations: true
+type BuildablesQuery = {
+  filter?: {                         // exact, AND-combined; unknown keys rejected
+    category?: 'manufacturer' | 'extractor' | 'generator' | 'storage';
+    className?: string;              // e.g. 'Build_SmelterMk1_C'
+    recipeName?: string;             // e.g. 'Recipe_IngotIron_C'
+  };
+  groupBy?: 'category' | 'class' | 'recipe';
+  from?: [number, number, number];   // centimetres; distance mode
+  includeRows?: boolean;             // default false: totals (and groups) only
+  limit?: number;                    // integer 1..100, default 50
+  cursor?: string;                   // only with includeRows: true and no `from`
 };
 ```
 
-The body is at most 8192 bytes of strict UTF-8 JSON. Unknown fields are
-rejected. The request never names a world: the receiver answers for its own
-configured `serverId`/`worldId`, and a cursor cannot select another world.
+A **class name** is the final `.`-separated segment of a class path
+(`…/Build_SmelterMk1.Build_SmelterMk1_C` → `Build_SmelterMk1_C`), the key
+`sf-game-data` uses. The body is at most 8192 bytes of strict UTF-8 JSON. The
+request never names a world: the receiver answers for its own configured
+`serverId`/`worldId`, and a cursor cannot select another world.
 
 ## Response (`200`, `Cache-Control: no-store`)
 
 ```ts
-type ConstructorState = {
-  protocol: 1;
+type BuildablesState = {
+  protocol: 2;
   serverId: string; worldId: string;   // the receiver's configured binding
   revision: string | null;             // opaque committed projection revision
   epoch: string | null;                // active world-session epoch
@@ -51,23 +61,36 @@ type ConstructorState = {
   reason: 'recent_sync' | 'stale' | 'resynchronizing' | 'receiver_restarted' | 'no_baseline';
   lastSyncAt: number | null;           // UTC epoch ms of last accepted synchronization
   evaluatedAt: number;                 // UTC epoch ms when the receiver evaluated status
-  totalCount: number | null;           // exact count for `revision`
-  locations: Array<{ entityId: string; position: [number, number, number] }>;
+  totalCount: number | null;           // exact count matching the filter for `revision`
+  groups?: Array<{ key: string | null; count: number }>; // only when groupBy is set
+  rows: Array<{
+    entityId: string; category: string; classPath: string;
+    position: [number, number, number]; // centimetres
+    config: object;                    // the row's per-category configuration (protocol-v2.md)
+    distanceMetres?: number;           // distance mode only, rounded to 0.1 m
+  }>;
   coordinateSystem: 'unreal_cm';
-  returnedCount: number;               // locations.length
+  returnedCount: number;               // rows.length
   hasMore: boolean;
   nextCursor: string | null;
 };
 ```
 
 Count, page, revision and status come from one read transaction.
-`totalCount` is always the exact total for the revision, independent of how
-many locations a page returns: a page of 50 positions does not mean 50 exist.
+`totalCount` is always the exact total for the revision and filter, independent
+of how many rows a page returns: a page of 50 rows does not mean 50 exist.
 
-- **Count only** (`includeLocations` false): `locations` is empty,
-  `returnedCount` 0, `hasMore` false, `nextCursor` null.
-- **Locations**: ordered by `entityId`; at most `limit` rows. When `hasMore`
-  is true, pass `nextCursor` with the same `includeLocations: true` to continue.
+- **Totals only** (`includeRows` false): `rows` is empty, `returnedCount` 0,
+  `hasMore` false, `nextCursor` null.
+- **Groups** (`groupBy`): counts per category, class name or recipe name,
+  sorted by count (descending) then key; buildables with no recipe group under
+  `key: null`.
+- **Id-ordered rows** (`includeRows`, no `from`): ordered by `entityId`; at
+  most `limit` rows. When `hasMore` is true, pass `nextCursor` with the same
+  query to continue.
+- **Distance rows** (`includeRows` with `from`): one page of the nearest
+  `limit` rows, ascending by distance, each with `distanceMetres`;
+  `nextCursor` is null and `hasMore` says whether more rows match.
 - **No committed baseline** (first start, or only candidate traffic seen):
   `status: 'unavailable'`, `reason: 'no_baseline'`, `revision`, `epoch`,
   `lastSyncAt` and `totalCount` null. The count is unknown, not zero.
@@ -117,7 +140,7 @@ Error bodies are `{"error": "<code>"}` with no internal detail.
 
 | Status | `error` | Meaning |
 | --- | --- | --- |
-| 400 | `invalid_query` | Malformed JSON, unknown field, bad `limit`, or a cursor without `includeLocations: true` |
+| 400 | `invalid_query` | Malformed JSON, unknown field, bad `limit`/`filter`/`groupBy`/`from`, or a cursor without `includeRows: true` or with `from` |
 | 400 | `invalid_cursor` | Cursor is not one this receiver issued for its world |
 | 401 | `unauthorized` | Missing or wrong credential (including the producer credential) |
 | 404 | `not_found` | Query route disabled (no `queryToken`) and the producer credential was sent; any other credential gets 401 |
@@ -132,17 +155,16 @@ Error bodies are `{"error": "<code>"}` with no internal detail.
 ## Example
 
 ```sh
-curl --cacert ca.pem -sS https://receiver.example:9443/query/v1/constructors \
+curl --cacert ca.pem -sS https://receiver.example:9443/query/v2/buildables \
   -H "Authorization: Bearer $FOREMAN_BRIDGE_QUERY_TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"includeLocations":true,"limit":2}'
+  -d '{"filter":{"className":"Build_SmelterMk1_C"},"groupBy":"recipe"}'
 ```
 
 ```json
-{"protocol":1,"serverId":"…","worldId":"…","revision":"…","epoch":"…",
+{"protocol":2,"serverId":"…","worldId":"…","revision":"…","epoch":"…",
  "status":"fresh","reason":"recent_sync","lastSyncAt":1760450000000,
- "evaluatedAt":1760450004200,"totalCount":7,
- "locations":[{"entityId":"…","position":[12000,-34050.5,800]},
-              {"entityId":"…","position":[12600,-34050.5,800]}],
- "coordinateSystem":"unreal_cm","returnedCount":2,"hasMore":true,"nextCursor":"…"}
+ "evaluatedAt":1760450004200,"totalCount":14,
+ "groups":[{"key":"Recipe_IngotIron_C","count":12},{"key":null,"count":2}],
+ "rows":[],"coordinateSystem":"unreal_cm","returnedCount":0,"hasMore":false,"nextCursor":null}
 ```

@@ -10,7 +10,7 @@ import {once} from 'node:events';
 import {createReceiver,loadConfig} from '../src/server.mjs';
 import {MAX_RESPONSE_BYTES} from '../src/query.mjs';
 import {row,storeHarness,testClock,up} from './support.mjs';
-const path='/query/v1/constructors';
+const path='/query/v2/buildables';
 let dir,ca,cert,key;
 before(()=>{dir=mkdtempSync(join(tmpdir(),'foreman-query-https-'));execFileSync('bash',['scripts/make-test-cert.sh',dir,'127.0.0.1'],{stdio:'pipe'});ca=readFileSync(join(dir,'ca.pem'));cert=readFileSync(join(dir,'server.pem'));key=readFileSync(join(dir,'server-key.pem'));});
 after(()=>rmSync(dir,{recursive:true,force:true}));
@@ -30,10 +30,10 @@ async function setup(t,{queryToken=randomBytes(32).toString('hex'),clock=testClo
 }
 test('query token receives the contract response with no-store caching',async t=>{
  const {h,queryToken,send}=await setup(t);h.hello();const a=row(randomUUID(),[1,2,3]);h.snapshot([a]);
- const response=await send({includeLocations:true},{token:queryToken});
+ const response=await send({includeRows:true},{token:queryToken});
  assert.equal(response.status,200);assert.equal(response.headers['cache-control'],'no-store');assert.match(response.headers['content-type'],/^application\/json/);
  const {evaluatedAt,revision,lastSyncAt,...rest}=response.body;
- assert.deepEqual(rest,{protocol:1,serverId:h.binding.serverId,worldId:h.binding.worldId,epoch:h.context.epoch,status:'fresh',reason:'recent_sync',totalCount:1,locations:[{entityId:a.entityId,position:[1,2,3]}],coordinateSystem:'unreal_cm',returnedCount:1,hasMore:false,nextCursor:null});
+ assert.deepEqual(rest,{protocol:2,serverId:h.binding.serverId,worldId:h.binding.worldId,epoch:h.context.epoch,status:'fresh',reason:'recent_sync',totalCount:1,rows:[{entityId:a.entityId,category:a.category,classPath:a.classPath,position:[1,2,3],config:a.config}],coordinateSystem:'unreal_cm',returnedCount:1,hasMore:false,nextCursor:null});
  assert.equal(typeof revision,'string');assert.equal(typeof evaluatedAt,'number');assert.equal(typeof lastSyncAt,'number');
 });
 test('no-baseline query is an ordinary 200 unavailable result',async t=>{
@@ -43,9 +43,15 @@ test('no-baseline query is an ordinary 200 unavailable result',async t=>{
 test('absent, wrong and producer credentials cannot query; query credential cannot ingest',async t=>{
  const {h,token,queryToken,send}=await setup(t);h.hello();h.snapshot([]);
  for(const credential of [undefined,'wrong',token])assert.deepEqual((await send({},{token:credential})).body,{error:'unauthorized'});
- const hello={protocol:1,...h.binding,epoch:randomUUID(),requestId:randomUUID(),latestSeq:'0',oldestRetainedSeq:'0',provenance:{gameVersion:'1',smlVersion:'1',bridgeVersion:'1',starterCommit:'a'.repeat(40),bridgeSourceSha256:'b'.repeat(64)}};
- for(const route of ['/v1/hello','/v1/exchange','/v1/snapshot/chunk','/v1/snapshot/commit'])assert.equal((await send(hello,{token:queryToken,route})).status,401,route);
- assert.equal((await send(hello,{token,route:'/v1/hello'})).status,200);
+ const hello={protocol:2,...h.binding,epoch:randomUUID(),requestId:randomUUID(),latestSeq:'0',oldestRetainedSeq:'0',provenance:{gameVersion:'1',smlVersion:'1',bridgeVersion:'1',starterCommit:'a'.repeat(40),bridgeSourceSha256:'b'.repeat(64)}};
+ for(const route of ['/v2/hello','/v2/exchange','/v2/snapshot/chunk','/v2/snapshot/commit'])assert.equal((await send(hello,{token:queryToken,route})).status,401,route);
+ assert.equal((await send(hello,{token,route:'/v2/hello'})).status,200);
+});
+test('the v1 query route is gone and the producer credential cannot use the v2 route',async t=>{
+ const {h,token,queryToken,send}=await setup(t);h.hello();h.snapshot([]);
+ assert.equal((await send({},{token:queryToken,route:'/query/v1/constructors'})).status,401);
+ assert.equal((await send({},{token,route:'/query/v1/constructors'})).status,404);
+ assert.equal((await send({},{token})).status,401);
 });
 test('unauthenticated query fails before the body is buffered',async t=>{
  const {h,token}=await setup(t);
@@ -58,15 +64,15 @@ test('unauthenticated query fails before the body is buffered',async t=>{
 test('query routes are disabled without a query credential while ingestion still works',async t=>{
  const {h,token,send}=await setup(t,{queryToken:null});
  assert.equal((await send({},{token})).status,404);
- const hello={protocol:1,...h.binding,epoch:randomUUID(),requestId:randomUUID(),latestSeq:'0',oldestRetainedSeq:'0',provenance:{gameVersion:'1',smlVersion:'1',bridgeVersion:'1',starterCommit:'a'.repeat(40),bridgeSourceSha256:'b'.repeat(64)}};
- assert.equal((await send(hello,{token,route:'/v1/hello'})).status,200);
+ const hello={protocol:2,...h.binding,epoch:randomUUID(),requestId:randomUUID(),latestSeq:'0',oldestRetainedSeq:'0',provenance:{gameVersion:'1',smlVersion:'1',bridgeVersion:'1',starterCommit:'a'.repeat(40),bridgeSourceSha256:'b'.repeat(64)}};
+ assert.equal((await send(hello,{token,route:'/v2/hello'})).status,200);
 });
 test('malformed queries are 400, a changed cursor is 409 and oversized bodies are 413',async t=>{
  const {h,queryToken,send}=await setup(t);h.hello();h.snapshot([row(),row(),row()]);
- for(const body of ['{',JSON.stringify({limit:101}),JSON.stringify({worldId:randomUUID()}),JSON.stringify({includeLocations:false,cursor:'abc'}),'[]','null'])assert.equal((await send(body,{token:queryToken})).status,400,body);
- assert.deepEqual((await send({includeLocations:true,cursor:'!!'},{token:queryToken})).body,{error:'invalid_cursor'});
- const first=(await send({includeLocations:true,limit:1},{token:queryToken})).body;h.exchange([up(1,row())]);
- const changed=await send({includeLocations:true,limit:1,cursor:first.nextCursor},{token:queryToken});assert.deepEqual([changed.status,changed.body],[409,{error:'state_changed'}]);
+ for(const body of ['{',JSON.stringify({limit:101}),JSON.stringify({worldId:randomUUID()}),JSON.stringify({includeRows:false,cursor:'abc'}),'[]','null'])assert.equal((await send(body,{token:queryToken})).status,400,body);
+ assert.deepEqual((await send({includeRows:true,cursor:'!!'},{token:queryToken})).body,{error:'invalid_cursor'});
+ const first=(await send({includeRows:true,limit:1},{token:queryToken})).body;h.exchange([up(1,row())]);
+ const changed=await send({includeRows:true,limit:1,cursor:first.nextCursor},{token:queryToken});assert.deepEqual([changed.status,changed.body],[409,{error:'state_changed'}]);
  assert.equal((await send(' '.repeat(8193),{token:queryToken})).status,413);
  assert.equal((await send(' '.repeat(8192-2)+'{}',{token:queryToken})).status,200);
  assert.equal((await send({},{token:queryToken,method:'GET'})).status,405);
@@ -74,19 +80,19 @@ test('malformed queries are 400, a changed cursor is 409 and oversized bodies ar
 });
 test('a full page response stays within the response bound',async t=>{
  const {h,queryToken,send}=await setup(t);h.hello();h.snapshot(Array.from({length:120},()=>row(randomUUID(),[-123456789.125,987654321.5,-0.000001])));
- const response=await send({includeLocations:true,limit:100},{token:queryToken});
+ const response=await send({includeRows:true,limit:100},{token:queryToken});
  assert.equal(response.status,200);assert.equal(response.body.returnedCount,100);assert.ok(Number(response.headers['content-length'])<=MAX_RESPONSE_BYTES);
 });
 test('an oversized query result is refused rather than truncated',async t=>{
  const token=randomBytes(32).toString('hex'),queryToken=randomBytes(32).toString('hex');
- const huge={queryConstructors:()=>({padding:'x'.repeat(MAX_RESPONSE_BYTES)})};
+ const huge={queryBuildables:()=>({padding:'x'.repeat(MAX_RESPONSE_BYTES)})};
  const send=await listen(t,{token,queryToken,serverId:randomUUID(),worldId:randomUUID()},huge);
  assert.deepEqual((await send({},{token:queryToken})).body,{error:'response_too_large'});
 });
 test('storage failures are classified without internal detail',async t=>{
  const {h,queryToken,send}=await setup(t);h.hello();h.snapshot([]);
- const store=h.store;const original=store.queryConstructors;store.queryConstructors=()=>{throw Error('private sqlite path /secret/db');};
- t.after(()=>{store.queryConstructors=original;});
+ const store=h.store;const original=store.queryBuildables;store.queryBuildables=()=>{throw Error('private sqlite path /secret/db');};
+ t.after(()=>{store.queryBuildables=original;});
  const response=await send({},{token:queryToken});assert.deepEqual([response.status,response.text],[503,'{"error":"storage_unavailable"}']);
 });
 test('config accepts an optional distinct query credential',()=>{

@@ -1,26 +1,48 @@
+// The read-only buildables query contract (docs/query-v2.md): request
+// validation and the opaque, revision-bound pagination cursor.
 import {ProtocolError} from './protocol.mjs';
 
-/** @typedef {{includeLocations:boolean, limit:number, cursor?:string}} ConstructorQuery */
+/** @typedef {{category?:string, className?:string, recipeName?:string}} BuildablesFilter */
+/** @typedef {{filter:BuildablesFilter, groupBy?:'category'|'class'|'recipe', from?:number[], includeRows:boolean, limit:number, cursor?:string}} BuildablesQuery */
 /** @typedef {{worldId:string, revision:string, after:string}} Cursor */
 export const DEFAULT_LIMIT=50;
 export const MAX_LIMIT=100;
 export const MAX_QUERY_BYTES=8192;
 export const MAX_RESPONSE_BYTES=256*1024;
 const MAX_CURSOR_LENGTH=1024;
+const MAX_NAME_LENGTH=256;
+const QUERY_KEYS=['filter','groupBy','from','includeRows','limit','cursor'];
+const FILTER_KEYS=['category','className','recipeName'];
+const CATEGORIES=['manufacturer','extractor','generator','storage'];
+const GROUPS=['category','class','recipe'];
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const invalid=code=>new ProtocolError(code,400);
+const isObject=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const requireQuery=condition=>{if(!condition)throw invalid('invalid_query');};
 
-/** Validate an application query. Unknown fields never pass. @returns {ConstructorQuery} */
-export function validateQuery(input) {
- if(input===null||typeof input!=='object'||Array.isArray(input))throw invalid('invalid_query');
- if(!Object.keys(input).every(key=>key==='includeLocations'||key==='limit'||key==='cursor'))throw invalid('invalid_query');
- const includeLocations=input.includeLocations??false,limit=input.limit??DEFAULT_LIMIT;
- if(typeof includeLocations!=='boolean')throw invalid('invalid_query');
- if(!Number.isInteger(limit)||limit<1||limit>MAX_LIMIT)throw invalid('invalid_query');
- const query={includeLocations,limit};
+function validateFilter(input={}) {
+ requireQuery(isObject(input)&&Object.keys(input).every(key=>FILTER_KEYS.includes(key)));
+ if(input.category!==undefined)requireQuery(CATEGORIES.includes(input.category));
+ for(const key of ['className','recipeName']) {
+  if(input[key]!==undefined)requireQuery(typeof input[key]==='string'&&input[key].length>0&&input[key].length<=MAX_NAME_LENGTH);
+ }
+ return {...input};
+}
+
+/** Validate an application query. Unknown fields never pass. @returns {BuildablesQuery} */
+export function validateBuildablesQuery(input) {
+ requireQuery(isObject(input)&&Object.keys(input).every(key=>QUERY_KEYS.includes(key)));
+ const includeRows=input.includeRows??false,limit=input.limit??DEFAULT_LIMIT;
+ requireQuery(typeof includeRows==='boolean'&&Number.isInteger(limit)&&limit>=1&&limit<=MAX_LIMIT);
+ const query={filter:validateFilter(input.filter),includeRows,limit};
+ if(input.groupBy!==undefined) {requireQuery(GROUPS.includes(input.groupBy));query.groupBy=input.groupBy;}
+ if(input.from!==undefined) {
+  requireQuery(Array.isArray(input.from)&&input.from.length===3&&input.from.every(x=>typeof x==='number'&&Number.isFinite(x)));
+  query.from=[...input.from];
+ }
  if(input.cursor!==undefined) {
-  // A continuation only makes sense for a location listing.
-  if(!includeLocations||typeof input.cursor!=='string'||input.cursor.length===0||input.cursor.length>MAX_CURSOR_LENGTH)throw invalid('invalid_query');
+  // A continuation only makes sense for an id-ordered row listing.
+  requireQuery(includeRows&&query.from===undefined&&typeof input.cursor==='string'&&input.cursor.length>0&&input.cursor.length<=MAX_CURSOR_LENGTH);
   query.cursor=input.cursor;
  }
  return query;

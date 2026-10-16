@@ -68,7 +68,7 @@ function commandId(value, context, causalSeq) {
   sequence(parts[2],false);
   if(causalSeq!==undefined) { requireThat(parts[2]===causalSeq,'invalid_command'); }
 }
-function command(value, context) {
+export function validateCommand(value, context) {
   fields(value,['commandId','causalSeq','type','text','expiresAt'],[],'invalid_command');
   sequence(value.causalSeq,false); commandId(value.commandId,context,value.causalSeq);
   requireThat(value.type==='chat.send','invalid_command');
@@ -131,7 +131,7 @@ export function validateResponse(rawUtf8,expected) {
     else { fields(value,[...keys,'mode','reason']);text(value.reason,256); }
   } else if(expected.kind==='exchange') {
     fields(value,[...keys,'ackSeq','commands'],['resyncRequired']);sequence(value.ackSeq);
-    boundedArray(value.commands,x=>command(x,value),'invalid_command');
+    boundedArray(value.commands,x=>validateCommand(x,value),'invalid_command');
     if(value.resyncRequired!==undefined) { text(value.resyncRequired,256); }
   } else if(expected.kind==='snapshot/chunk') {
     fields(value,[...keys,'snapshotId','chunkIndex']);identity(value.snapshotId);uint32(value.chunkIndex);

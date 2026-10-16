@@ -1,8 +1,16 @@
+// The receiver's durable store: ingestion (hello, snapshot staging and
+// commit, exchange) with epoch fencing and idempotent receipts, plus the
+// read-only buildables query. Schema lives in store/schema.mjs, the
+// projection in store/projection.mjs and the query reader in
+// store/buildablesQuery.mjs.
 import {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
-import {ProtocolError,decodeRequest,snapshotDigest,MAX_BODY_BYTES} from './protocol.mjs';
+import {ProtocolError,decodeRequest,snapshotDigest,validateCommand,MAX_BODY_BYTES} from './protocol.mjs';
 import {createFreshness,systemClock} from './freshness.mjs';
-import {validateQuery,encodeCursor,decodeCursor} from './query.mjs';
+import {validateBuildablesQuery,decodeCursor} from './query.mjs';
+import {migrate} from './store/schema.mjs';
+import {putBuildable,deleteBuildable,clearBuildables} from './store/projection.mjs';
+import {readBuildables} from './store/buildablesQuery.mjs';
 
 function canonical(value) {
  if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']';
@@ -17,16 +25,8 @@ function validate(kind,q) {return decodeRequest(kind,Buffer.from(JSON.stringify(
  * clock supplies UTC for reporting and monotonic time for freshness. */
 export function openStore(databasePath,{beforeCommit=()=>{},clock=systemClock}={}) {
  const db=new DatabaseSync(databasePath);
- db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
- CREATE TABLE IF NOT EXISTS worlds(world_id TEXT PRIMARY KEY,server_id TEXT NOT NULL,active_epoch TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS epochs(world_id TEXT NOT NULL,epoch TEXT NOT NULL,retired INTEGER NOT NULL DEFAULT 0,cursor TEXT NOT NULL DEFAULT '0',watermark TEXT NOT NULL DEFAULT '0',ready INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(world_id,epoch),FOREIGN KEY(world_id) REFERENCES worlds(world_id));
- CREATE TABLE IF NOT EXISTS connections(connection_id TEXT PRIMARY KEY,world_id TEXT NOT NULL,epoch TEXT NOT NULL,active INTEGER NOT NULL,FOREIGN KEY(world_id,epoch) REFERENCES epochs(world_id,epoch));
- CREATE TABLE IF NOT EXISTS receipts(world_id TEXT NOT NULL,epoch TEXT NOT NULL,kind TEXT NOT NULL,receipt_key TEXT NOT NULL,payload TEXT NOT NULL,reply TEXT,PRIMARY KEY(world_id,epoch,kind,receipt_key),FOREIGN KEY(world_id,epoch) REFERENCES epochs(world_id,epoch));
- CREATE TABLE IF NOT EXISTS constructors(world_id TEXT NOT NULL,epoch TEXT NOT NULL,entity_id TEXT NOT NULL,row_json TEXT NOT NULL,PRIMARY KEY(world_id,epoch,entity_id),FOREIGN KEY(world_id,epoch) REFERENCES epochs(world_id,epoch));
- CREATE TABLE IF NOT EXISTS snapshots(world_id TEXT NOT NULL,epoch TEXT NOT NULL,snapshot_id TEXT NOT NULL,commit_json TEXT,PRIMARY KEY(world_id,epoch,snapshot_id),FOREIGN KEY(world_id,epoch) REFERENCES epochs(world_id,epoch));
- CREATE TABLE IF NOT EXISTS snapshot_chunks(world_id TEXT NOT NULL,epoch TEXT NOT NULL,snapshot_id TEXT NOT NULL,chunk_index INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(world_id,epoch,snapshot_id,chunk_index),FOREIGN KEY(world_id,epoch,snapshot_id) REFERENCES snapshots(world_id,epoch,snapshot_id));
- CREATE TABLE IF NOT EXISTS commands(command_id TEXT PRIMARY KEY,world_id TEXT NOT NULL,epoch TEXT NOT NULL,command_json TEXT NOT NULL,expires_at INTEGER NOT NULL,status TEXT,FOREIGN KEY(world_id,epoch) REFERENCES epochs(world_id,epoch));
- CREATE TABLE IF NOT EXISTS sync_metadata(world_id TEXT PRIMARY KEY,revision TEXT NOT NULL,last_sync_at INTEGER,FOREIGN KEY(world_id) REFERENCES worlds(world_id));`);
+ db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
+ migrate(db);
  const freshness=createFreshness(clock);
  const get=(sql,...args)=>db.prepare(sql).get(...args);
  const all=(sql,...args)=>db.prepare(sql).all(...args);
@@ -60,32 +60,7 @@ export function openStore(databasePath,{beforeCommit=()=>{},clock=systemClock}={
  transaction(()=>{
   for(const w of all("SELECT world_id FROM worlds WHERE active_epoch<>'' AND world_id NOT IN (SELECT world_id FROM sync_metadata)"))run('INSERT INTO sync_metadata VALUES(?,?,NULL)',w.world_id,randomUUID());
  });
- function putRow(q,row) {
-  run('INSERT INTO constructors VALUES(?,?,?,?) ON CONFLICT(world_id,epoch,entity_id) DO UPDATE SET row_json=excluded.row_json',q.worldId,q.epoch,row.entityId,JSON.stringify(row));
- }
- function readState(binding,query,cursor) {
-  const base={protocol:1,serverId:binding.serverId,worldId:binding.worldId};
-  const empty={locations:[],coordinateSystem:'unreal_cm',returnedCount:0,hasMore:false,nextCursor:null};
-  const w=get('SELECT * FROM worlds WHERE world_id=?',binding.worldId);
-  const m=get('SELECT * FROM sync_metadata WHERE world_id=?',binding.worldId);
-  if(!w||w.server_id!==binding.serverId||w.active_epoch===''||!m) {
-   if(cursor)throw new ProtocolError('state_changed',409);
-   return {...base,revision:null,epoch:null,status:'unavailable',reason:'no_baseline',lastSyncAt:null,evaluatedAt:clock.utcNow(),totalCount:null,...empty};
-  }
-  if(cursor&&cursor.revision!==m.revision)throw new ProtocolError('state_changed',409);
-  const e=get('SELECT ready FROM epochs WHERE world_id=? AND epoch=?',binding.worldId,w.active_epoch);
-  // A pending snapshot for the active epoch is persisted, so it also survives restart.
-  const status=e.ready?freshness.evaluate(binding.worldId,m.last_sync_at):{status:'last_known',reason:'resynchronizing',evaluatedAt:clock.utcNow()};
-  const totalCount=get('SELECT count(*) AS n FROM constructors WHERE world_id=? AND epoch=?',binding.worldId,w.active_epoch).n;
-  const state={...base,revision:m.revision,epoch:w.active_epoch,...status,lastSyncAt:m.last_sync_at,totalCount,...empty};
-  if(!query.includeLocations)return state;
-  const rows=all('SELECT entity_id,row_json FROM constructors WHERE world_id=? AND epoch=? AND entity_id>? ORDER BY entity_id LIMIT ?',binding.worldId,w.active_epoch,cursor?.after??'',query.limit+1);
-  const page=rows.slice(0,query.limit),hasMore=rows.length>query.limit;
-  state.locations=page.map(r=>({entityId:r.entity_id,position:JSON.parse(r.row_json).transform.position}));
-  state.returnedCount=page.length;state.hasMore=hasMore;
-  state.nextCursor=hasMore?encodeCursor(binding.worldId,m.revision,page.at(-1).entity_id):null;
-  return state;
- }
+ const reader={get,all,evaluate:(worldId,lastSyncAt)=>freshness.evaluate(worldId,lastSyncAt),now:()=>clock.utcNow()};
  return {
   hello(input,nowMs) {
    const q=validate('hello',input);let recovering=false;
@@ -161,8 +136,8 @@ export function openStore(databasePath,{beforeCommit=()=>{},clock=systemClock}={
      run("UPDATE commands SET status='expired' WHERE world_id=? AND epoch<>? AND status IS NULL",q.worldId,q.epoch);
      run('UPDATE worlds SET active_epoch=? WHERE world_id=?',q.epoch,q.worldId);
     }
-    run('DELETE FROM constructors WHERE world_id=? AND epoch=?',q.worldId,q.epoch);
-    for(const row of rows)putRow(q,row);
+    clearBuildables(db,q.worldId,q.epoch);
+    for(const row of rows)putBuildable(db,q.worldId,q.epoch,row);
     run('UPDATE epochs SET cursor=?,watermark=?,ready=1 WHERE world_id=? AND epoch=?',q.watermark,q.watermark,q.worldId,q.epoch);
     // Snapshot recovery covers history; pending greetings must not masquerade as fresh placements.
     for(const c of all('SELECT * FROM commands WHERE world_id=? AND epoch=? AND status IS NULL',q.worldId,q.epoch)) {
@@ -188,13 +163,9 @@ export function openStore(databasePath,{beforeCommit=()=>{},clock=systemClock}={
      const payload=canonical(event),old=receipt(q,'event',event.seq,payload);
      if(old)continue;
      if(seq!==cursor+1n)conflict('sequence_gap',{expectedSeq:String(cursor+1n)});
-     if(event.type==='constructor.upsert')putRow(q,event.row);
-     else run('DELETE FROM constructors WHERE world_id=? AND epoch=? AND entity_id=?',q.worldId,q.epoch,event.entityId);
+     if(event.type==='buildable.upsert')putBuildable(db,q.worldId,q.epoch,event.row);
+     else deleteBuildable(db,q.worldId,q.epoch,event.entityId);
      remember(q,'event',event.seq,payload);cursor=seq;mutated=true;
-     if(event.type==='constructor.upsert'&&event.origin==='placed') {
-      const command={commandId:`${q.worldId}/${q.epoch}/${event.seq}/chat`,causalSeq:event.seq,type:'chat.send',text:`Foreman bridge: constructor recorded (event ${event.seq}).`,expiresAt:nowMs+30000};
-      run('INSERT INTO commands VALUES(?,?,?,?,?,NULL)',command.commandId,q.worldId,q.epoch,JSON.stringify(command),command.expiresAt);
-     }
     }
     for(const result of q.commandResults)run('UPDATE commands SET status=? WHERE command_id=? AND world_id=? AND epoch=? AND status IS NULL',result.status,result.commandId,q.worldId,q.epoch);
     run("UPDATE commands SET status='expired' WHERE world_id=? AND epoch=? AND expires_at<=? AND status IS NULL",q.worldId,q.epoch,nowMs);
@@ -210,21 +181,28 @@ export function openStore(databasePath,{beforeCommit=()=>{},clock=systemClock}={
    freshness.markSynchronized(q.worldId);
    return result;
   },
+  /** Queue an in-game chat line for the epoch (plumbing for the future in-game foreman; no
+   * receiver flow calls it yet). Same validation and fixed 30 s lifetime as every command. */
+  queueChat({worldId,epoch,causalSeq,text},nowMs) {
+   const command={commandId:`${worldId}/${epoch}/${causalSeq}/chat`,causalSeq,type:'chat.send',text,expiresAt:nowMs+30000};
+   validateCommand(command,{worldId,epoch});
+   return transaction(()=>{run('INSERT INTO commands VALUES(?,?,?,?,?,NULL)',command.commandId,worldId,epoch,JSON.stringify(command),command.expiresAt);return command;});
+  },
   /** One consistent read of committed state for the configured binding; staged rows are never visible. */
-  queryConstructors(binding,input) {
-   const query=validateQuery(input),cursor=query.cursor===undefined?undefined:decodeCursor(query.cursor);
+  queryBuildables(binding,input) {
+   const query=validateBuildablesQuery(input),cursor=query.cursor===undefined?undefined:decodeCursor(query.cursor);
    if(cursor&&cursor.worldId!==binding.worldId)throw new ProtocolError('invalid_cursor',400);
    let begun=false;
    try {
     db.exec('BEGIN');begun=true;
-    const state=readState(binding,query,cursor);
+    const state=readBuildables(reader,binding,query,cursor);
     db.exec('COMMIT');begun=false;return state;
    } catch(error) {
     if(begun) {try{db.exec('ROLLBACK');}catch{/* Preserve original failure. */}}
     if(error instanceof ProtocolError)throw error;throw new ProtocolError('storage_unavailable',503);
    }
   },
-  current(worldId) {return all('SELECT c.row_json FROM constructors c JOIN worlds w ON c.world_id=w.world_id AND c.epoch=w.active_epoch WHERE c.world_id=? ORDER BY c.entity_id',worldId).map(r=>JSON.parse(r.row_json));},
+  current(worldId) {return all('SELECT b.row_json FROM buildables b JOIN worlds w ON b.world_id=w.world_id AND b.epoch=w.active_epoch WHERE b.world_id=? ORDER BY b.entity_id',worldId).map(r=>JSON.parse(r.row_json));},
   close() {db.close();}
  };
 }

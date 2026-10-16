@@ -24,14 +24,14 @@ export function loadConfig(absolutePath) {
 }
 
 const digest=value=>createHash('sha256').update(value).digest();
-const QUERY_ROUTE='/query/v1/constructors';
+const QUERY_ROUTE='/query/v2/buildables';
 
 /** HTTPS boundary: authenticate before buffering and expose only classified errors.
  * The producer credential reaches only ingestion routes; the optional query
  * credential reaches only the read-only query route. */
 export function createReceiver(config,store) {
  const tokenHash=digest(config.token),queryHash=config.queryToken===undefined?undefined:digest(config.queryToken);
- const routes=new Map([['/v1/hello',['hello','hello']],['/v1/snapshot/chunk',['snapshot/chunk','stageChunk']],['/v1/snapshot/commit',['snapshot/commit','commitSnapshot']],['/v1/exchange',['exchange','exchange']]]);
+ const routes=new Map([['/v2/hello',['hello','hello']],['/v2/snapshot/chunk',['snapshot/chunk','stageChunk']],['/v2/snapshot/commit',['snapshot/commit','commitSnapshot']],['/v2/exchange',['exchange','exchange']]]);
  const timeout=config.requestTimeoutMs??5000;
  const server=createServer({key:config.key,cert:config.cert,minVersion:'TLSv1.2',maxHeaderSize:8192,requestTimeout:timeout,headersTimeout:timeout,handshakeTimeout:timeout},(req,res)=>{
   let finished=false,timer;
@@ -60,7 +60,7 @@ export function createReceiver(config,store) {
     try {
      let input;
      try {input=JSON.parse(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks,length)));} catch {throw new ProtocolError('invalid_query');}
-     const result=store.queryConstructors({serverId:config.serverId,worldId:config.worldId},input);
+     const result=store.queryBuildables({serverId:config.serverId,worldId:config.worldId},input);
      if(Buffer.byteLength(JSON.stringify(result))>MAX_RESPONSE_BYTES)return reply(503,{error:'response_too_large'});
      reply(200,result);
     } catch(error) {
