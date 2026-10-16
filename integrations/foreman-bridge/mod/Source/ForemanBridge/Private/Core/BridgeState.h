@@ -1,3 +1,5 @@
+// The game-thread projection of tracked buildables plus the sequenced, bounded
+// event history Delivery replays to the receiver.
 #pragma once
 #include "BridgeTypes.h"
 #include <deque>
@@ -12,6 +14,9 @@ public:
     void Seed(std::vector<Row> rows);
     std::optional<Event> Upsert(Row row, Origin origin);
     std::optional<Event> Remove(std::string entityId);
+    /** Upsert with Origin::Reconfigured, but only for an entity already in the
+     *  projection whose row changed; otherwise nothing is emitted. */
+    std::optional<Event> Reconfigure(Row row);
     Snapshot Capture(std::string snapshotId);
     ReplayResult ReplayAfter(uint64_t cursor, size_t maxEvents = 10000) const;
     bool Acknowledge(uint64_t cursor);

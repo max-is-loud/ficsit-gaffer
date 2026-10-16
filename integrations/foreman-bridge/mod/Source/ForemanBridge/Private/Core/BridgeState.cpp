@@ -1,8 +1,18 @@
+// The game-thread projection and bounded event history; see BridgeState.h.
 #include "BridgeState.h"
 #include <algorithm>
 
 namespace foreman {
 namespace {
+// The variable-length strings inside a configuration, for retention accounting.
+std::vector<const std::string*> ConfigPaths(const Config& config) {
+    std::vector<const std::string*> paths;
+    const auto keep = [&paths](const std::optional<std::string>& text) { if (text) { paths.push_back(&*text); } };
+    if (const auto* made = std::get_if<ManufacturerConfig>(&config)) { keep(made->recipe); }
+    if (const auto* mined = std::get_if<ExtractorConfig>(&config)) { keep(mined->resource); keep(mined->node); }
+    if (const auto* burned = std::get_if<GeneratorConfig>(&config)) { keep(burned->fuel); }
+    return paths;
+}
 // Covers escaped UTF-8 (at most six bytes per source byte), DTO storage,
 // deque bookkeeping and fixed JSON fields. Saturate rather than wrap.
 size_t EventBytes(const Event& event) {
@@ -16,6 +26,7 @@ size_t EventBytes(const Event& event) {
     add(event.entityId);
     if (event.row) {
         add(event.row->entityId); add(event.row->actorPath); add(event.row->classPath);
+        for (const auto* path : ConfigPaths(event.row->config)) { add(*path); }
         if (event.row->player) {
             add(event.row->player->platform); add(event.row->player->accountId); add(event.row->player->displayName);
         }
@@ -40,6 +51,10 @@ std::optional<Event> State::Upsert(Row row, Origin origin) {
     const auto id = row.entityId;
     rows_.insert_or_assign(id,row);
     return Emit(Event{0,EventType::Upsert,id,std::move(row),origin});
+}
+std::optional<Event> State::Reconfigure(Row row) {
+    if (rows_.find(row.entityId) == rows_.end()) { return std::nullopt; }
+    return Upsert(std::move(row), Origin::Reconfigured);
 }
 std::optional<Event> State::Remove(std::string entityId) {
     seeded_ = true;

@@ -1,4 +1,4 @@
-param([ValidateSet('State','Delivery')][string]$Case = 'State')
+param([ValidateSet('State','Delivery','Recapture')][string]$Case = 'State')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path $PSScriptRoot -Parent
@@ -6,7 +6,7 @@ $output = Join-Path $root 'out\core-tests'
 New-Item -ItemType Directory -Force $output | Out-Null
 $vcvars = 'D:\Modding\Toolchains\VS2022\VC\Auxiliary\Build\vcvarsall.bat'
 $core = Join-Path $root 'Source\ForemanBridge\Private\Core'
-$sources = @((Join-Path $root 'Tests\CoreTests.cpp'), (Join-Path $core 'BridgeState.cpp'), (Join-Path $core 'BridgeDelivery.cpp'))
+$sources = @((Join-Path $root 'Tests\CoreTests.cpp'), (Join-Path $core 'BridgeState.cpp'), (Join-Path $core 'BridgeDelivery.cpp'), (Join-Path $core 'RecaptureQueue.cpp'))
 $sourceArgs = ($sources | ForEach-Object { '"' + $_ + '"' }) -join ' '
 $exe = Join-Path $output 'CoreTests.exe'
 $batch = Join-Path $output 'compile.cmd'

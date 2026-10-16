@@ -1,5 +1,6 @@
 #include "BridgeState.h"
 #include "BridgeDelivery.h"
+#include "RecaptureQueue.h"
 #include <cassert>
 #include <iostream>
 #include <limits>
@@ -87,15 +88,34 @@ static void snapshot_ack_clears_only_covered_gap() {
     auto replacement=state.Capture("replacement"); assert(!state.ConfirmSnapshot(snapshotId,frozen.watermark));
     assert(state.ConfirmSnapshot("replacement",replacement.watermark)); assert(!state.ReplayAfter(7).gap);
 }
+static void reconfigure_skips_untracked_and_unchanged() {
+    State state(epoch, {}); auto a = MakeRow(); state.Seed({a});
+    // drain skips untracked entity: an unknown id emits nothing and allocates no sequence.
+    assert(!state.Reconfigure(MakeRow("30000000-0000-4000-8000-000000000099")) && state.Latest() == 0 && state.Count() == 1);
+    assert(!state.Reconfigure(a) && state.Latest() == 0);
+    std::get<ManufacturerConfig>(a.config).recipe = "/Game/Recipes/Recipe_IronPlate.Recipe_IronPlate_C";
+    auto changed = state.Reconfigure(a);
+    assert(changed && changed->seq == 1 && changed->origin == Origin::Reconfigured && changed->type == EventType::Upsert);
+    assert(state.Capture(snapshotId).rows[0] == a);
+}
+static void config_strings_count_towards_retained_bytes() {
+    State plain(epoch, {}); State configured(epoch, {}); auto a = MakeRow(); auto b = MakeRow();
+    std::get<ManufacturerConfig>(b.config).recipe = std::string(4096, 'r');
+    plain.Upsert(a, Origin::Placed); configured.Upsert(b, Origin::Placed);
+    assert(configured.RetainedBytes() >= plain.RetainedBytes() + 4096*6);
+}
 static int TestDelivery();
+static int TestRecapture();
 int main(int argc, char** argv) {
     if(argc==2 && std::string(argv[1])=="Delivery") return TestDelivery();
+    if(argc==2 && std::string(argv[1])=="Recapture") return TestRecapture();
     if(argc!=2 || std::string(argv[1])!="State") { std::cerr<<"Unknown suite\n"; return 2; }
 #define RUN(test) test(); std::cout << #test << " PASS\n";
     RUN(seed_upsert_removal) RUN(snapshot_is_immutable) RUN(overflow_requires_snapshot)
     RUN(byte_limit_requires_snapshot) RUN(ack_releases_only_prefix) RUN(new_epoch_starts_empty)
     RUN(sequence_does_not_wrap) RUN(snapshot_ack_clears_only_covered_gap)
-    std::cout<<"PASS: 8 State cases\n";
+    RUN(reconfigure_skips_untracked_and_unchanged) RUN(config_strings_count_towards_retained_bytes)
+    std::cout<<"PASS: 10 State cases\n";
 }
 struct DeliveryHarness {
     State state;
@@ -184,4 +204,36 @@ static int TestDelivery() {
     RUN(delivery_snapshot_replay_and_overflow) RUN(delivery_conflict_rehandshakes)
     RUN(delivery_command_lifecycle) RUN(delivery_clock_jump_retains_evidence) RUN(delivery_status_reports_retry_until_valid_success)
     std::cout<<"PASS: 8 Delivery cases\n";return 0;
+}
+static void recapture_deduplicates_repeated_requests() {
+    RecaptureQueue queue(64);
+    for (int i=0; i<100; ++i) { queue.Request("a", MonotonicTime(0)); }
+    assert(queue.Pending() == 1);
+    auto drained = queue.Drain(MonotonicTime(0)); assert(drained.size() == 1 && drained[0] == "a" && queue.Pending() == 0);
+}
+static void recapture_keeps_earliest_due_time() {
+    RecaptureQueue queue(64); queue.Request("a", MonotonicTime(5000)); queue.Request("a", MonotonicTime(1000));
+    assert(queue.Drain(MonotonicTime(999)).empty());
+    assert(queue.Drain(MonotonicTime(1000)).size() == 1);
+}
+static void recapture_holds_entries_not_yet_due() {
+    RecaptureQueue queue(64); queue.Request("late", MonotonicTime(2000)); queue.Request("now", MonotonicTime(0));
+    auto drained = queue.Drain(MonotonicTime(10)); assert(drained == std::vector<std::string>{"now"} && queue.Pending() == 1);
+}
+static void recapture_caps_each_drain_in_due_order() {
+    RecaptureQueue queue(2);
+    for (int i=4; i>=0; --i) { queue.Request("e"+std::to_string(i), MonotonicTime(i)); }
+    assert((queue.Drain(MonotonicTime(10)) == std::vector<std::string>{"e0","e1"}));
+    assert((queue.Drain(MonotonicTime(10)) == std::vector<std::string>{"e2","e3"}));
+    assert((queue.Drain(MonotonicTime(10)) == std::vector<std::string>{"e4"}));
+}
+static void recapture_forget_removes_pending() {
+    RecaptureQueue queue(64); queue.Request("a", MonotonicTime(0)); queue.Forget("a"); queue.Forget("absent");
+    assert(queue.Pending() == 0 && queue.Drain(MonotonicTime(0)).empty());
+}
+static int TestRecapture() {
+    RUN(recapture_deduplicates_repeated_requests) RUN(recapture_keeps_earliest_due_time)
+    RUN(recapture_holds_entries_not_yet_due) RUN(recapture_caps_each_drain_in_due_order) RUN(recapture_forget_removes_pending)
+    std::cout<<"PASS: 5 Recapture cases\n";
+    return 0;
 }
