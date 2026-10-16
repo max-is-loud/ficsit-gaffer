@@ -35,7 +35,7 @@ export class AnthropicProvider implements LlmProvider {
       // breakpoints — one on the tool list, one on system — mean a system-prompt
       // change still reuses the tools cache.
       system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
-      messages: toAnthropicMessages(req.messages),
+      messages: markLastMessageCacheable(toAnthropicMessages(req.messages)),
       tools: cacheableTools(req.tools),
     });
 
@@ -111,6 +111,32 @@ function cacheableTools(tools: LlmRequest['tools']): Anthropic.Tool[] {
     last.cache_control = { type: 'ephemeral' };
   }
   return mapped;
+}
+
+/**
+ * Puts a cache breakpoint on the last block of the final (user) message. A turn's tool rounds
+ * re-send the whole growing message list, so without it every round pays full price for the
+ * conversation so far; with it each round reads the previous round's prefix from the cache.
+ * Cache lookups scan back at most 20 blocks from a breakpoint, so a round with more than about
+ * nine tool calls may miss once and write afresh. The input is not mutated.
+ */
+export function markLastMessageCacheable(
+  messages: Anthropic.MessageParam[],
+): Anthropic.MessageParam[] {
+  const last = messages.at(-1);
+  if (last === undefined || last.role !== 'user') {
+    return messages;
+  }
+  const blocks: Anthropic.ContentBlockParam[] =
+    typeof last.content === 'string'
+      ? [{ type: 'text', text: last.content }]
+      : last.content.map((block) => ({ ...block }));
+  const tail = blocks.at(-1);
+  if (tail === undefined) {
+    return messages;
+  }
+  Object.assign(tail, { cache_control: { type: 'ephemeral' } });
+  return [...messages.slice(0, -1), { role: 'user', content: blocks }];
 }
 
 /**

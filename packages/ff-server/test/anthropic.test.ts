@@ -2,7 +2,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BridgeQueryError } from '../src/bridge/types.js';
-import { AnthropicProvider } from '../src/llm/anthropic.js';
+import { AnthropicProvider, markLastMessageCacheable } from '../src/llm/anthropic.js';
 import { runChat } from '../src/llm/chat.js';
 import type { LlmStreamEvent } from '../src/llm/types.js';
 import type { McpGateway } from '../src/mcp/client.js';
@@ -203,12 +203,17 @@ describe('Anthropic continuation through runChat', () => {
             tool_use_id: 'power-1',
             content: 'Power unavailable',
             is_error: true,
+            cache_control: { type: 'ephemeral' },
           },
         ],
       },
     ]);
+    // Only the newest message carries the breakpoint; earlier rounds are replayed unmarked.
+    const replayed = structuredClone(wire.requests[1]?.messages ?? []);
+    const earlierResults = replayed.at(-1)?.content as Anthropic.ToolResultBlockParam[];
+    delete earlierResults[1]?.cache_control;
     expect(wire.requests[2]?.messages).toEqual([
-      ...(wire.requests[1]?.messages ?? []),
+      ...replayed,
       { role: 'assistant', content: originalSecond },
       {
         role: 'user',
@@ -218,6 +223,7 @@ describe('Anthropic continuation through runChat', () => {
             tool_use_id: 'recipe-2',
             content: 'Recipe found',
             is_error: false,
+            cache_control: { type: 'ephemeral' },
           },
         ],
       },
@@ -226,6 +232,34 @@ describe('Anthropic continuation through runChat', () => {
     expect(wire.requests[2]?.tools).toEqual(wire.requests[0]?.tools);
     expect(first).toEqual(originalFirst);
     expect(second).toEqual(originalSecond);
+  });
+
+  it('marks a plain-text last message as cacheable by turning it into a text block', async () => {
+    wire.responses.push(response([{ type: 'text', text: 'Hi.', citations: null }]));
+    await chat();
+    expect(wire.requests[0]?.messages).toEqual([
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Check my saved factory.', cache_control: { type: 'ephemeral' } },
+        ],
+      },
+    ]);
+  });
+
+  it('stays within four cache breakpoints per request', async () => {
+    wire.responses.push(
+      response(
+        [{ type: 'tool_use', id: 'r1', name: 'get_recipe', input: {}, caller: { type: 'direct' } }],
+        'tool_use',
+      ),
+      response([{ type: 'text', text: 'Done.', citations: null }]),
+    );
+    await chat();
+    for (const request of wire.requests) {
+      const breakpoints = JSON.stringify(request).split('"cache_control"').length - 1;
+      expect(breakpoints).toBeLessThanOrEqual(4);
+    }
   });
 
   it('carries the live tool definition and its error result in native format', async () => {
@@ -336,10 +370,36 @@ describe('Anthropic continuation through runChat', () => {
       {
         role: 'user',
         content: [
-          { type: 'tool_result', tool_use_id: 'r1', content: 'Recipe found', is_error: false },
+          {
+            type: 'tool_result',
+            tool_use_id: 'r1',
+            content: 'Recipe found',
+            is_error: false,
+            cache_control: { type: 'ephemeral' },
+          },
         ],
       },
     ]);
     expect(events).toEqual([{ type: 'text', delta: 'Done.' }]);
+  });
+});
+
+describe('markLastMessageCacheable', () => {
+  it('does not mutate the messages it is given', () => {
+    const messages: Anthropic.MessageParam[] = [
+      {
+        role: 'user',
+        content: [{ type: 'tool_result', tool_use_id: 'a', content: 'x', is_error: false }],
+      },
+    ];
+    const before = structuredClone(messages);
+    const marked = markLastMessageCacheable(messages);
+    expect(messages).toEqual(before);
+    expect(marked).not.toBe(messages);
+  });
+
+  it('leaves a conversation ending in an assistant message alone', () => {
+    const messages: Anthropic.MessageParam[] = [{ role: 'assistant', content: 'Hello' }];
+    expect(markLastMessageCacheable(messages)).toBe(messages);
   });
 });
