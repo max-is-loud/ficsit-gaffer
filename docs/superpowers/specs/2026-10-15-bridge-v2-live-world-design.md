@@ -231,9 +231,12 @@ sample is superseded by the next. Strings follow v1's player-string limits.
 
 ### Storage
 
-- `buildables(world_id, epoch, entity_id, category, class_path, recipe,
-  row_json)` replaces `constructors`; indexes on category, class path and recipe
-  within world/epoch.
+- `buildables(world_id, epoch, entity_id, category, class_name, recipe_name,
+  row_json)` replaces `constructors`; indexes on category, class name and recipe
+  name within world/epoch. A **class name** is the final `.`-separated segment
+  of a class path (`…/Build_SmelterMk1.Build_SmelterMk1_C` → `Build_SmelterMk1_C`)
+  — the key `sf-game-data` uses — so ff-server can filter without knowing asset
+  paths. Rows keep the full paths.
 - Schema version via `PRAGMA user_version`. Opening a v1 database wipes the
   ingestion state so the world reads `no_baseline` and the game re-snapshots on
   its next hello. No history exists to lose.
@@ -242,7 +245,7 @@ sample is superseded by the next. Strings follow v1's player-string limits.
 
 ```ts
 type BuildablesQuery = {
-  filter?: { category?: string; classPath?: string; recipe?: string }; // exact, AND-combined
+  filter?: { category?: string; className?: string; recipeName?: string }; // exact class names, AND-combined
   groupBy?: 'category' | 'class' | 'recipe';
   from?: [number, number, number];   // cm; distance mode
   includeRows?: boolean;             // default false
@@ -255,7 +258,8 @@ Response: v1's `protocol`, binding, `revision`, `epoch`, `status`, `reason`,
 `lastSyncAt`, `evaluatedAt`, plus:
 
 - `totalCount` — exact count matching the filter for the revision.
-- `groups: [{ key, count }]` when `groupBy` is set.
+- `groups: [{ key, count }]` when `groupBy` is set; `class`/`recipe` keys are
+  class names, and buildables with no recipe group under `key: null`.
 - `rows: [{ entityId, category, classPath, position, config, distanceMetres? }]`.
 - `coordinateSystem: 'unreal_cm'`, `returnedCount`, `hasMore`, `nextCursor`.
 
