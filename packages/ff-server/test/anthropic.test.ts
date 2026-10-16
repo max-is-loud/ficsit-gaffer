@@ -335,6 +335,39 @@ describe('Anthropic continuation through runChat', () => {
     expect(result.rawStopReason).toBe('end_turn');
   });
 
+  it('sends each context block as its own system block, the last one cached', async () => {
+    wire.responses.push(response([{ type: 'text', text: 'Hi.', citations: null }]));
+    await new AnthropicProvider('test-key').runTurn(
+      {
+        system: 'Foreman',
+        contextBlocks: ['Save snapshot', 'Live readings'],
+        model: 'm',
+        maxTokens: 10,
+        tools: [{ name: 'get_recipe', description: 'Recipe', inputSchema: { type: 'object' } }],
+        messages: [{ role: 'user', content: 'Hi' }],
+      },
+      () => {},
+    );
+    // tools + persona + last context block + last message: exactly the four allowed.
+    expect(JSON.stringify(wire.requests[0]).split('"cache_control"').length - 1).toBe(4);
+    expect(wire.requests[0]?.system).toEqual([
+      { type: 'text', text: 'Foreman', cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: 'Save snapshot' },
+      { type: 'text', text: 'Live readings', cache_control: { type: 'ephemeral' } },
+    ]);
+  });
+
+  it('sends the persona alone when there are no context blocks', async () => {
+    wire.responses.push(response([{ type: 'text', text: 'Hi.', citations: null }]));
+    await new AnthropicProvider('test-key').runTurn(
+      { system: 'Foreman', model: 'm', maxTokens: 10, tools: [], messages: [] },
+      () => {},
+    );
+    expect(wire.requests[0]?.system).toEqual([
+      { type: 'text', text: 'Foreman', cache_control: { type: 'ephemeral' } },
+    ]);
+  });
+
   it('still translates neutral assistant turns when native continuation is absent', async () => {
     wire.responses.push(response([{ type: 'text', text: 'Done.', citations: null }]));
     const events: LlmStreamEvent[] = [];

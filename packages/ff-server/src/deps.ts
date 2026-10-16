@@ -2,6 +2,7 @@
 // its routers.
 
 import type { Auth } from './auth.js';
+import type { SaveSummaryCache } from './context/saveSummaryCache.js';
 import type { ServerConfig } from './config.js';
 import type { LlmProviderFactory } from './llm/provider.js';
 import type { SummaryService } from './llm/summary.js';
@@ -20,6 +21,8 @@ export interface AppDeps {
   foremen: ForemanService;
   playthroughs: PlaythroughService;
   saves: SaveService;
+  /** Rendered save summaries for the chat context; absent → no save snapshot block. */
+  saveSummaries?: SaveSummaryCache;
   workOrders: WorkOrderService;
   mcp: McpGateway;
   /** Maintains each playthrough's running summary in the background. */

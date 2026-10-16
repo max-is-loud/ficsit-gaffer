@@ -17,6 +17,7 @@ import { logger } from './logger.js';
 import { loadSystemPromptTemplate } from './anthropic/systemPrompt.js';
 import { createProvider } from './llm/factory.js';
 import { SummaryService } from './llm/summary.js';
+import { SaveSummaryCache } from './context/saveSummaryCache.js';
 import { McpHttpClient } from './mcp/client.js';
 import { ForemanService } from './services/foremanService.js';
 import { PlaythroughService } from './services/playthroughService.js';
@@ -78,6 +79,7 @@ async function main(): Promise<void> {
     foremen: new ForemanService(prisma),
     playthroughs,
     saves: new SaveService(prisma, mcp, config.saveDataDir, workOrders),
+    saveSummaries: new SaveSummaryCache(mcp),
     workOrders,
     mcp,
     summary: new SummaryService(

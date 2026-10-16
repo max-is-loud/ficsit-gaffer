@@ -184,7 +184,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     const stream = await this.client.chat.completions.create({
       model: req.model,
       ...tokenLimitParam(req.model, req.maxTokens),
-      messages: toOpenAiMessages(req.system, req.messages),
+      messages: toOpenAiMessages([req.system, ...(req.contextBlocks ?? [])], req.messages),
       tools: req.tools.map((tool) => ({
         type: 'function' as const,
         function: { name: tool.name, description: tool.description, parameters: tool.inputSchema },
@@ -210,14 +210,18 @@ export class OpenAiCompatibleProvider implements LlmProvider {
   }
 }
 
-/** Translates neutral history to OpenAI chat messages (system prompt first). */
+/**
+ * Translates neutral history to OpenAI chat messages, after one system message per system text
+ * (the persona, then each context block) so the provider's prefix cache keeps the persona.
+ */
 function toOpenAiMessages(
-  system: string,
+  systemTexts: string[],
   messages: NeutralMessage[],
 ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-  const out: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: 'system', content: system },
-  ];
+  const out: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = systemTexts.map((content) => ({
+    role: 'system',
+    content,
+  }));
   for (const message of messages) {
     if (message.role === 'user') {
       out.push({ role: 'user', content: message.content });

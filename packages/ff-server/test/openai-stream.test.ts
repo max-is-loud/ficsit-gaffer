@@ -178,6 +178,30 @@ describe('consumeOpenAiStream usage', () => {
   });
 });
 
+describe('OpenAI context blocks', () => {
+  it('sends each context block as a system message after the persona', async () => {
+    wire.requests.length = 0;
+    await new OpenAiCompatibleProvider('key').runTurn(
+      {
+        system: 'Foreman',
+        contextBlocks: ['Save snapshot'],
+        messages: [{ role: 'user', content: 'Hi' }],
+        tools: [],
+        model: 'gpt-4.1',
+        maxTokens: 10,
+      },
+      () => {},
+    );
+    const messages = wire.requests[0]?.['messages'];
+    wire.requests.length = 0;
+    expect(messages).toEqual([
+      { role: 'system', content: 'Foreman' },
+      { role: 'system', content: 'Save snapshot' },
+      { role: 'user', content: 'Hi' },
+    ]);
+  });
+});
+
 describe('tokenLimitParam', () => {
   it('uses max_completion_tokens for GPT-5 and o-series reasoning models', () => {
     expect(tokenLimitParam('gpt-5-mini', 4096)).toEqual({ max_completion_tokens: 4096 });

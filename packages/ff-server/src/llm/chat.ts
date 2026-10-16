@@ -37,6 +37,8 @@ export interface ChatRequest {
   promptContext: PromptContext;
   /** Absolute path of the playthrough's save, injected into save-game tools. */
   savePath?: string;
+  /** Context blocks (save snapshot, …) sent after the system prompt on every round. */
+  contextBlocks?: string[];
   /** The LLM provider for this request, already built from the effective config. */
   provider: LlmProvider;
   model: string;
@@ -70,11 +72,7 @@ export async function runChat(
   const system = buildSystemPrompt(deps.systemPromptTemplate, req.promptContext);
   const tools = await assembleTools(deps.mcp, req.playthroughId, deps.liveState);
 
-  const history = await deps.playthroughs.recentMessages(req.playthroughId, deps.historyWindow);
-  const messages: NeutralMessage[] = history.map((message) => ({
-    role: message.role,
-    content: message.content,
-  }));
+  const messages = await loadHistory(deps, req.playthroughId);
 
   let streamedText = '';
   const recorder = new TurnMetricsRecorder();
@@ -87,7 +85,14 @@ export async function runChat(
 
   for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
     const result = await req.provider.runTurn(
-      { system, messages, tools, model: req.model, maxTokens: req.maxTokens },
+      {
+        system,
+        contextBlocks: req.contextBlocks,
+        messages,
+        tools,
+        model: req.model,
+        maxTokens: req.maxTokens,
+      },
       (event) => {
         if (event.type === 'text') {
           streamedText += event.delta;
@@ -124,16 +129,28 @@ export async function runChat(
   return finish(true);
 }
 
+/** The windowed conversation so far, as plain text turns (tool rounds are never persisted). */
+async function loadHistory(deps: ChatDeps, playthroughId: string): Promise<NeutralMessage[]> {
+  const history = await deps.playthroughs.recentMessages(playthroughId, deps.historyWindow);
+  return history.map((message) => ({ role: message.role, content: message.content }));
+}
+
+/** MCP tools the backend calls itself; offering them would only lengthen the tool list. */
+const HOST_INTERNAL_TOOLS = new Set(['describe_save', 'get_save_summary']);
+
 /**
  * Merges the MCP game-data tools with the server-local work-order and live tools.
- * The live tool's name is reserved: an MCP tool of the same name is never offered.
+ * The live tool's name is reserved: an MCP tool of the same name is never offered, and
+ * host-internal tools are not offered either.
  */
 async function assembleTools(
   mcp: McpGateway,
   playthroughId: string,
   liveState: LiveStateService | undefined,
 ): Promise<ToolDefinition[]> {
-  const mcpTools = (await mcp.listTools()).filter((tool) => !isLiveStateTool(tool.name));
+  const mcpTools = (await mcp.listTools()).filter(
+    (tool) => !isLiveStateTool(tool.name) && !HOST_INTERNAL_TOOLS.has(tool.name),
+  );
   return [
     ...mcpTools,
     ...workOrderToolDefinitions(),

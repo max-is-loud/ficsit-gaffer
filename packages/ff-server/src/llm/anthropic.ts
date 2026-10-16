@@ -34,7 +34,7 @@ export class AnthropicProvider implements LlmProvider {
       // is reused across requests and across tool rounds within a turn. Two
       // breakpoints — one on the tool list, one on system — mean a system-prompt
       // change still reuses the tools cache.
-      system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
+      system: systemBlocks(req.system, req.contextBlocks ?? []),
       messages: markLastMessageCacheable(toAnthropicMessages(req.messages)),
       tools: cacheableTools(req.tools),
     });
@@ -93,6 +93,23 @@ export class AnthropicProvider implements LlmProvider {
       .join('')
       .trim();
   }
+}
+
+/**
+ * The persona, then each context block, as system text blocks. The persona keeps its own
+ * breakpoint, so a changed context block (a re-uploaded save) still reuses the cached persona;
+ * the last context block gets the other, caching the whole stable prefix.
+ */
+function systemBlocks(system: string, contextBlocks: string[]): Anthropic.TextBlockParam[] {
+  const blocks: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
+    ...contextBlocks.map((text): Anthropic.TextBlockParam => ({ type: 'text', text })),
+  ];
+  const last = blocks[blocks.length - 1];
+  if (last !== undefined) {
+    last.cache_control = { type: 'ephemeral' };
+  }
+  return blocks;
 }
 
 /**

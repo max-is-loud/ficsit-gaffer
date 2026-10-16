@@ -83,6 +83,12 @@ export interface LlmTurnResult {
 /** A single turn request to a provider. */
 export interface LlmRequest {
   system: string;
+  /**
+   * Per-playthrough context placed after the system prompt, one block per source (save snapshot,
+   * later live readings). Stable within a turn, and kept out of `system` so a change here never
+   * invalidates the cached persona.
+   */
+  contextBlocks?: string[];
   messages: NeutralMessage[];
   tools: ToolDefinition[];
   model: string;

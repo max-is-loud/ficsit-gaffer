@@ -2,14 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { BridgeQueryError, type BridgeClient, type ConstructorQuery } from '../src/bridge/types.js';
 import { runChat, type ChatDeps } from '../src/llm/chat.js';
-import type { LlmProvider } from '../src/llm/provider.js';
 import type { TurnMetrics } from '../src/llm/turnMetrics.js';
-import type { LlmRequest, LlmStreamEvent, LlmTurnResult } from '../src/llm/types.js';
-import type { McpGateway, ToolDefinition, ToolInvocationResult } from '../src/mcp/client.js';
+import type { LlmTurnResult } from '../src/llm/types.js';
+import type { ToolDefinition } from '../src/mcp/client.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
 import { WorkOrderService } from '../src/services/workOrderService.js';
 import { LIVE_CONSTRUCTOR_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
 import type { WorkOrder } from '../src/types.js';
+import { FakeLlmProvider, fakeMcp } from './chatFakes.js';
 import { createTestDb, createTestForeman, createTestUser, type TestDb } from './helpers.js';
 
 let db: TestDb;
@@ -25,44 +25,6 @@ const validWorkOrderInput = {
   buildSteps: [{ title: 'Place constructors' }],
   expectedOutputs: [{ kind: 'infrastructure', description: 'Constructors online and fed.' }],
 };
-
-/** A scripted provider: returns queued turns, emitting their text as a delta. */
-class FakeLlmProvider implements LlmProvider {
-  public readonly requests: LlmRequest[] = [];
-  public constructor(private readonly queue: LlmTurnResult[]) {}
-  public async runTurn(
-    req: LlmRequest,
-    onEvent: (event: LlmStreamEvent) => void,
-  ): Promise<LlmTurnResult> {
-    this.requests.push({ ...req, messages: [...req.messages] });
-    const result = this.queue.shift();
-    if (result === undefined) {
-      throw new Error('FakeLlmProvider: no scripted turn left');
-    }
-    if (result.text.length > 0) {
-      onEvent({ type: 'text', delta: result.text });
-    }
-    return result;
-  }
-  public async complete(): Promise<string> {
-    return '';
-  }
-}
-
-function fakeMcp(): McpGateway & { calls: { name: string; args: Record<string, unknown> }[] } {
-  const calls: { name: string; args: Record<string, unknown> }[] = [];
-  return {
-    gameVersion: '1.2.3.0',
-    calls,
-    listTools: async (): Promise<ToolDefinition[]> => [
-      { name: 'get_recipe', description: 'recipe', inputSchema: { type: 'object' } },
-    ],
-    callTool: async (name, args): Promise<ToolInvocationResult> => {
-      calls.push({ name, args });
-      return { text: 'Iron Plate: 1 Iron Ingot → 1 plate.', isError: false };
-    },
-  };
-}
 
 beforeAll(async () => {
   db = await createTestDb();
@@ -246,6 +208,49 @@ describe('runChat tool-use loop', () => {
       stopReason: 'end_turn',
       hitIterationCap: false,
     });
+  });
+
+  it('passes context blocks to every round and hides host-internal tools', async () => {
+    const playthroughs = new PlaythroughService(db.prisma);
+    const workOrders = new WorkOrderService(db.prisma);
+    const foremanId = await createTestForeman(db.prisma, userId);
+    const playthrough = await playthroughs.create({ userId, foremanId });
+    await playthroughs.appendMessage(playthrough.id, 'user', 'Where am I?');
+    const mcp = fakeMcp();
+    const listed = await mcp.listTools();
+    mcp.listTools = async () => [
+      ...listed,
+      { name: 'describe_save', description: 'host', inputSchema: { type: 'object' } },
+      { name: 'get_save_summary', description: 'host', inputSchema: { type: 'object' } },
+    ];
+    const provider = new FakeLlmProvider([
+      {
+        text: '',
+        toolCalls: [{ id: 't1', name: 'get_recipe', arguments: { name: 'Iron Plate' } }],
+        stopReason: 'tool_use',
+      },
+      { text: 'Here.', toolCalls: [], stopReason: 'stop' },
+    ]);
+    await runChat(
+      {
+        playthroughId: playthrough.id,
+        promptContext: { personality: '', pioneerProfile: '' },
+        contextBlocks: ['## Save snapshot'],
+        provider,
+        model: 'm',
+        maxTokens: 1024,
+      },
+      { systemPromptTemplate: 'Prompt', historyWindow: 20, playthroughs, workOrders, mcp },
+      { text: () => {}, toolUse: () => {}, workOrder: () => {} },
+    );
+    expect(provider.requests.map((request) => request.contextBlocks)).toEqual([
+      ['## Save snapshot'],
+      ['## Save snapshot'],
+    ]);
+    const offered = provider.requests[0]?.tools.map((tool) => tool.name) ?? [];
+    expect(offered).toContain('get_recipe');
+    expect(offered).not.toContain('describe_save');
+    expect(offered).not.toContain('get_save_summary');
   });
 
   it('returns immediately when the first turn has no tool use', async () => {
