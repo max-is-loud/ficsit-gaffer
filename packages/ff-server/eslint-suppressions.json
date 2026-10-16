@@ -17,11 +17,6 @@
       "count": 1
     }
   },
-  "src/llm/chat.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/llm/openai.ts": {
     "complexity": {
       "count": 1

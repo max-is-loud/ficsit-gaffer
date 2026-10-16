@@ -9,18 +9,14 @@ import type { WorkOrder } from '../types.js';
 import { logger } from '../logger.js';
 import { buildSystemPrompt, type PromptContext } from '../anthropic/systemPrompt.js';
 import {
-  handleLiveStateTool,
   isLiveStateTool,
   liveStateToolDefinitions,
   type LiveStateService,
 } from '../tools/liveStateTools.js';
-import {
-  handleWorkOrderTool,
-  isWorkOrderTool,
-  workOrderToolDefinitions,
-} from '../tools/workOrderTools.js';
+import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
 import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
+import { runToolCalls, type ToolOutcome } from './toolRunner.js';
 import type { NeutralMessage, NeutralToolCall } from './types.js';
 
 /** Backing services and settings the chat loop needs (provider-agnostic). */
@@ -113,16 +109,13 @@ export async function runChat(
     }
 
     recorder.recordToolCalls(result.toolCalls);
-    for (const call of result.toolCalls) {
-      events.toolUse(call.name);
-      const outcome = await dispatchTool(req.playthroughId, req.savePath, call, deps, events);
-      messages.push({
-        role: 'tool',
-        toolCallId: call.id,
-        content: outcome.text,
-        isError: outcome.isError,
-      });
-    }
+    const outcomes = await runToolCalls(result.toolCalls, {
+      playthroughId: req.playthroughId,
+      savePath: req.savePath,
+      deps,
+      events,
+    });
+    appendToolResults(messages, result.toolCalls, outcomes);
   }
 
   logger.warn(
@@ -148,34 +141,19 @@ async function assembleTools(
   ];
 }
 
-interface ToolOutcome {
-  text: string;
-  isError: boolean;
-}
-
-/** Routes a tool call to the live, work-order or MCP handler. */
-async function dispatchTool(
-  playthroughId: string,
-  savePath: string | undefined,
-  call: NeutralToolCall,
-  deps: ChatDeps,
-  events: ChatEvents,
-): Promise<ToolOutcome> {
-  // Local and authority-checked even when unadvertised; never falls through to MCP.
-  if (isLiveStateTool(call.name)) {
-    return handleLiveStateTool(playthroughId, call.arguments, deps.liveState);
-  }
-  if (isWorkOrderTool(call.name)) {
-    const outcome = await handleWorkOrderTool(playthroughId, call.name, call.arguments, {
-      workOrders: deps.workOrders,
-      gameVersion: () => deps.mcp.gameVersion,
-      mcp: deps.mcp,
+/** Adds one tool message per call, in call order, so each result matches its call id. */
+function appendToolResults(
+  messages: NeutralMessage[],
+  calls: NeutralToolCall[],
+  outcomes: ToolOutcome[],
+): void {
+  calls.forEach((call, index) => {
+    const outcome = outcomes[index] ?? { text: 'Tool produced no result.', isError: true };
+    messages.push({
+      role: 'tool',
+      toolCallId: call.id,
+      content: outcome.text,
+      isError: outcome.isError,
     });
-    if (outcome.workOrder !== undefined) {
-      events.workOrder(outcome.workOrder);
-    }
-    return { text: outcome.text, isError: outcome.isError };
-  }
-  // savePath is injected into save-game tool calls by the aggregate gateway.
-  return deps.mcp.callTool(call.name, call.arguments, { savePath });
+  });
 }
