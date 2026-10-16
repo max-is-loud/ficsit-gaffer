@@ -76,17 +76,18 @@ describe('buildSystemPrompt', () => {
   });
 });
 
-describe('live Constructor guidance in the bundled prompt', () => {
+describe('live factory guidance in the bundled prompt', () => {
   const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
-  const section = prompt.slice(prompt.indexOf('## Live Constructor Observations'));
+  const section = prompt.slice(prompt.indexOf('## Live Factory Observations'));
 
   it('has a dedicated section naming the tool', () => {
-    expect(prompt).toContain('## Live Constructor Observations');
-    expect(section).toContain('get_live_constructor_state');
+    expect(prompt).toContain('## Live Factory Observations');
+    expect(section).toContain('get_live_buildables');
+    expect(prompt).not.toContain('get_live_constructor_state');
   });
 
   it('requires a fresh query and never treats earlier text or summaries as current', () => {
-    expect(section).toMatch(/call `get_live_constructor_state` (again )?for every/i);
+    expect(section).toMatch(/call `get_live_buildables` (again )?for every/i);
     expect(section).toMatch(/earlier (messages|answers)/i);
     expect(section).toMatch(/summar/i);
   });
@@ -103,13 +104,14 @@ describe('live Constructor guidance in the bundled prompt', () => {
     expect(section).toMatch(/separate|not the same as|never mix/i);
   });
 
-  it('discloses partial locations against the exact total', () => {
-    expect(section).toMatch(/totalConstructors/);
+  it('discloses partial rows against the exact total', () => {
+    expect(section).toMatch(/totalBuildables/);
     expect(section).toMatch(/partial|some of/i);
   });
 
-  it('forbids invented landmarks and claims beyond Constructors', () => {
+  it('forbids invented landmarks and treating configuration as activity', () => {
     expect(section).toMatch(/near your base/i);
-    expect(section).toMatch(/recipes|power|production/i);
+    expect(section).toMatch(/configuration is not activity/i);
+    expect(section).toMatch(/nominal/i);
   });
 });

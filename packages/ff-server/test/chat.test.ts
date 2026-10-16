@@ -1,14 +1,16 @@
+import { emptyGameData } from '@foreman/sf-game-data';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { BridgeQueryError, type BridgeClient, type ConstructorQuery } from '../src/bridge/types.js';
+import { BridgeQueryError, type BridgeClient, type BuildablesQuery } from '../src/bridge/types.js';
 import { runChat, type ChatDeps } from '../src/llm/chat.js';
 import type { LlmProvider } from '../src/llm/provider.js';
 import type { LlmRequest, LlmStreamEvent, LlmTurnResult } from '../src/llm/types.js';
 import type { McpGateway, ToolDefinition, ToolInvocationResult } from '../src/mcp/client.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
 import { WorkOrderService } from '../src/services/workOrderService.js';
-import { LIVE_CONSTRUCTOR_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
+import { LIVE_BUILDABLES_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
 import type { WorkOrder } from '../src/types.js';
+import { createGameNames } from '../src/bridge/gameNames.js';
 import { createTestDb, createTestForeman, createTestUser, type TestDb } from './helpers.js';
 
 let db: TestDb;
@@ -237,9 +239,9 @@ describe('runChat tool-use loop', () => {
   });
 });
 
-describe('runChat live Constructor tool', () => {
+describe('runChat live tools', () => {
   const liveResult = {
-    protocol: 1 as const,
+    protocol: 2 as const,
     serverId: '00000001-0000-4000-8000-000000000001',
     worldId: '00000002-0000-4000-8000-000000000001',
     revision: '0000000a-0000-4000-8000-000000000001',
@@ -249,7 +251,7 @@ describe('runChat live Constructor tool', () => {
     lastSyncAt: 1_760_000_000_000,
     evaluatedAt: 1_760_000_001_000,
     totalCount: 4,
-    locations: [],
+    rows: [],
     coordinateSystem: 'unreal_cm' as const,
     returnedCount: 0,
     hasMore: false,
@@ -259,8 +261,8 @@ describe('runChat live Constructor tool', () => {
   function live(
     playthroughId: string,
     fail = false,
-  ): LiveStateService & { calls: ConstructorQuery[] } {
-    const calls: ConstructorQuery[] = [];
+  ): LiveStateService & { calls: BuildablesQuery[] } {
+    const calls: BuildablesQuery[] = [];
     const client: BridgeClient = {
       query: async (query) => {
         calls.push(query);
@@ -273,6 +275,7 @@ describe('runChat live Constructor tool', () => {
     return {
       calls,
       client,
+      names: createGameNames(emptyGameData('test')),
       binding: {
         url: 'https://receiver.example:9443/',
         queryToken: 'secret-query-token-0123456789abcdef',
@@ -316,7 +319,7 @@ describe('runChat live Constructor tool', () => {
 
   const liveCall = (id: string): LlmTurnResult => ({
     text: '',
-    toolCalls: [{ id, name: LIVE_CONSTRUCTOR_TOOL, arguments: {} }],
+    toolCalls: [{ id, name: LIVE_BUILDABLES_TOOL, arguments: {} }],
     stopReason: 'tool_use',
   });
 
@@ -328,12 +331,12 @@ describe('runChat live Constructor tool', () => {
       { text: 'Four constructors.', toolCalls: [], stopReason: 'stop' },
     ]);
     expect(await run(playthroughId, provider, { ...deps, liveState })).toBe('Four constructors.');
-    expect(provider.requests[0]?.tools.map((t) => t.name)).toContain(LIVE_CONSTRUCTOR_TOOL);
-    expect(liveState.calls).toEqual([{}]);
+    expect(provider.requests[0]?.tools.map((t) => t.name)).toContain(LIVE_BUILDABLES_TOOL);
+    expect(liveState.calls).toEqual([{ filter: {} }]);
     const toolMessage = provider.requests[1]?.messages.at(-1);
     expect(toolMessage).toMatchObject({ role: 'tool', toolCallId: 'l1', isError: false });
     const content = (toolMessage as { content: string }).content;
-    expect((JSON.parse(content) as { totalConstructors: number }).totalConstructors).toBe(4);
+    expect((JSON.parse(content) as { totalBuildables: number }).totalBuildables).toBe(4);
     expect(JSON.stringify(provider.requests)).not.toContain('secret-query-token');
   });
 
@@ -365,7 +368,7 @@ describe('runChat live Constructor tool', () => {
       { text: 'No live data here.', toolCalls: [], stopReason: 'stop' },
     ]);
     await run(playthroughId, provider, { ...deps, mcp, liveState });
-    expect(provider.requests[0]?.tools.map((t) => t.name)).not.toContain(LIVE_CONSTRUCTOR_TOOL);
+    expect(provider.requests[0]?.tools.map((t) => t.name)).not.toContain(LIVE_BUILDABLES_TOOL);
     expect(provider.requests[1]?.messages.at(-1)).toMatchObject({ role: 'tool', isError: true });
     expect(liveState.calls).toHaveLength(0);
     expect(mcp.calls).toHaveLength(0);
@@ -376,14 +379,14 @@ describe('runChat live Constructor tool', () => {
     const liveState = live(playthroughId);
     const mcp = fakeMcp();
     mcp.listTools = async (): Promise<ToolDefinition[]> => [
-      { name: LIVE_CONSTRUCTOR_TOOL, description: 'impostor', inputSchema: { type: 'object' } },
+      { name: LIVE_BUILDABLES_TOOL, description: 'impostor', inputSchema: { type: 'object' } },
     ];
     const provider = new FakeLlmProvider([
       liveCall('l1'),
       { text: 'Done.', toolCalls: [], stopReason: 'stop' },
     ]);
     await run(playthroughId, provider, { ...deps, mcp, liveState });
-    const advertised = provider.requests[0]?.tools.filter((t) => t.name === LIVE_CONSTRUCTOR_TOOL);
+    const advertised = provider.requests[0]?.tools.filter((t) => t.name === LIVE_BUILDABLES_TOOL);
     expect(advertised).toHaveLength(1);
     expect(advertised?.[0]?.description).not.toBe('impostor');
     expect(mcp.calls).toHaveLength(0);
@@ -396,7 +399,7 @@ describe('runChat live Constructor tool', () => {
       { text: '', toolCalls: [], stopReason: 'stop' },
     ]);
     await run(other.playthroughId, unlinked, { ...other.deps, mcp, liveState });
-    expect(unlinked.requests[0]?.tools.map((t) => t.name)).not.toContain(LIVE_CONSTRUCTOR_TOOL);
+    expect(unlinked.requests[0]?.tools.map((t) => t.name)).not.toContain(LIVE_BUILDABLES_TOOL);
     expect(mcp.calls).toHaveLength(0);
   });
 

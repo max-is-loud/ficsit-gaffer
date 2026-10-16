@@ -1,3 +1,4 @@
+import { emptyGameData } from '@foreman/sf-game-data';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,6 +9,7 @@ import {
 } from '../src/llm/openai.js';
 import { liveStateToolDefinitions } from '../src/tools/liveStateTools.js';
 import type { LlmStreamEvent } from '../src/llm/types.js';
+import { createGameNames } from '../src/bridge/gameNames.js';
 
 // Capture SDK requests; consumeOpenAiStream tests never touch the client.
 const wire = vi.hoisted(() => ({ requests: [] as Record<string, unknown>[] }));
@@ -175,6 +177,7 @@ describe('OpenAI live tool serialisation', () => {
         playthroughId: 'p1',
       },
       client: { query: async () => Promise.reject(new Error('unused')) },
+      names: createGameNames(emptyGameData('test')),
     });
     expect(definition).toBeDefined();
     await new OpenAiCompatibleProvider('sk-test').runTurn(
@@ -188,7 +191,7 @@ describe('OpenAI live tool serialisation', () => {
           {
             role: 'assistant',
             text: '',
-            toolCalls: [{ id: 'c1', name: 'get_live_constructor_state', arguments: {} }],
+            toolCalls: [{ id: 'c1', name: 'get_live_buildables', arguments: {} }],
           },
           {
             role: 'tool',
@@ -204,11 +207,16 @@ describe('OpenAI live tool serialisation', () => {
       tools: { function: { name: string; parameters: { properties: Record<string, unknown> } } }[];
       messages: { role: string; content: string | null; tool_call_id?: string }[];
     };
-    expect(request.tools[0]?.function.name).toBe('get_live_constructor_state');
+    expect(request.tools[0]?.function.name).toBe('get_live_buildables');
     expect(Object.keys(request.tools[0]?.function.parameters.properties ?? {}).sort()).toEqual([
+      'building',
+      'category',
       'cursor',
-      'includeLocations',
+      'groupBy',
+      'includeRows',
       'limit',
+      'nearestTo',
+      'recipe',
     ]);
     expect(request.messages.at(-1)).toEqual({
       role: 'tool',

@@ -5,10 +5,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { loadGameData } from '@foreman/sf-game-data';
 import dotenv from 'dotenv';
 
 import { buildApp } from './app.js';
 import { createBridgeClient } from './bridge/client.js';
+import { createGameNames } from './bridge/gameNames.js';
 import { createAuth } from './auth.js';
 import { resolveServerConfig } from './config.js';
 import { disconnectDb, prisma } from './db.js';
@@ -57,11 +59,20 @@ async function main(): Promise<void> {
   const playthroughs = new PlaythroughService(prisma);
   const workOrders = new WorkOrderService(prisma);
 
-  // Optional live Constructor observations for one operator-bound playthrough.
+  // Optional live factory observations for one operator-bound playthrough.
   // The binding carries a credential: log only the non-secret playthrough id.
   let liveState: LiveStateService | undefined;
   if (config.bridge !== undefined) {
-    liveState = { binding: config.bridge, client: createBridgeClient(config.bridge) };
+    // Game data names live buildings and recipes; without it names show as class names.
+    const gameData = loadGameData();
+    if (gameData.warning !== undefined) {
+      logger.warn(`Live bridge game data: ${gameData.warning}`);
+    }
+    liveState = {
+      binding: config.bridge,
+      client: createBridgeClient(config.bridge),
+      names: createGameNames(gameData.gameData),
+    };
     const linked = await playthroughs.findOwnerId(config.bridge.playthroughId);
     if (linked === undefined || linked.userId === null) {
       logger.warn(

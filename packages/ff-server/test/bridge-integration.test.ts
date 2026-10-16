@@ -1,3 +1,4 @@
+import { loadGameData } from '@foreman/sf-game-data';
 import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -13,7 +14,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createBridgeClient } from '../src/bridge/client.js';
 import type { BridgeBinding } from '../src/bridge/types.js';
-import { handleLiveStateTool, type LiveStateService } from '../src/tools/liveStateTools.js';
+import { createGameNames } from '../src/bridge/gameNames.js';
+import {
+  LIVE_BUILDABLES_TOOL,
+  handleLiveStateTool,
+  type LiveStateService,
+} from '../src/tools/liveStateTools.js';
 
 /**
  * Drives the REAL receiver (HTTPS ingestion + read-only query, disposable SQLite
@@ -31,6 +37,8 @@ interface Row {
   entityId: string;
   actorPath: string;
   classPath: string;
+  category: string;
+  config: Record<string, unknown>;
   transform: { position: number[]; rotation: number[]; scale: number[] };
   player: null;
 }
@@ -42,12 +50,43 @@ interface Clock {
   monotonicNow(): number;
 }
 
-function row(position: [number, number, number]): Row {
+const SMELTER = {
+  classPath: '/Game/FactoryGame/Buildable/Factory/SmelterMk1/Build_SmelterMk1.Build_SmelterMk1_C',
+  category: 'manufacturer',
+  config: {
+    recipe: '/Game/FactoryGame/Recipes/Smelter/Recipe_IngotIron.Recipe_IngotIron_C',
+    clockSpeed: 1,
+    productionBoost: 1,
+    powerShards: 0,
+    somersloops: 0,
+    paused: false,
+  },
+};
+const MINER = {
+  classPath: '/Game/FactoryGame/Buildable/Factory/MinerMK1/Build_MinerMk1.Build_MinerMk1_C',
+  category: 'extractor',
+  config: {
+    resource: '/Game/FactoryGame/Resource/RawResources/OreIron/Desc_OreIron.Desc_OreIron_C',
+    purity: 'pure',
+    node: 'Persistent_Level.BP_ResourceNode_7',
+    clockSpeed: 2.5,
+    powerShards: 3,
+    paused: false,
+  },
+};
+const CONTAINER = {
+  classPath:
+    '/Game/FactoryGame/Buildable/Factory/StorageContainerMk1/Build_StorageContainerMk1.Build_StorageContainerMk1_C',
+  category: 'storage',
+  config: {},
+};
+
+function row(position: [number, number, number], kind = SMELTER): Row {
   const entityId = randomUUID();
   return {
     entityId,
-    actorPath: `/Game/Constructor_${entityId}`,
-    classPath: '/Game/Build_ConstructorMk1',
+    actorPath: `/Game/Buildable_${entityId}`,
+    ...kind,
     transform: { position, rotation: [0, 0, 0], scale: [1, 1, 1] },
     player: null,
   };
@@ -70,7 +109,7 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
   const queryToken = randomBytes(32).toString('hex');
   const serverId = randomUUID();
   const worldId = randomUUID();
-  const context: Record<string, unknown> = { protocol: 1, serverId, worldId, epoch: randomUUID() };
+  const context: Record<string, unknown> = { protocol: 2, serverId, worldId, epoch: randomUUID() };
   let seq = 0;
   let snapshotDigest: (chunks: Uint8Array[]) => string;
   let live: LiveStateService;
@@ -119,12 +158,17 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
     return response.body as Record<string, unknown>;
   }
   async function exchange(events: unknown[]): Promise<void> {
-    await ingest('/v1/exchange', envelope({ events, commandResults: [] }));
+    await ingest('/v2/exchange', envelope({ events, commandResults: [] }));
   }
   async function tool(
     args: Record<string, unknown> = {},
   ): Promise<{ isError: boolean; body: Record<string, unknown>; text: string }> {
-    const result = await handleLiveStateTool('linked-playthrough', args, live);
+    const result = await handleLiveStateTool(
+      LIVE_BUILDABLES_TOOL,
+      'linked-playthrough',
+      args,
+      live,
+    );
     return {
       isError: result.isError,
       text: result.text,
@@ -181,7 +225,11 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
       worldId,
       playthroughId: 'linked-playthrough',
     };
-    live = { binding, client: createBridgeClient(binding, { ca }) };
+    live = {
+      binding,
+      client: createBridgeClient(binding, { ca }),
+      names: createGameNames(loadGameData({}).gameData),
+    };
   });
   afterAll(async () => {
     await stopReceiver().catch(() => undefined);
@@ -194,12 +242,12 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
     expect(state.body).toMatchObject({
       status: 'unavailable',
       reason: 'no_baseline',
-      totalConstructors: 'unknown',
+      totalBuildables: 'unknown',
     });
 
     // Baseline N = 2 via hello + one-chunk snapshot.
     const hello = await ingest(
-      '/v1/hello',
+      '/v2/hello',
       (({ connectionId: _c, ...rest }) => rest)(
         envelope({
           latestSeq: '0',
@@ -216,13 +264,13 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
     );
     context.connectionId = hello.connectionId;
     const a = row([100000, -50000, 200]);
-    const b = row([100600, -50000, 200]);
+    const b = row([100600, -50000, 200], CONTAINER);
     const rows = [a, b].sort((x, y) => (x.entityId < y.entityId ? -1 : 1));
     const data = rows.map((r) => `${JSON.stringify(r)}\n`).join('');
     const snapshotId = randomUUID();
-    await ingest('/v1/snapshot/chunk', envelope({ snapshotId, chunkIndex: 0, data }));
+    await ingest('/v2/snapshot/chunk', envelope({ snapshotId, chunkIndex: 0, data }));
     await ingest(
-      '/v1/snapshot/commit',
+      '/v2/snapshot/commit',
       envelope({
         snapshotId,
         watermark: '0',
@@ -231,53 +279,81 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
         sha256: snapshotDigest([Buffer.from(data)]),
       }),
     );
-    state = await tool({ includeLocations: true });
+    state = await tool({ includeRows: true });
     expect(state.body).toMatchObject({
       status: 'fresh',
-      totalConstructors: 2,
-      returnedLocations: 2,
-      locationsComplete: true,
+      totalBuildables: 2,
+      returnedRows: 2,
+      rowsComplete: true,
     });
 
     // Place -> N + 1, with the recorded position.
-    const c = row([-12345, 67890, 300]);
+    const c = row([-12345, 67890, 300], MINER);
     seq += 1;
     await exchange([
       {
         seq: String(seq),
-        type: 'constructor.upsert',
+        type: 'buildable.upsert',
         entityId: c.entityId,
         row: c,
         origin: 'placed',
       },
     ]);
-    state = await tool({ includeLocations: true });
-    expect(state.body.totalConstructors).toBe(3);
-    expect(state.body.locations).toContainEqual({
+    state = await tool({ includeRows: true });
+    expect(state.body.totalBuildables).toBe(3);
+    expect(state.body.rows).toContainEqual({
       entityId: c.entityId,
+      building: 'Miner Mk.1',
+      category: 'extractor',
+      configuration: {
+        resource: 'Iron Ore',
+        purity: 'pure',
+        clockSpeedPercent: 250,
+        powerShards: 3,
+        paused: false,
+      },
       positionCm: [-12345, 67890, 300],
       positionMetres: [-123.45, 678.9, 3],
     });
+    // One answer per category, by name, through game data.
+    const byCategory = await tool({ groupBy: 'category' });
+    expect(byCategory.body.groups).toEqual([
+      { name: 'extractor', count: 1 },
+      { name: 'manufacturer', count: 1 },
+      { name: 'storage', count: 1 },
+    ]);
+    const smelters = await tool({ building: 'Smelter', recipe: 'Iron Ingot', includeRows: true });
+    expect(smelters.body).toMatchObject({ totalBuildables: 1, rowsComplete: true });
+    expect((smelters.body.rows as { entityId: string }[])[0]?.entityId).toBe(a.entityId);
+    const nearest = await tool({
+      nearestTo: { x: 1000, y: -500, z: 2 },
+      includeRows: true,
+      limit: 1,
+    });
+    expect((nearest.body.rows as { entityId: string; distanceMetres: number }[])[0]).toMatchObject({
+      entityId: a.entityId,
+      distanceMetres: 0,
+    });
 
     // Pagination: exact total independent of the page, explicit partial flag.
-    state = await tool({ includeLocations: true, limit: 1 });
+    state = await tool({ includeRows: true, limit: 1 });
     expect(state.body).toMatchObject({
-      totalConstructors: 3,
-      returnedLocations: 1,
-      locationsComplete: false,
+      totalBuildables: 3,
+      returnedRows: 1,
+      rowsComplete: false,
     });
     const cursor = state.body.nextCursor as string;
 
     // Remove -> N, and the old cursor is now classified as state-changed.
     seq += 1;
     await exchange([
-      { seq: String(seq), type: 'constructor.remove', entityId: a.entityId, origin: 'placed' },
+      { seq: String(seq), type: 'buildable.remove', entityId: a.entityId, origin: 'placed' },
     ]);
-    expect((await tool()).body.totalConstructors).toBe(2);
-    const changed = await tool({ includeLocations: true, cursor });
+    expect((await tool()).body.totalBuildables).toBe(2);
+    const changed = await tool({ includeRows: true, cursor });
     expect(changed.isError).toBe(true);
     expect(changed.text).toMatch(/changed between pages/);
-    const forged = await tool({ includeLocations: true, cursor: 'not-a-receiver-cursor' });
+    const forged = await tool({ includeRows: true, cursor: 'not-a-receiver-cursor' });
     expect(forged.isError).toBe(true);
     expect(forged.text).toMatch(/without a cursor/);
 
@@ -291,7 +367,7 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
       status: 'last_known',
       reason: 'stale',
       lastSyncAt: syncedAt,
-      totalConstructors: 2,
+      totalBuildables: 2,
     });
     expect((await tool()).body.status).toBe('last_known');
 
@@ -304,7 +380,7 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
 
     // The read-only credential cannot ingest.
     expect(
-      (await post('/v1/exchange', envelope({ events: [], commandResults: [] }), queryToken)).status,
+      (await post('/v2/exchange', envelope({ events: [], commandResults: [] }), queryToken)).status,
     ).toBe(401);
 
     // Receiver restart: persisted state is last known until synchronisation resumes.
@@ -317,10 +393,10 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
     expect(state.body).toMatchObject({
       status: 'last_known',
       reason: 'receiver_restarted',
-      totalConstructors: 2,
+      totalBuildables: 2,
     });
     const resumed = await ingest(
-      '/v1/hello',
+      '/v2/hello',
       (({ connectionId: _c, ...rest }) => rest)(
         envelope({
           latestSeq: String(seq),
@@ -339,6 +415,6 @@ describe.skipIf(nodeMajor < 24)('live bridge end-to-end over the real receiver',
     context.connectionId = resumed.connectionId;
     expect((await tool()).body.reason).toBe('receiver_restarted');
     await exchange([]);
-    expect((await tool()).body).toMatchObject({ status: 'fresh', totalConstructors: 2 });
+    expect((await tool()).body).toMatchObject({ status: 'fresh', totalBuildables: 2 });
   });
 });

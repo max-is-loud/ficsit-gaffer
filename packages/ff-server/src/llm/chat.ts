@@ -151,7 +151,7 @@ async function dispatchTool(
 ): Promise<ToolOutcome> {
   // Local and authority-checked even when unadvertised; never falls through to MCP.
   if (isLiveStateTool(call.name)) {
-    return handleLiveStateTool(playthroughId, call.arguments, deps.liveState);
+    return handleLiveStateTool(call.name, playthroughId, call.arguments, deps.liveState);
   }
   if (isWorkOrderTool(call.name)) {
     const outcome = await handleWorkOrderTool(playthroughId, call.name, call.arguments, {

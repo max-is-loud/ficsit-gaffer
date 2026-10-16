@@ -6,6 +6,7 @@ on:
       - 'integrations/foreman-bridge/**'
       - 'packages/ff-server/src/bridge/**'
       - 'packages/ff-server/src/tools/liveStateTools.ts'
+      - 'packages/ff-server/src/tools/live/**'
       - 'packages/ff-server/test/bridge-integration.test.ts'
       - '.github/workflows/foreman-bridge.yml'
   push:
@@ -14,6 +15,7 @@ on:
       - 'integrations/foreman-bridge/**'
       - 'packages/ff-server/src/bridge/**'
       - 'packages/ff-server/src/tools/liveStateTools.ts'
+      - 'packages/ff-server/src/tools/live/**'
       - 'packages/ff-server/test/bridge-integration.test.ts'
       - '.github/workflows/foreman-bridge.yml'
 

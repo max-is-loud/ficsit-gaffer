@@ -256,25 +256,34 @@ a tool for ballpark conversational guidance — rough strategy, "iron is worth
 automating early", and the like. Reach for a tool only when a real number or an
 actual work order is on the line.
 
-## Live Constructor Observations
+## Live Factory Observations
 
 Some playthroughs are linked to a dedicated-server world through the Foreman
-bridge. When `get_live_constructor_state` is available it reports the
-Constructor machines that world's receiver has committed: the exact total and,
-on request, their recorded positions. It covers Constructors only — never
-recipes, power, production rates, or whether a machine is running — and it is
-not the same as uploaded save data. If the tool is absent, there is no live
-link for this playthrough.
+bridge. When `get_live_buildables` is available it reports the production
+buildings that world's receiver has committed — manufacturers, extractors,
+generators and storage — with each one's configuration: recipe, clock speed,
+Power Shards, Somersloops and whether it is paused; an extractor's resource and
+purity; a generator's fuel. It is not the same as uploaded save data. If the
+tool is absent, there is no live link for this playthrough.
 
-- Call `get_live_constructor_state` for every claim about current Constructors.
+- Call `get_live_buildables` for every claim about current buildings.
   Earlier messages, earlier answers and the session summary are not current
   observations — query again rather than repeating an old number.
 - Keep live observations separate from save data and say which source a figure
   came from. Never mix a save's count with a live count.
-- Report `totalConstructors` as the count. When locations are included, a page
-  may be partial (`locationsComplete: false`): say you are showing some of the
-  total, or fetch the next page with `nextCursor`. If the state changed between
-  pages, start the listing again; never stitch pages together.
+- Ask for what you need: filter by `building` or `recipe` (exact names; if the
+  tool lists candidates, pick or ask), use `groupBy` for counts, and
+  `nearestTo` (metres) for the closest machines.
+- Report `totalBuildables` as the count. When rows are included, a page may be
+  partial (`rowsComplete: false`): say you are showing some of the total, or
+  fetch the next page with `nextCursor`. If the state changed between pages,
+  start the listing again; never stitch pages together.
+- Configuration is not activity. "Set to Iron Ingot, not paused" does not mean
+  the machine is running or producing — live running status is not available
+  yet. If you derive rates from recipe and clock speed with the game-data
+  tools, call them nominal rates, never actual output.
+- A building shown "(not in game data)" comes from a mod or a newer game build:
+  name it as given and do not guess what it makes.
 - `status: fresh` means the receiver synchronised with the game moments ago —
   still describe it as what the bridge last recorded, not a live guarantee.
   `last_known` means synchronisation has lapsed, the game is resending a

@@ -1,3 +1,4 @@
+import { emptyGameData } from '@foreman/sf-game-data';
 import type Anthropic from '@anthropic-ai/sdk';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,7 +9,8 @@ import type { LlmStreamEvent } from '../src/llm/types.js';
 import type { McpGateway } from '../src/mcp/client.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
 import { WorkOrderService } from '../src/services/workOrderService.js';
-import { LIVE_CONSTRUCTOR_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
+import { LIVE_BUILDABLES_TOOL, type LiveStateService } from '../src/tools/liveStateTools.js';
+import { createGameNames } from '../src/bridge/gameNames.js';
 import { createTestDb, createTestForeman, createTestUser, type TestDb } from './helpers.js';
 
 // Mock only the external SDK stream; exercise the real adapter and chat loop.
@@ -230,6 +232,7 @@ describe('Anthropic continuation through runChat', () => {
 
   it('carries the live tool definition and its error result in native format', async () => {
     const liveState: LiveStateService = {
+      names: createGameNames(emptyGameData('test')),
       binding: {
         url: 'https://receiver.example:9443/',
         queryToken: 'anthropic-test-query-token-0123456789',
@@ -249,8 +252,8 @@ describe('Anthropic continuation through runChat', () => {
           {
             type: 'tool_use',
             id: 'live-1',
-            name: LIVE_CONSTRUCTOR_TOOL,
-            input: { includeLocations: true },
+            name: LIVE_BUILDABLES_TOOL,
+            input: { includeRows: true },
             caller: { type: 'direct' },
           },
         ],
@@ -260,12 +263,17 @@ describe('Anthropic continuation through runChat', () => {
     );
     await chat(liveState);
     const tool = wire.requests[0]?.tools?.find(
-      (t) => 'name' in t && t.name === LIVE_CONSTRUCTOR_TOOL,
+      (t) => 'name' in t && t.name === LIVE_BUILDABLES_TOOL,
     ) as { input_schema?: { properties?: Record<string, unknown> } } | undefined;
     expect(Object.keys(tool?.input_schema?.properties ?? {}).sort()).toEqual([
+      'building',
+      'category',
       'cursor',
-      'includeLocations',
+      'groupBy',
+      'includeRows',
       'limit',
+      'nearestTo',
+      'recipe',
     ]);
     const results = wire.requests[1]?.messages.at(-1);
     expect(results).toMatchObject({
