@@ -47,12 +47,18 @@
         "docs/protocol-v1.md": "330730fe581f43149d30dba90f2092ca32b76f4830ed7eb411e54ba61b2f485d"
       },
       "current": {
-        "modified": [
-          "Tests/fixtures/v1.json"
+        "modified": [],
+        "added": [
+          ".clang-format",
+          "Tests/fixtures/v2.json",
+          "docs/protocol-v2.md"
         ],
-        "added": [],
-        "deleted": [],
+        "deleted": [
+          "Tests/fixtures/v1.json",
+          "docs/protocol-v1.md"
+        ],
         "files": {
+          ".clang-format": "0ffe1a5e5fc1488928c935631fac98e0d978199bc31841f6cf6386f8a1f01edb",
           ".gitignore": "3de3c3f1520ab2724361930b10cf063dbb77432968b2dc295865d0b65ed7a7cd",
           "ForemanBridge.uplugin": "142649d284a56f9877a4d1eaa30f655a86e7e4a85d02d2417c91f3f6ea2c663f",
           "README.md": "7b22dc45c2d332b270fee804c4e20a09c858595101ab405555a4571ee0fe9900",
@@ -87,13 +93,13 @@
           "Source/ForemanBridge/Public/BridgeSubsystem.h": "32ae8d31fda478968bf78a805afcfea9e10b255ddd5f39ba781868664ce454a2",
           "Source/ForemanBridge/Public/BridgeWorldModule.h": "e0fa0484e7bdd10b3a60005b3b6ece6fde9a5f31d44770acf92622e9aa52e662",
           "Tests/CoreTests.cpp": "05a7c9633e639e9acdf6b18aa8b42a7edbbd9bef52c8d8a319338847b4c8a3e3",
-          "Tests/fixtures/v1.json": "9eea01d3c770189905065d700accbc32c36db2c41034651c431300abd68136da",
+          "Tests/fixtures/v2.json": "82050a3560cc7917f4514dd245c65026e0b1130fdf2d84b3712f7ff11a5462ef",
           "docs/acceptance.md": "59f427b54d9c9bc6b2a4014f3033ffd4ab4c8eb5707b124ad9e6221359a6b855",
           "docs/build-manifest.json": "c83ca0764b9987c2c805e1d6a35771c4121ff356e9ba94786d80d12154bf629e",
           "docs/final-review.md": "1ef2d222a7a3d226624fac9a85671cee33d279032aa6721b313015206b389493",
           "docs/game-probe.md": "013bca1f2c54ba167264cd89aaa86002d46bd38a885c4603a7e3d88a041e4710",
           "docs/implementation-decisions.md": "f820927e317a28b64f043dd3c9b256745ea0925c218c173c636dc51c08afb9d3",
-          "docs/protocol-v1.md": "330730fe581f43149d30dba90f2092ca32b76f4830ed7eb411e54ba61b2f485d"
+          "docs/protocol-v2.md": "c6fabce3076c7911926a6a0a799962aecbe19bc6f5176e3fb12beedd7751ba8a"
         }
       }
     },
@@ -120,7 +126,6 @@
       "current": {
         "modified": [
           "README.md",
-          "fixtures/v1.json",
           "scripts/replay-scenario.mjs",
           "src/protocol.mjs",
           "src/server.mjs",
@@ -131,32 +136,39 @@
         ],
         "added": [
           "docs/query-v1.md",
+          "fixtures/v2.json",
           "src/freshness.mjs",
           "src/query.mjs",
+          "src/rows.mjs",
+          "src/validation.mjs",
           "test/freshness.test.mjs",
           "test/query-server.test.mjs",
           "test/query.test.mjs",
           "test/support.mjs"
         ],
-        "deleted": [],
+        "deleted": [
+          "fixtures/v1.json"
+        ],
         "files": {
           ".gitignore": "19ec15539f455ae74b6aa076419f24c0971b54fa075b7b20c215c7aaaa62ed2f",
           "README.md": "d11c02812b90ccb5125285eb6eabdd959c7499d9025c3a0bad178d30bb04b8d1",
           "docs/query-v1.md": "cde5171a3df870c1dec983379cc64044fae657169fe0aa02d7775b97fcbec2db",
-          "fixtures/v1.json": "9eea01d3c770189905065d700accbc32c36db2c41034651c431300abd68136da",
+          "fixtures/v2.json": "82050a3560cc7917f4514dd245c65026e0b1130fdf2d84b3712f7ff11a5462ef",
           "package.json": "f39eb050adbb883e0cd163d9becd82aa12616564e7b5eba5800814b03c55d269",
           "scripts/acceptance-receiver.mjs": "aa2b0dc0f1ea4dfde54b0f6d775fa7eef2a0fa3af4be098bb337f3d5cb40d4a2",
           "scripts/make-test-cert.sh": "aefc42a600caebe1755c5edb19d99aabaa4771b13e4dbeca5f8738351e1688a5",
           "scripts/replay-scenario.mjs": "c9425dbae0065ce27c857689a68917811540226ef2835e5ceb3d8ffcba47a394",
           "src/freshness.mjs": "8506c2c991382d2a5ada7271866c4144e9ec36560c325db7e86b943b9342391f",
           "src/main.mjs": "eac39b55f5b68ed3becec94e233e67c22c82cdd1b7f37a730e81c94efc7afe53",
-          "src/protocol.mjs": "a2635e79af7230639c793e2f4fe29c924b1ec67859222cabc476e74b417b66d8",
+          "src/protocol.mjs": "4a578176f9ab9f8c3451ddb1af8f2ddf4531a6d80e76cb5b699d6021fe781a66",
           "src/query.mjs": "e6cf952cc48e58e3793c008ce5abe4ba7d29103d8686bcd6cdcb168a435e8f25",
+          "src/rows.mjs": "06b10df31f8d1cc0db191e15d6fc3510cfcacd727cc04bc8286eb3376c120e67",
           "src/server.mjs": "71a12f0d892d12b25df645da7c42bd2eda6d6c1b1baafdf20f844a6d323bf677",
           "src/store.mjs": "05b963d94b26fd9833704a5a1937205664038084ae2529b7370183b5e0f47aa0",
+          "src/validation.mjs": "79721e5690631c2a1c3f03b113051278187a2bfc8fab56090d9df31bbef4a3f6",
           "test/acceptance-gate.test.mjs": "f3b11aff9b4ce339c71cfd55bf614a748669d29365264f06a05a9b6b0b6a7d81",
           "test/freshness.test.mjs": "b6d2fbb4125e45e67254d889d057d64b1ea4dd09c48636cfd351f37f1ca4e2c5",
-          "test/protocol.test.mjs": "40ab375199ffa6108c13785c12cc63f5ba250134d059bbc33cdb347e268c0be7",
+          "test/protocol.test.mjs": "bb4eb94268a02cbaf3594048d73d6db8c4569c5491acb13eae1b669056df558d",
           "test/query-server.test.mjs": "8f9282e734e8aedc75ac7969b15abc2b7dd4f8c95aa5a53e1594e7ecedd54a09",
           "test/query.test.mjs": "43c78fee517611ac968bbb2fb090ce3c75f47e13f1ecd1c3076b204e13b7534e",
           "test/recovery.test.mjs": "e53bde4e6fec7aa12c90ad8e4d6b9b3784802b76bd44d8d44df31c53bd29a6c8",

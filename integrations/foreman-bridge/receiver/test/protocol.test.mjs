@@ -2,7 +2,8 @@ import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {decodeRequest, validateResponse, snapshotDigest, ProtocolError} from '../src/protocol.mjs';
-const fixtures = JSON.parse(readFileSync(new URL('../fixtures/v1.json', import.meta.url)));
+import {className, CATEGORY_SCHEMAS} from '../src/rows.mjs';
+const fixtures = JSON.parse(readFileSync(new URL('../fixtures/v2.json', import.meta.url)));
 for (const fixture of fixtures.cases) {
   test(fixture.name, () => {
     const raw = fixture.rawHex ? Buffer.from(fixture.rawHex, 'hex') : Buffer.from(fixture.body);
@@ -37,3 +38,11 @@ if (process.env.FOREMAN_INTEROP) {
     });
   }
 }
+test('class name is the final dotted segment of a class path', () => {
+  assert.equal(className('/Game/X/Build_SmelterMk1.Build_SmelterMk1_C'), 'Build_SmelterMk1_C');
+  assert.equal(className('Build_Thing_C'), 'Build_Thing_C');
+});
+test('every category has a schema and storage has no fields', () => {
+  assert.deepEqual(Object.keys(CATEGORY_SCHEMAS).sort(), ['extractor','generator','manufacturer','storage']);
+  assert.deepEqual(CATEGORY_SCHEMAS.storage, {});
+});

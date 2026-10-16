@@ -1,10 +1,16 @@
-import {createHash} from 'node:crypto';
+// Protocol v2 wire codec: envelopes, the four producer requests and their
+// replies. Rows are validated by rows.mjs. See mod/docs/protocol-v2.md.
 
-/** @typedef {{platform:string, accountId:string, displayName:string}} Player */
-/** @typedef {{position:number[], rotation:number[], scale:number[]}} Transform */
-/** @typedef {{entityId:string, actorPath:string, classPath:string, transform:Transform, player:Player|null}} Row */
-/** @typedef {{seq:string, type:'constructor.upsert'|'constructor.remove', entityId:string, row?:Row, origin:'placed'|'reconciled'}} Event */
-/** @typedef {{protocol:1, serverId:string, worldId:string, epoch:string, requestId:string, connectionId?:string}} Envelope */
+import {createHash} from 'node:crypto';
+import {ProtocolError,fields,identity,object,requireThat,text,uint32,unicode} from './validation.mjs';
+import {validateRow} from './rows.mjs';
+
+export {ProtocolError} from './validation.mjs';
+export {validateRow} from './rows.mjs';
+
+/** @typedef {import('./rows.mjs').Row} Row */
+/** @typedef {{seq:string, type:'buildable.upsert'|'buildable.remove', entityId:string, row?:Row, origin:'placed'|'reconciled'|'reconfigured'}} Event */
+/** @typedef {{protocol:2, serverId:string, worldId:string, epoch:string, requestId:string, connectionId?:string}} Envelope */
 /** @typedef {{gameVersion:string, smlVersion:string, bridgeVersion:string, starterCommit:string, bridgeSourceSha256:string}} Provenance */
 /** @typedef {Envelope & {latestSeq:string, oldestRetainedSeq:string, provenance:Provenance}} Hello */
 /** @typedef {Envelope & {snapshotId:string, chunkIndex:number, data:string}} SnapshotChunk */
@@ -24,37 +30,13 @@ import {createHash} from 'node:crypto';
 export const MAX_BODY_BYTES = 256*1024;
 export const MAX_BATCH = 128;
 const MAX_SEQ = 18446744073709551615n;
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const ORIGINS = ['placed','reconciled','reconfigured'];
 const envelopeKeys = ['protocol','serverId','worldId','epoch','requestId'];
-export class ProtocolError extends Error {
-  constructor(code, status=400) { super(code); this.name='ProtocolError'; this.code=code; this.status=status; }
-}
-function requireThat(condition, code, status=400) { if (!condition) { throw new ProtocolError(code,status); } }
-function object(value, code='invalid_schema') {
-  requireThat(value !== null && typeof value==='object' && !Array.isArray(value),code);
-}
-function fields(value, required, optional=[], code='invalid_schema') {
-  object(value,code);
-  requireThat(required.every(key => Object.hasOwn(value,key)) && Object.keys(value).every(key => required.includes(key)||optional.includes(key)),code);
-}
-function text(value, max=4096, code='invalid_schema') {
-  requireThat(typeof value==='string' && value.length>0 && Buffer.byteLength(value)<=max,code);
-}
 export function sequence(value, allowZero=true) {
   requireThat(typeof value==='string' && /^(0|[1-9][0-9]{0,19})$/.test(value), 'invalid_sequence');
   const number=BigInt(value);
   requireThat(number<=MAX_SEQ && (allowZero || number!==0n),'invalid_sequence');
   return number;
-}
-function identity(value) { requireThat(typeof value==='string' && uuid.test(value),'invalid_identity'); }
-function uint32(value, code='invalid_snapshot') { requireThat(Number.isInteger(value) && value>=0 && value<=4294967295,code); }
-function unicode(value, depth=0) {
-  requireThat(depth<=32,'invalid_schema');
-  if (typeof value==='string') { requireThat(value.isWellFormed(),'invalid_unicode'); }
-  else if (Array.isArray(value)) { for(const item of value) { unicode(item,depth+1); } }
-  else if (value && typeof value==='object') {
-    for(const [key,item] of Object.entries(value)) { unicode(key,depth+1); unicode(item,depth+1); }
-  }
 }
 function parse(raw) {
   requireThat(raw instanceof Uint8Array,'invalid_schema');
@@ -68,29 +50,16 @@ function parse(raw) {
   return value;
 }
 function envelope(value, connected) {
-  requireThat(value.protocol===1,'unsupported_protocol',426);
+  requireThat(value.protocol===2,'unsupported_protocol',426);
   for(const key of ['serverId','worldId','epoch','requestId']) { identity(value[key]); }
   if(connected) { identity(value.connectionId); }
 }
-export function validateRow(row) {
-  fields(row,['entityId','actorPath','classPath','transform','player'],[],'invalid_row'); identity(row.entityId);
-  text(row.actorPath,4096,'invalid_row'); text(row.classPath,4096,'invalid_row');
-  fields(row.transform,['position','rotation','scale'],[],'invalid_row');
-  for(const vector of Object.values(row.transform)) {
-    requireThat(Array.isArray(vector) && vector.length===3 && vector.every(x=>typeof x==='number' && Number.isFinite(x)),'invalid_row');
-  }
-  if(row.player!==null) {
-    fields(row.player,['platform','accountId','displayName'],[],'invalid_row');
-    for(const key of ['platform','accountId','displayName']) { text(row.player[key],1024,'invalid_row'); }
-  }
-  unicode(row); return row;
-}
 function event(value) {
-  requireThat(value?.type==='constructor.upsert'||value?.type==='constructor.remove','invalid_event');
-  fields(value,['seq','type','entityId','origin',...(value.type==='constructor.upsert'?['row']:[])],[],'invalid_event');
+  requireThat(value?.type==='buildable.upsert'||value?.type==='buildable.remove','invalid_event');
+  fields(value,['seq','type','entityId','origin',...(value.type==='buildable.upsert'?['row']:[])],[],'invalid_event');
   sequence(value.seq,false); identity(value.entityId);
-  requireThat(value.origin==='placed'||value.origin==='reconciled','invalid_event');
-  if(value.type==='constructor.upsert') { validateRow(value.row); requireThat(value.row.entityId===value.entityId,'invalid_row'); }
+  requireThat(ORIGINS.includes(value.origin),'invalid_event');
+  if(value.type==='buildable.upsert') { validateRow(value.row); requireThat(value.row.entityId===value.entityId,'invalid_row'); }
 }
 function commandId(value, context, causalSeq) {
   text(value,128,'invalid_command');

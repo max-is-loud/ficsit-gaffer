@@ -43,9 +43,9 @@ for(const [name,component] of Object.entries(manifest.components)) {
  expected.components[name]={sourceCommit:component.sourceCommit,files:imported,current:{modified,added,deleted,files}};
 }
 // Both codecs must exercise the same canonical protocol fixtures.
-const [canonical,native]=['receiver/fixtures/v1.json','mod/Tests/fixtures/v1.json'].map(path=>sha256(join(root,path)));
+const [canonical,native]=['receiver/fixtures/v2.json','mod/Tests/fixtures/v2.json'].map(path=>sha256(join(root,path)));
 if(canonical!==native) {
- console.error('Protocol fixture copies differ; copy receiver/fixtures/v1.json to mod/Tests/fixtures/v1.json');process.exit(1);
+ console.error('Protocol fixture copies differ; copy receiver/fixtures/v2.json to mod/Tests/fixtures/v2.json');process.exit(1);
 }
 const text=JSON.stringify(expected,null,2)+'\n';
 if(mode==='--write') {

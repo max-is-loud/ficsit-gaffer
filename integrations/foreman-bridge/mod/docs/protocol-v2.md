@@ -1,9 +1,11 @@
-# Foreman bridge protocol v1
+# Foreman bridge protocol v2
 
-Revision 1, independent prototype. The canonical executable fixture is
-`foreman-bridge-receiver/fixtures/v1.json`; its byte-identical copy lives at
-`Tests/fixtures/v1.json`. This document fixes the approved plan's previously
-unspecified envelope field names. No Foreman application routes are involved.
+Revision 2 (bridge v2, #10). A hard cut from revision 1: `protocol:1` is
+rejected with `unsupported_protocol`. The canonical executable fixture is
+`receiver/fixtures/v2.json`; its byte-identical copy lives at
+`Tests/fixtures/v2.json`. Envelope, sequences, snapshots, epochs and command
+rules are unchanged from revision 1; rows gain a category and a per-category
+configuration, and events gain the `reconfigured` origin.
 
 ## Encoding and common envelope
 
@@ -13,7 +15,7 @@ Reject invalid UTF-8, unpaired Unicode surrogates, unknown object fields,
 unknown protocol/type, non-finite numeric transforms and malformed identities.
 Maximum JSON nesting is 32. UUIDs are canonical lowercase hyphenated strings.
 
-Every request/reply carries `protocol:1`, `serverId`, `worldId`, `epoch` and
+Every request/reply carries `protocol:2`, `serverId`, `worldId`, `epoch` and
 UUID `requestId`. Requests after hello and all replies carry UUID `connectionId`.
 Replies must match expected server/world/epoch/request and, except hello,
 connection. A stale reply is rejected before it reaches State. Hello supplies
@@ -31,10 +33,10 @@ The common fields above are omitted here for readability.
 
 | Endpoint | Request fields | Reply fields |
 | --- | --- | --- |
-| `/v1/hello` | `latestSeq`, `oldestRetainedSeq`, `provenance` | `mode:"resume",cursor` or `mode:"snapshotRequired",reason` |
-| `/v1/snapshot/chunk` | `snapshotId`, `chunkIndex`, `data` | `snapshotId`, `chunkIndex` |
-| `/v1/snapshot/commit` | `snapshotId`, `watermark`, `chunkCount`, `rowCount`, `sha256` | `snapshotId`, `watermark` |
-| `/v1/exchange` | `events`, `commandResults` | `ackSeq`, `commands`, optional `resyncRequired` reason |
+| `/v2/hello` | `latestSeq`, `oldestRetainedSeq`, `provenance` | `mode:"resume",cursor` or `mode:"snapshotRequired",reason` |
+| `/v2/snapshot/chunk` | `snapshotId`, `chunkIndex`, `data` | `snapshotId`, `chunkIndex` |
+| `/v2/snapshot/commit` | `snapshotId`, `watermark`, `chunkCount`, `rowCount`, `sha256` | `snapshotId`, `watermark` |
+| `/v2/exchange` | `events`, `commandResults` | `ackSeq`, `commands`, optional `resyncRequired` reason |
 
 `oldestRetainedSeq:"0"` means no retained events; otherwise it cannot exceed
 latestSeq. Provenance has `gameVersion`, `smlVersion`, `bridgeVersion` (nonempty,
@@ -52,7 +54,7 @@ not clear loss of events newer than the frozen watermark.
 Rows have exactly:
 
 ```
-entityId, actorPath, classPath,
+entityId, actorPath, classPath, category, config,
 transform: {position:[x,y,z], rotation:[pitch,yaw,roll], scale:[x,y,z]},
 player: null | {platform, accountId, displayName}
 ```
@@ -61,11 +63,32 @@ Position uses UE centimetres, rotation degrees. Paths are nonempty and at most
 4096 UTF-8 bytes. Player strings are nonempty and at most 1024 UTF-8 bytes each.
 Unknown creator identity is null; display name is never an account key.
 
+`category` is one of `manufacturer`, `extractor`, `generator`, `storage`.
+`config` has exactly the fields of its category — every field present, each
+either `null` (the game could not say) or a value of the listed type. Unknown
+or missing fields are rejected (`invalid_row`).
+
+| Category | `config` fields |
+| --- | --- |
+| `manufacturer` | `recipe` path, `clockSpeed` number, `productionBoost` number, `powerShards` uint32, `somersloops` uint32, `paused` boolean |
+| `extractor` | `resource` path, `purity` (`impure`/`normal`/`pure`), `node` path, `clockSpeed` number, `powerShards` uint32, `paused` boolean |
+| `generator` | `fuel` path, `clockSpeed` number, `powerShards` uint32, `paused` boolean |
+| `storage` | none (`{}`) |
+
+Numbers are finite JSON numbers; `clockSpeed` is the current potential (1 =
+100 %). Paths follow the path rules above. A class *name* is the final
+`.`-separated segment of a class path; the receiver indexes class and recipe
+names for queries.
+
 Events have `seq`, `type`, `entityId`, `origin`; upserts additionally require
-`row` with matching entityId. Types are `constructor.upsert` / `constructor.remove`;
-origins are `placed` / `reconciled`. Maximum 128 events per exchange. The entire
-batch is validated before persistence; sequence continuity/duplicate equality
-are store responsibilities. Only newly accepted placed upserts create chat.
+`row` with matching entityId. Types are `buildable.upsert` / `buildable.remove`;
+origins are `placed` / `reconciled` / `reconfigured` (a configuration change on
+an existing buildable). Maximum 128 events per exchange. The entire batch is
+validated before persistence; sequence continuity/duplicate equality are store
+responsibilities. No event creates chat.
+
+The `pioneers` exchange field is reserved for Part 2 (Pioneer position) and is
+rejected as an unknown field until then.
 
 A frozen snapshot is sorted by entityId. Each compact row is encoded once as
 UTF-8 JSON followed by LF. Chunks split on row boundaries and carry these exact
