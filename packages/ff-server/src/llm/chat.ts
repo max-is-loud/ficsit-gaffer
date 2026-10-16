@@ -20,6 +20,7 @@ import {
   workOrderToolDefinitions,
 } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
+import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
 import type { NeutralMessage, NeutralToolCall } from './types.js';
 
 /** Backing services and settings the chat loop needs (provider-agnostic). */
@@ -51,6 +52,8 @@ export interface ChatEvents {
   text(delta: string): void;
   toolUse(name: string): void;
   workOrder(order: WorkOrder): void;
+  /** Called once when the turn ends, with its rounds, tool calls and token usage. */
+  metrics?(metrics: TurnMetrics): void;
 }
 
 /** Safety bound on tool-use round-trips within a single turn. */
@@ -78,6 +81,13 @@ export async function runChat(
   }));
 
   let streamedText = '';
+  const recorder = new TurnMetricsRecorder();
+  const finish = (hitIterationCap: boolean): string => {
+    const metrics = recorder.finish(hitIterationCap);
+    logger.info(formatTurnMetrics(metrics));
+    events.metrics?.(metrics);
+    return streamedText;
+  };
 
   for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
     const result = await req.provider.runTurn(
@@ -90,6 +100,7 @@ export async function runChat(
       },
     );
 
+    recorder.recordRound(result);
     messages.push({
       role: 'assistant',
       text: result.text,
@@ -98,9 +109,10 @@ export async function runChat(
     });
 
     if (result.stopReason !== 'tool_use') {
-      return streamedText;
+      return finish(false);
     }
 
+    recorder.recordToolCalls(result.toolCalls);
     for (const call of result.toolCalls) {
       events.toolUse(call.name);
       const outcome = await dispatchTool(req.playthroughId, req.savePath, call, deps, events);
@@ -116,7 +128,7 @@ export async function runChat(
   logger.warn(
     `Tool loop hit the ${MAX_TOOL_ITERATIONS}-iteration cap; returning partial response.`,
   );
-  return streamedText;
+  return finish(true);
 }
 
 /**

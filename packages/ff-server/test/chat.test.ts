@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BridgeQueryError, type BridgeClient, type ConstructorQuery } from '../src/bridge/types.js';
 import { runChat, type ChatDeps } from '../src/llm/chat.js';
 import type { LlmProvider } from '../src/llm/provider.js';
+import type { TurnMetrics } from '../src/llm/turnMetrics.js';
 import type { LlmRequest, LlmStreamEvent, LlmTurnResult } from '../src/llm/types.js';
 import type { McpGateway, ToolDefinition, ToolInvocationResult } from '../src/mcp/client.js';
 import { PlaythroughService } from '../src/services/playthroughService.js';
@@ -196,6 +197,55 @@ describe('runChat tool-use loop', () => {
     expect(
       audit.some((e) => e.eventType === 'completion_proposed' && e.note === 'Looks finished.'),
     ).toBe(true);
+  });
+
+  it('reports one metrics record per turn', async () => {
+    const playthroughs = new PlaythroughService(db.prisma);
+    const workOrders = new WorkOrderService(db.prisma);
+    const foremanId = await createTestForeman(db.prisma, userId);
+    const playthrough = await playthroughs.create({ userId, foremanId });
+    await playthroughs.appendMessage(playthrough.id, 'user', 'Recipe?');
+    const usage = { inputTokens: 5, outputTokens: 1, cacheReadTokens: 2, cacheWriteTokens: 3 };
+    const provider = new FakeLlmProvider([
+      {
+        text: '',
+        toolCalls: [{ id: 't1', name: 'get_recipe', arguments: { name: 'Iron Plate' } }],
+        stopReason: 'tool_use',
+        usage,
+      },
+      { text: 'Done.', toolCalls: [], stopReason: 'stop', usage, rawStopReason: 'end_turn' },
+    ]);
+    const metrics: TurnMetrics[] = [];
+    await runChat(
+      {
+        playthroughId: playthrough.id,
+        promptContext: { personality: '', pioneerProfile: '' },
+        provider,
+        model: 'm',
+        maxTokens: 1024,
+      },
+      {
+        systemPromptTemplate: 'Prompt',
+        historyWindow: 20,
+        playthroughs,
+        workOrders,
+        mcp: fakeMcp(),
+      },
+      {
+        text: () => {},
+        toolUse: () => {},
+        workOrder: () => {},
+        metrics: (record) => metrics.push(record),
+      },
+    );
+    expect(metrics).toHaveLength(1);
+    expect(metrics[0]).toMatchObject({
+      rounds: 2,
+      toolCalls: ['get_recipe'],
+      usage: { inputTokens: 10, outputTokens: 2, cacheReadTokens: 4, cacheWriteTokens: 6 },
+      stopReason: 'end_turn',
+      hitIterationCap: false,
+    });
   });
 
   it('returns immediately when the first turn has no tool use', async () => {

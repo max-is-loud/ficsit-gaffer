@@ -13,6 +13,7 @@ import type {
   LlmTurnResult,
   NeutralMessage,
   NeutralToolCall,
+  TurnUsage,
 } from './types.js';
 
 /**
@@ -32,6 +33,23 @@ export interface OpenAiStreamChunk {
     };
     finish_reason?: string | null;
   }[];
+  /** Sent on a final, choice-less chunk when `stream_options.include_usage` is set. */
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    prompt_tokens_details?: { cached_tokens?: number };
+  } | null;
+}
+
+/** Maps OpenAI usage to neutral usage; cached prompt tokens are split out of input. */
+function toTurnUsage(usage: NonNullable<OpenAiStreamChunk['usage']>): TurnUsage {
+  const cached = usage.prompt_tokens_details?.cached_tokens ?? 0;
+  return {
+    inputTokens: (usage.prompt_tokens ?? 0) - cached,
+    outputTokens: usage.completion_tokens ?? 0,
+    cacheReadTokens: cached,
+    cacheWriteTokens: 0,
+  };
 }
 
 /**
@@ -48,7 +66,12 @@ export async function consumeOpenAiStream(
   let finishReason: string | null = null;
   const acc = new Map<number, { id: string; name: string; args: string }>();
 
+  let usage: TurnUsage | undefined;
+
   for await (const chunk of stream) {
+    if (chunk.usage !== undefined && chunk.usage !== null) {
+      usage = toTurnUsage(chunk.usage);
+    }
     const choice = chunk.choices?.[0];
     if (choice === undefined) {
       continue;
@@ -79,7 +102,26 @@ export async function consumeOpenAiStream(
   if (finishReason === 'length') {
     logger.warn('OpenAI response was truncated (finish_reason=length); returning partial turn.');
   }
+  logger.info(
+    `OpenAI usage: ${usage?.inputTokens ?? '?'} input, ${usage?.cacheReadTokens ?? '?'} ` +
+      `cache-read, ${usage?.outputTokens ?? '?'} output; finish_reason=${finishReason ?? 'none'}.`,
+  );
 
+  const toolCalls = assembleToolCalls(acc, onEvent);
+  return {
+    text,
+    toolCalls,
+    stopReason: finishReason === 'tool_calls' ? 'tool_use' : 'stop',
+    usage,
+    rawStopReason: finishReason ?? undefined,
+  };
+}
+
+/** Turns the index-keyed fragments into ordered tool calls, emitting each one. */
+function assembleToolCalls(
+  acc: Map<number, { id: string; name: string; args: string }>,
+  onEvent: (event: LlmStreamEvent) => void,
+): NeutralToolCall[] {
   const toolCalls: NeutralToolCall[] = [];
   for (const entry of [...acc.entries()].sort((a, b) => a[0] - b[0]).map(([, value]) => value)) {
     if (entry.name.length === 0) {
@@ -93,8 +135,7 @@ export async function consumeOpenAiStream(
     toolCalls.push(call);
     onEvent({ type: 'tool_call', call });
   }
-
-  return { text, toolCalls, stopReason: finishReason === 'tool_calls' ? 'tool_use' : 'stop' };
+  return toolCalls;
 }
 
 function parseArgs(raw: string): Record<string, unknown> {
@@ -149,6 +190,8 @@ export class OpenAiCompatibleProvider implements LlmProvider {
         function: { name: tool.name, description: tool.description, parameters: tool.inputSchema },
       })),
       stream: true,
+      // Usage arrives on a final chunk; providers that ignore the option simply omit it.
+      stream_options: { include_usage: true },
     });
     return consumeOpenAiStream(stream as AsyncIterable<OpenAiStreamChunk>, onEvent);
   }

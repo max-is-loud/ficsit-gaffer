@@ -286,6 +286,21 @@ describe('Anthropic continuation through runChat', () => {
     expect(wire.requests).toHaveLength(1);
   });
 
+  it('reports token usage and the raw stop reason on the turn result', async () => {
+    wire.responses.push(response([{ type: 'text', text: 'Done.', citations: null }]));
+    const result = await new AnthropicProvider('test-key').runTurn(
+      { system: 'Foreman', model: 'test-model', maxTokens: 1024, tools: [], messages: [] },
+      () => {},
+    );
+    expect(result.usage).toEqual({
+      inputTokens: 20,
+      outputTokens: 10,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    });
+    expect(result.rawStopReason).toBe('end_turn');
+  });
+
   it('still translates neutral assistant turns when native continuation is absent', async () => {
     wire.responses.push(response([{ type: 'text', text: 'Done.', citations: null }]));
     const events: LlmStreamEvent[] = [];

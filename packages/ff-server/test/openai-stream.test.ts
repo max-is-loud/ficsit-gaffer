@@ -137,6 +137,47 @@ describe('consumeOpenAiStream', () => {
   });
 });
 
+describe('consumeOpenAiStream usage', () => {
+  it('reads usage from the final chunk, splitting out cached prompt tokens', async () => {
+    const result = await consumeOpenAiStream(
+      chunks([
+        textChunk('Hi', 'stop'),
+        {
+          choices: [],
+          usage: {
+            prompt_tokens: 120,
+            completion_tokens: 9,
+            prompt_tokens_details: { cached_tokens: 100 },
+          },
+        },
+      ]),
+      () => {},
+    );
+    expect(result.usage).toEqual({
+      inputTokens: 20,
+      outputTokens: 9,
+      cacheReadTokens: 100,
+      cacheWriteTokens: 0,
+    });
+    expect(result.rawStopReason).toBe('stop');
+  });
+
+  it('leaves usage undefined when the provider sends none', async () => {
+    const result = await consumeOpenAiStream(chunks([textChunk('Hi', 'stop')]), () => {});
+    expect(result.usage).toBeUndefined();
+  });
+
+  it('asks for usage on streamed completions', async () => {
+    wire.requests.length = 0;
+    await new OpenAiCompatibleProvider('key').runTurn(
+      { system: 's', messages: [], tools: [], model: 'gpt-4.1', maxTokens: 10 },
+      () => {},
+    );
+    expect(wire.requests[0]?.['stream_options']).toEqual({ include_usage: true });
+    wire.requests.length = 0;
+  });
+});
+
 describe('tokenLimitParam', () => {
   it('uses max_completion_tokens for GPT-5 and o-series reasoning models', () => {
     expect(tokenLimitParam('gpt-5-mini', 4096)).toEqual({ max_completion_tokens: 4096 });

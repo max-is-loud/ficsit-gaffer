@@ -12,6 +12,7 @@ import type {
   LlmTurnResult,
   NeutralMessage,
   NeutralToolCall,
+  TurnUsage,
 } from './types.js';
 
 /** Native Anthropic adapter — the foreman's first-class path for Claude models. */
@@ -45,10 +46,16 @@ export class AnthropicProvider implements LlmProvider {
     });
 
     const final = await stream.finalMessage();
+    const usage: TurnUsage = {
+      inputTokens: final.usage.input_tokens,
+      outputTokens: final.usage.output_tokens,
+      cacheReadTokens: final.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: final.usage.cache_creation_input_tokens ?? 0,
+    };
     logger.info(
-      `Anthropic usage: ${final.usage.input_tokens} input, ` +
-        `${final.usage.cache_creation_input_tokens ?? 0} cache-write, ` +
-        `${final.usage.cache_read_input_tokens ?? 0} cache-read.`,
+      `Anthropic usage: ${usage.inputTokens} input, ${usage.cacheWriteTokens} cache-write, ` +
+        `${usage.cacheReadTokens} cache-read, ${usage.outputTokens} output; ` +
+        `stop_reason=${final.stop_reason ?? 'none'}.`,
     );
     const toolCalls: NeutralToolCall[] = [];
     for (const block of final.content) {
@@ -68,6 +75,8 @@ export class AnthropicProvider implements LlmProvider {
       toolCalls,
       stopReason: final.stop_reason === 'tool_use' ? 'tool_use' : 'stop',
       continuation: { provider: 'anthropic', content: final.content },
+      usage,
+      rawStopReason: final.stop_reason ?? undefined,
     };
   }
 
