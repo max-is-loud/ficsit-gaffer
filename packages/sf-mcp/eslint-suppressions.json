@@ -4,14 +4,6 @@
       "count": 1
     }
   },
-  "src/http.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/query/bottlenecks.ts": {
     "complexity": {
       "count": 3
