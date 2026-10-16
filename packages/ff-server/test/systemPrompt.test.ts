@@ -133,6 +133,11 @@ describe('research economy guidance in the bundled prompt', () => {
     );
   });
 
+  it('tells the foreman to batch lookups by name', () => {
+    expect(section).toContain('`names`');
+    expect(section).toContain('recipes_for');
+  });
+
   it('forbids re-fetching facts already in hand', () => {
     expect(section).toMatch(/do not re-fetch/i);
   });

@@ -234,6 +234,9 @@ another round when a later lookup depends on an earlier result.
 - For a production chain, call `full_production_line` (machines, extraction and
   build cost in one answer) or `total_raw_inputs` — do not walk the chain with
   `ingredient_tree` followed by `get_recipe` for each step.
+- `get_item`, `get_recipe`, `get_building`, `get_schematic` and `recipes_for` take
+  a list (`names` / `items`), and `nearest_resource_nodes` takes `resources`: one
+  batched call beats several single ones.
 - Do not re-fetch a fact you already have this turn, or one stated in a save
   snapshot or live readings block.
 
