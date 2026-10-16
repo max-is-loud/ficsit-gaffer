@@ -8,10 +8,8 @@ import type { GraphDB } from '@foreman/sf-game-data-graph';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-type ToolResult = {
-  content: { type: 'text'; text: string }[];
-  isError?: boolean;
-};
+import { registerLookupTools } from './lookupTools.js';
+import { errorResult, notFoundResult, okResult, type ToolResult } from './toolResult.js';
 
 /** Collectible kinds accepted by the world-location tools. */
 const collectibleKind = z.enum([
@@ -60,6 +58,39 @@ function biomeOf(world: WorldQueries, h: { x: number; y: number; z: number }): s
   return world.biomeAt({ x: h.x, y: h.y, z: h.z })?.name ?? null;
 }
 
+type NodeFilter = { resource?: string; purity?: 'impure' | 'normal' | 'pure'; n?: number };
+
+/** Nearest resource nodes to a metres origin, reshaped to metres with bearing and biome. */
+function placeNodes(
+  world: WorldQueries,
+  origin: { x: number; y: number; z: number },
+  filter: NodeFilter,
+): object[] {
+  return world
+    .nearestResourceNodes(toCm(origin), filter)
+    .map((hit) => ({ ...placeInMetres(hit, origin), biome: biomeOf(world, hit) }));
+}
+
+/** Up to n nodes for each resource, grouped by the name asked for; empty ones go to notFound. */
+function nearestNodesByResource(
+  world: WorldQueries,
+  origin: { x: number; y: number; z: number },
+  resources: string[],
+  filter: Omit<NodeFilter, 'resource'>,
+): { byResource: Record<string, object[]>; notFound?: string[] } {
+  const byResource: Record<string, object[]> = {};
+  const notFound: string[] = [];
+  for (const resource of new Set(resources)) {
+    const nodes = placeNodes(world, origin, { ...filter, resource });
+    if (nodes.length === 0) {
+      notFound.push(resource);
+    } else {
+      byResource[resource] = nodes;
+    }
+  }
+  return notFound.length > 0 ? { byResource, notFound } : { byResource };
+}
+
 /**
  * Registers every Foreman MCP tool. Tool descriptions are tight and
  * model-facing — they appear in the system context on every request. All
@@ -71,32 +102,10 @@ export function registerGameDataTools(
   graph: GraphDB,
   world: WorldQueries,
 ): void {
-  const ok = (payload: object): ToolResult => ({
-    content: [{ type: 'text', text: JSON.stringify({ version: graph.version, ...payload }) }],
-  });
-  const notFound = (what: string): ToolResult => ({
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify({ version: graph.version, error: `Not found: ${what}` }),
-      },
-    ],
-    isError: true,
-  });
+  const ok = (payload: object): ToolResult => okResult(graph.version, payload);
+  const notFound = (what: string): ToolResult => notFoundResult(graph.version, what);
 
-  server.registerTool(
-    'get_item',
-    {
-      title: 'Get item',
-      description:
-        'Resolve an item by display name or class name. Returns item details including form (solid/liquid/gas) and sink points.',
-      inputSchema: { name: z.string() },
-    },
-    async ({ name }): Promise<ToolResult> => {
-      const item = graph.getItem(name);
-      return item === undefined ? notFound(`item '${name}'`) : ok({ item });
-    },
-  );
+  registerLookupTools(server, graph);
 
   server.registerTool(
     'list_items',
@@ -112,20 +121,6 @@ export function registerGameDataTools(
   );
 
   server.registerTool(
-    'get_recipe',
-    {
-      title: 'Get recipe',
-      description:
-        'Resolve a recipe by display name or class name. Returns the full recipe: ingredients, products, machine and per-minute rates.',
-      inputSchema: { name: z.string() },
-    },
-    async ({ name }): Promise<ToolResult> => {
-      const recipe = graph.getRecipe(name);
-      return recipe === undefined ? notFound(`recipe '${name}'`) : ok({ recipe });
-    },
-  );
-
-  server.registerTool(
     'list_recipes',
     {
       title: 'List recipes',
@@ -135,20 +130,6 @@ export function registerGameDataTools(
     },
     async ({ search }): Promise<ToolResult> => {
       return ok({ recipes: graph.listRecipes({ search }) });
-    },
-  );
-
-  server.registerTool(
-    'recipes_for',
-    {
-      title: 'Recipes for item',
-      description:
-        'All recipes that produce the named item, including alternates. Flags which recipe is the standard one.',
-      inputSchema: { item: z.string() },
-    },
-    async ({ item }): Promise<ToolResult> => {
-      const result = await graph.recipesFor(item);
-      return result === undefined ? notFound(`item '${item}'`) : ok(result);
     },
   );
 
@@ -272,34 +253,6 @@ export function registerGameDataTools(
   );
 
   server.registerTool(
-    'get_schematic',
-    {
-      title: 'Get schematic',
-      description:
-        'Resolve a schematic by display name or class name. Returns it with its full unlock list.',
-      inputSchema: { name: z.string() },
-    },
-    async ({ name }): Promise<ToolResult> => {
-      const schematic = graph.getSchematic(name);
-      return schematic === undefined ? notFound(`schematic '${name}'`) : ok({ schematic });
-    },
-  );
-
-  server.registerTool(
-    'get_building',
-    {
-      title: 'Get building',
-      description:
-        'Resolve a building or machine by display name or class name. Returns power draw (constant, or max for variable-power machines), build cost, and — for power generators — MW output plus every fuel option with per-minute fuel, supplemental (water) and byproduct rates.',
-      inputSchema: { name: z.string() },
-    },
-    async ({ name }): Promise<ToolResult> => {
-      const building = graph.getBuilding(name);
-      return building === undefined ? notFound(`building '${name}'`) : ok({ building });
-    },
-  );
-
-  server.registerTool(
     'list_power_generators',
     {
       title: 'List power generators',
@@ -396,19 +349,23 @@ export function registerGameDataTools(
     {
       title: 'Nearest resource nodes',
       description:
-        'The resource extraction points closest to a world location, nearest-first, each with resource type, purity (impure/normal/pure), coordinates (metres), distance (metres) and a compass bearing (N/NE/E/…) from the origin. Covers ore/fluid nodes, fracking satellites and cores, and geothermal geysers. Filter by resource (name or class, e.g. "Iron Ore") and/or purity; cap with n (default 10). Pass the pioneer location in metres.',
+        'The resource extraction points closest to a world location, nearest-first, each with resource type, purity (impure/normal/pure), coordinates (metres), distance (metres) and a compass bearing (N/NE/E/…) from the origin. Covers ore/fluid nodes, fracking satellites and cores, and geothermal geysers. Filter by resource (name or class, e.g. "Iron Ore") and/or purity; cap with n (default 10). Pass the pioneer location in metres. To survey several resources in one call, pass `resources` instead of `resource`: n then applies per resource and the result is grouped by resource.',
       inputSchema: {
         coord,
         resource: z.string().optional(),
+        resources: z.array(z.string()).min(1).max(10).optional(),
         purity: z.enum(['impure', 'normal', 'pure']).optional(),
         n: z.number().int().positive().optional(),
       },
     },
-    async ({ coord: origin, resource, purity, n }): Promise<ToolResult> => {
-      const hits = world.nearestResourceNodes(toCm(origin), { resource, purity, n });
-      return ok({
-        nodes: hits.map((h) => ({ ...placeInMetres(h, origin), biome: biomeOf(world, h) })),
-      });
+    async ({ coord: origin, resource, resources, purity, n }): Promise<ToolResult> => {
+      if (resource !== undefined && resources !== undefined) {
+        return errorResult(graph.version, "Pass either 'resource' or 'resources'.");
+      }
+      if (resources !== undefined) {
+        return ok(nearestNodesByResource(world, origin, resources, { purity, n }));
+      }
+      return ok({ nodes: placeNodes(world, origin, { resource, purity, n }) });
     },
   );
 
