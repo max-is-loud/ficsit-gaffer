@@ -142,3 +142,17 @@ describe('research economy guidance in the bundled prompt', () => {
     expect(section).toMatch(/do not re-fetch/i);
   });
 });
+
+describe('save snapshot guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Save State & Opportunities'));
+
+  it('tells the foreman to use the snapshot instead of re-fetching what it covers', () => {
+    expect(section).toContain('Save snapshot');
+    expect(section).toContain('do not call `get_player_state`');
+  });
+
+  it('takes "near you" positions from the snapshot', () => {
+    expect(section).toMatch(/near you.*from the save snapshot/is);
+  });
+});
