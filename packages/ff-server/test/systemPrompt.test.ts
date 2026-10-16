@@ -113,3 +113,27 @@ describe('live Constructor guidance in the bundled prompt', () => {
     expect(section).toMatch(/recipes|power|production/i);
   });
 });
+
+describe('research economy guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Research Efficiently'));
+
+  it('has a dedicated section', () => {
+    expect(prompt).toContain('## Research Efficiently');
+  });
+
+  it('asks for independent lookups in the same round', () => {
+    expect(section).toContain('same round');
+  });
+
+  it('prefers full_production_line over chained lookups', () => {
+    expect(section).toContain('full_production_line');
+    expect(prompt).not.toContain(
+      'Full production breakdown with machine counts → `ingredient_tree`',
+    );
+  });
+
+  it('forbids re-fetching facts already in hand', () => {
+    expect(section).toMatch(/do not re-fetch/i);
+  });
+});

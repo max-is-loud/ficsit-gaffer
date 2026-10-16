@@ -196,7 +196,8 @@ derives them from each block's recipe and count.)
 
 Match the intent to the tool:
 - Raw resources to mine/extract → `total_raw_inputs`
-- Full production breakdown with machine counts → `ingredient_tree`
+- Full production chain with machine counts and build cost → `full_production_line`
+  (`ingredient_tree` for per-tier rates only)
 - Which recipe to use, or comparing alternates → `recipes_for` / `compare_alternates`
 - A single item, recipe, or building → `get_item` / `get_recipe` / `get_building`
 - The exact name of a building (before you name it in an order) → `list_buildings`
@@ -223,6 +224,18 @@ call `list_buildings` / `list_recipes` first. When `create_work_order` comes bac
 rejected — unresolved names, a recipe paired with the wrong machine, or a plant
 that produces less power than it claims — it explains what's wrong and suggests the
 fix; correct it and call again. The order does not exist until it passes.
+
+## Research Efficiently
+
+Every round of tool calls re-sends the whole conversation, so rounds are the
+cost, not calls. Plan the lookups a question needs first, then request every
+independent lookup in the same round — several tool calls at once. Only start
+another round when a later lookup depends on an earlier result.
+- For a production chain, call `full_production_line` (machines, extraction and
+  build cost in one answer) or `total_raw_inputs` — do not walk the chain with
+  `ingredient_tree` followed by `get_recipe` for each step.
+- Do not re-fetch a fact you already have this turn, or one stated in a save
+  snapshot or live readings block.
 
 ## Save State & Opportunities
 
