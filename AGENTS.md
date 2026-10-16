@@ -122,6 +122,30 @@ committing.
 - **Keep generic fixes upstreamable** — in self-contained commits, not tangled
   with Gaffer-only changes (see "Contributing upstream" in `CONTRIBUTING.md`).
 
+## External documentation — consult Context7 first
+
+For anything to do with **Unreal Engine** or **Satisfactory modding** (SML, the
+`foreman-bridge` mod, mod tooling, FICSIT-Networks, Remote Monitoring, game
+classes and engine APIs), look it up in Context7 (`query-docs`) **before**
+answering from memory or writing code; treat it as the source of truth over
+training data. Cite what you used when it shapes a decision. If Context7 has
+nothing on the point, say so and fall back to the upstream sites.
+
+| Topic | Context7 library ID |
+|---|---|
+| Satisfactory modding (SML) docs | `/websites/ficsit_app_satisfactory-modding` |
+| Satisfactory modding — development guides | `/websites/ficsit_app_satisfactory-modding_development` |
+| Satisfactory modding — documentation hub | `/websites/ficsit_app_satisfactory-modding-documentation` |
+| ficsit.app (mod repository, all hosted docs) | `/websites/ficsit_app` |
+| Satisfactory Mod Manager | `/satisfactorymodding/satisfactorymodmanager` |
+| FICSIT-Networks | `/websites/ficsit_app_ficsit-networks` |
+| FICSIT Remote Monitoring | `/websites/ficsit_app_ficsitremotemonitoring` |
+| Unreal Engine (official docs, C++ API) | `/websites/dev_epicgames_unreal-engine` |
+| Unreal Engine C++ coding standard | `/websites/dev_epicgames_unreal-engine_epic-cplusplus-coding-standard-for-unreal-engine` |
+
+Satisfactory ships a customised Unreal Engine 5 build, so the modding docs win
+where they disagree with the stock Unreal docs.
+
 ## Dev environment note
 
 Development happens on a Proxmox VM over SSH. The Satisfactory game files are **not**
