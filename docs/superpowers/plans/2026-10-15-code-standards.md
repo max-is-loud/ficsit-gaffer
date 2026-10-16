@@ -22,7 +22,7 @@
 - `--update` only ever lowers recorded counts and removes entries; nothing ever adds or raises one.
 - Prettier settings stay exactly: `semi: true`, `singleQuote: true`, `trailingComma: "all"`, `printWidth: 100`, `tabWidth: 2`.
 - Conventions from `CONTRIBUTING.md`: Conventional Commits with a body; `feature/` branches; never commit to `main`; British English; AI-generated PR bodies start with `🤖 AI-generated PR — Please review carefully.`
-- GitHub items are created only on `max-is-loud/ficsit-foreman`, never upstream; every issue is added to board 4 (`gh project item-add 4 --owner max-is-loud --url …`; `gh issue create --project` is broken in gh 2.46).
+- GitHub items are created only on `max-is-loud/ficsit-gaffer`, never upstream; every issue is added to board 4 (`gh project item-add 4 --owner max-is-loud --url …`; `gh issue create --project` is broken in gh 2.46).
 - New code follows the standard it introduces: file headers, small functions, descriptive names.
 
 ## Review Focus
@@ -73,7 +73,7 @@ Each refactor body: the current line count, the 500-line limit, "listed in `sour
 
 - [ ] **Step 3: Create them after the OK**
 
-For each row: `url=$(gh issue create -R max-is-loud/ficsit-foreman --title … --body-file … --label … --milestone "Foundations — identity & standards")`, then `gh project item-add 4 --owner max-is-loud --url "$url"`, then set Status to *Backlog* (project `PVT_kwHOAnxrc84BnNVv`, field `PVTSSF_lAHOAnxrc84BnNVvzhlzAL8`, option `e2d04cfe`) with `gh project item-edit`.
+For each row: `url=$(gh issue create -R max-is-loud/ficsit-gaffer --title … --body-file … --label … --milestone "Foundations — identity & standards")`, then `gh project item-add 4 --owner max-is-loud --url "$url"`, then set Status to *Backlog* (project `PVT_kwHOAnxrc84BnNVv`, field `PVTSSF_lAHOAnxrc84BnNVvzhlzAL8`, option `e2d04cfe`) with `gh project item-edit`.
 Expected: 13 URLs; each issue's `projectItems` shows *Backlog*. Record the number for every row.
 
 ---
