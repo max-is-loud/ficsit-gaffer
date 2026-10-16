@@ -1,107 +1,23 @@
-// HTTPS client for the live bridge receiver's read-only Constructor query. It validates each
-// response against a strict schema and the configured binding, and turns every failure into a
-// classified BridgeQueryError.
+// HTTPS client for the live bridge receiver's read-only buildables query. It validates each
+// response against the v2 contract (responseSchema.ts) and the configured binding, and turns
+// every failure into a classified BridgeQueryError.
 
 import { request } from 'node:https';
 
-import { z } from 'zod';
-
+import { inconsistency, stateSchema } from './responseSchema.js';
 import {
   BridgeQueryError,
   type BridgeBinding,
   type BridgeClient,
-  type ConstructorQuery,
-  type ConstructorState,
+  type BuildablesQuery,
+  type BuildablesState,
 } from './types.js';
 
 /** One deadline for the whole request: connect, TLS, headers and body. */
 export const BRIDGE_REQUEST_TIMEOUT_MS = 5000;
 export const BRIDGE_RESPONSE_LIMIT_BYTES = 256 * 1024;
-const QUERY_PATH = 'query/v1/constructors';
-const MAX_LOCATIONS = 100;
-const DEFAULT_LIMIT = 50;
-
-const id = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-const timestamp = z.number().int().nonnegative();
-const stateSchema = z.strictObject({
-  protocol: z.literal(1),
-  serverId: id,
-  worldId: id,
-  revision: id.nullable(),
-  epoch: id.nullable(),
-  status: z.enum(['fresh', 'last_known', 'unavailable']),
-  reason: z.enum(['recent_sync', 'stale', 'resynchronizing', 'receiver_restarted', 'no_baseline']),
-  lastSyncAt: timestamp.nullable(),
-  evaluatedAt: timestamp,
-  totalCount: z.number().int().nonnegative().nullable(),
-  locations: z
-    .array(
-      z.strictObject({ entityId: id, position: z.tuple([z.number(), z.number(), z.number()]) }),
-    )
-    .max(MAX_LOCATIONS),
-  coordinateSystem: z.literal('unreal_cm'),
-  returnedCount: z.number().int().nonnegative(),
-  hasMore: z.boolean(),
-  nextCursor: z
-    .string()
-    .regex(/^[A-Za-z0-9_-]{1,1024}$/)
-    .nullable(),
-});
-
-/** Cross-field rules the schema alone cannot express. Returns a detail label or undefined. */
-function inconsistency(
-  state: ConstructorState,
-  binding: BridgeBinding,
-  query: ConstructorQuery,
-): string | undefined {
-  if (state.serverId !== binding.serverId || state.worldId !== binding.worldId) {
-    return 'identity_mismatch';
-  }
-  if (
-    state.returnedCount !== state.locations.length ||
-    state.hasMore !== (state.nextCursor !== null)
-  ) {
-    return 'page_flags';
-  }
-  if (
-    new Set(state.locations.map((location) => location.entityId)).size !== state.locations.length
-  ) {
-    return 'duplicate_entity';
-  }
-  if (query.includeLocations !== true && (state.locations.length > 0 || state.hasMore)) {
-    return 'unrequested_locations';
-  }
-  if (state.locations.length > (query.limit ?? DEFAULT_LIMIT)) {
-    return 'page_limit';
-  }
-  if (state.status === 'unavailable') {
-    const empty =
-      state.reason === 'no_baseline' &&
-      state.revision === null &&
-      state.epoch === null &&
-      state.lastSyncAt === null &&
-      state.totalCount === null &&
-      state.locations.length === 0 &&
-      !state.hasMore;
-    return empty ? undefined : 'unavailable_shape';
-  }
-  if (state.revision === null || state.epoch === null || state.totalCount === null) {
-    return 'committed_shape';
-  }
-  if (state.locations.length > state.totalCount) {
-    return 'count_bound';
-  }
-  if (state.status === 'fresh' && (state.reason !== 'recent_sync' || state.lastSyncAt === null)) {
-    return 'fresh_shape';
-  }
-  if (
-    state.status === 'last_known' &&
-    (state.reason === 'recent_sync' || state.reason === 'no_baseline')
-  ) {
-    return 'last_known_shape';
-  }
-  return undefined;
-}
+const QUERY_PATH = 'query/v2/buildables';
+const QUERY_KEYS = ['filter', 'groupBy', 'from', 'includeRows', 'limit', 'cursor'] as const;
 
 function classifyStatus(status: number): BridgeQueryError {
   if (status === 409) {
@@ -115,16 +31,12 @@ function classifyStatus(status: number): BridgeQueryError {
 }
 
 /** Only known query fields are forwarded; the client never adds identities. */
-function requestBody(query: ConstructorQuery): string {
-  const body: ConstructorQuery = {};
-  if (query.includeLocations !== undefined) {
-    body.includeLocations = query.includeLocations;
-  }
-  if (query.limit !== undefined) {
-    body.limit = query.limit;
-  }
-  if (query.cursor !== undefined) {
-    body.cursor = query.cursor;
+function requestBody(query: BuildablesQuery): string {
+  const body: Record<string, unknown> = {};
+  for (const key of QUERY_KEYS) {
+    if (query[key] !== undefined) {
+      body[key] = query[key];
+    }
   }
   return JSON.stringify(body);
 }
@@ -149,7 +61,7 @@ export function createBridgeClient(
   const target = new URL(QUERY_PATH, binding.url);
   const timeoutMs = options.timeoutMs ?? BRIDGE_REQUEST_TIMEOUT_MS;
 
-  function send(query: ConstructorQuery): Promise<Buffer> {
+  function send(query: BuildablesQuery): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const body = Buffer.from(requestBody(query));
       let settled = false;
@@ -217,7 +129,7 @@ export function createBridgeClient(
   }
 
   return {
-    async query(query: ConstructorQuery): Promise<ConstructorState> {
+    async query(query: BuildablesQuery): Promise<BuildablesState> {
       const bytes = await send(query);
       let value: unknown;
       try {
@@ -229,7 +141,7 @@ export function createBridgeClient(
       if (!parsed.success) {
         throw new BridgeQueryError('invalid_response', 'schema');
       }
-      const state = parsed.data as ConstructorState;
+      const state = parsed.data as BuildablesState;
       const problem = inconsistency(state, binding, query);
       if (problem !== undefined) {
         throw new BridgeQueryError('invalid_response', problem);

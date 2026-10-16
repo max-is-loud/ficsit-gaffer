@@ -1,6 +1,6 @@
 /**
  * Live bridge types. These mirror the receiver's read-only query contract
- * (`integrations/foreman-bridge/receiver/docs/query-v1.md`); the receiver lives
+ * (`integrations/foreman-bridge/receiver/docs/query-v2.md`); the receiver lives
  * outside the npm workspace, so the contract is reproduced here and validated at
  * runtime rather than imported.
  */
@@ -20,8 +20,65 @@ export interface BridgeBinding {
   playthroughId: string;
 }
 
-export interface ConstructorQuery {
-  includeLocations?: boolean;
+export type BuildableCategory = 'manufacturer' | 'extractor' | 'generator' | 'storage';
+export type Purity = 'impure' | 'normal' | 'pure';
+
+/** Per-category configuration; every field is `null` when the game could not say. */
+export interface ManufacturerConfig {
+  recipe: string | null;
+  /** Current potential: 1 = 100 %. */
+  clockSpeed: number | null;
+  productionBoost: number | null;
+  powerShards: number | null;
+  somersloops: number | null;
+  paused: boolean | null;
+}
+export interface ExtractorConfig {
+  resource: string | null;
+  purity: Purity | null;
+  node: string | null;
+  clockSpeed: number | null;
+  powerShards: number | null;
+  paused: boolean | null;
+}
+export interface GeneratorConfig {
+  fuel: string | null;
+  clockSpeed: number | null;
+  powerShards: number | null;
+  paused: boolean | null;
+}
+export type StorageConfig = Record<string, never>;
+export type BuildableConfig =
+  ManufacturerConfig | ExtractorConfig | GeneratorConfig | StorageConfig;
+
+export interface BuildableRow {
+  entityId: string;
+  category: BuildableCategory;
+  /** Full Unreal class path; its final `.` segment is the class name. */
+  classPath: string;
+  /** Unreal world location `[X, Y, Z]` in centimetres. */
+  position: [number, number, number];
+  config: BuildableConfig;
+  /** Distance mode only, rounded to 0.1 m. */
+  distanceMetres?: number;
+}
+
+export interface BuildablesFilter {
+  category?: BuildableCategory;
+  /** Exact class name, e.g. `Build_SmelterMk1_C`. */
+  className?: string;
+  /** Exact recipe class name, e.g. `Recipe_IngotIron_C`. */
+  recipeName?: string;
+}
+
+export type BuildablesGroupBy = 'category' | 'class' | 'recipe';
+
+export interface BuildablesQuery {
+  filter?: BuildablesFilter;
+  groupBy?: BuildablesGroupBy;
+  /** Centimetres; switches to one distance-sorted page. */
+  from?: [number, number, number];
+  includeRows?: boolean;
   limit?: number;
   cursor?: string;
 }
@@ -30,14 +87,8 @@ export type StateStatus = 'fresh' | 'last_known' | 'unavailable';
 export type StateReason =
   'recent_sync' | 'stale' | 'resynchronizing' | 'receiver_restarted' | 'no_baseline';
 
-export interface ConstructorLocation {
-  entityId: string;
-  /** Unreal world location `[X, Y, Z]` in centimetres. */
-  position: [number, number, number];
-}
-
-export interface ConstructorState {
-  protocol: 1;
+export interface BuildablesState {
+  protocol: 2;
   serverId: string;
   worldId: string;
   revision: string | null;
@@ -48,8 +99,11 @@ export interface ConstructorState {
   lastSyncAt: number | null;
   /** UTC epoch milliseconds when the receiver evaluated `status`. */
   evaluatedAt: number;
+  /** Exact count matching the filter. */
   totalCount: number | null;
-  locations: ConstructorLocation[];
+  /** Present only when the query set `groupBy`; recipe-less buildables group under `null`. */
+  groups?: { key: string | null; count: number }[];
+  rows: BuildableRow[];
   coordinateSystem: 'unreal_cm';
   returnedCount: number;
   hasMore: boolean;
@@ -57,7 +111,7 @@ export interface ConstructorState {
 }
 
 export interface BridgeClient {
-  query(query: ConstructorQuery): Promise<ConstructorState>;
+  query(query: BuildablesQuery): Promise<BuildablesState>;
 }
 
 /**

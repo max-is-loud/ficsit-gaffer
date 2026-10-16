@@ -18,7 +18,8 @@ import {
 import {
   BridgeQueryError,
   type BridgeBinding,
-  type ConstructorState,
+  type BuildableRow,
+  type BuildablesState,
 } from '../src/bridge/types.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -92,9 +93,35 @@ function binding(port: number, host = '127.0.0.1'): BridgeBinding {
   };
 }
 
-function state(overrides: Partial<ConstructorState> = {}): ConstructorState {
+const SMELTER =
+  '/Game/FactoryGame/Buildable/Factory/SmelterMk1/Build_SmelterMk1.Build_SmelterMk1_C';
+const BOX =
+  '/Game/FactoryGame/Buildable/Factory/StorageContainerMk1/Build_StorageContainerMk1.Build_StorageContainerMk1_C';
+const ROW_A: BuildableRow = {
+  entityId: ENTITY_A,
+  category: 'manufacturer',
+  classPath: SMELTER,
+  position: [100, -200.5, 300],
+  config: {
+    recipe: '/Game/FactoryGame/Recipes/Smelter/Recipe_IngotIron.Recipe_IngotIron_C',
+    clockSpeed: 1,
+    productionBoost: 1,
+    powerShards: 0,
+    somersloops: 0,
+    paused: false,
+  },
+};
+const ROW_B: BuildableRow = {
+  entityId: ENTITY_B,
+  category: 'storage',
+  classPath: BOX,
+  position: [1, 2, 3],
+  config: {},
+};
+
+function state(overrides: Partial<BuildablesState> = {}): BuildablesState {
   return {
-    protocol: 1,
+    protocol: 2,
     serverId: SERVER_ID,
     worldId: WORLD_ID,
     revision: '0000000a-0000-4000-8000-000000000001',
@@ -104,10 +131,7 @@ function state(overrides: Partial<ConstructorState> = {}): ConstructorState {
     lastSyncAt: 1_760_000_000_000,
     evaluatedAt: 1_760_000_004_000,
     totalCount: 7,
-    locations: [
-      { entityId: ENTITY_A, position: [100, -200.5, 300] },
-      { entityId: ENTITY_B, position: [1, 2, 3] },
-    ],
+    rows: [ROW_A, ROW_B],
     coordinateSystem: 'unreal_cm',
     returnedCount: 2,
     hasMore: true,
@@ -143,21 +167,21 @@ describe('createBridgeClient', () => {
   it('posts the query with the read-only credential and returns a validated state', async () => {
     const fixture = await serve((_req, res) => json(res, 200, state()));
     const result = await createBridgeClient(binding(fixture.port), { ca }).query({
-      includeLocations: true,
+      includeRows: true,
       limit: 2,
     });
     expect(result).toEqual(state());
     expect(fixture.requests).toHaveLength(1);
     const [request] = fixture.requests;
     expect(request?.method).toBe('POST');
-    expect(request?.url).toBe('/query/v1/constructors');
+    expect(request?.url).toBe('/query/v2/buildables');
     expect(request?.headers.authorization).toBe(`Bearer ${TOKEN}`);
     expect(request?.headers['content-type']).toMatch(/^application\/json/);
-    expect(JSON.parse(request?.body ?? '')).toEqual({ includeLocations: true, limit: 2 });
+    expect(JSON.parse(request?.body ?? '')).toEqual({ includeRows: true, limit: 2 });
   });
 
   it('accepts count-only and no-baseline states', async () => {
-    const countOnly = state({ locations: [], returnedCount: 0, hasMore: false, nextCursor: null });
+    const countOnly = state({ rows: [], returnedCount: 0, hasMore: false, nextCursor: null });
     const noBaseline = state({
       revision: null,
       epoch: null,
@@ -165,7 +189,7 @@ describe('createBridgeClient', () => {
       reason: 'no_baseline',
       lastSyncAt: null,
       totalCount: null,
-      locations: [],
+      rows: [],
       returnedCount: 0,
       hasMore: false,
       nextCursor: null,
@@ -193,7 +217,7 @@ describe('createBridgeClient', () => {
   it.each([301, 302, 307, 308])('never follows a %i redirect', async (status) => {
     const sink = await serve((_req, res) => json(res, 200, state()));
     const fixture = await serve((_req, res) => {
-      res.writeHead(status, { location: `https://127.0.0.1:${sink.port}/query/v1/constructors` });
+      res.writeHead(status, { location: `https://127.0.0.1:${sink.port}/query/v2/buildables` });
       res.end();
     });
     expect(
@@ -220,7 +244,7 @@ describe('createBridgeClient', () => {
     expect(visible).not.toContain(TOKEN);
   });
 
-  const invalid: [string, string | ConstructorState | Record<string, unknown>][] = [
+  const invalid: [string, string | BuildablesState | Record<string, unknown>][] = [
     ['server identity mismatch', state({ serverId: '00000001-0000-4000-8000-000000000002' })],
     ['world identity mismatch', state({ worldId: '00000002-0000-4000-8000-000000000002' })],
     [
@@ -230,9 +254,7 @@ describe('createBridgeClient', () => {
     [
       'short position',
       state({
-        locations: [
-          { entityId: ENTITY_A, position: [1, 2] as unknown as [number, number, number] },
-        ],
+        rows: [{ ...ROW_A, position: [1, 2] as unknown as [number, number, number] }],
         returnedCount: 1,
       }),
     ],
@@ -240,15 +262,7 @@ describe('createBridgeClient', () => {
     ['hasMore without cursor', state({ nextCursor: null })],
     ['cursor without hasMore', state({ hasMore: false })],
     ['returned more than total', state({ totalCount: 1 })],
-    [
-      'duplicate entity',
-      state({
-        locations: [
-          { entityId: ENTITY_A, position: [1, 2, 3] },
-          { entityId: ENTITY_A, position: [1, 2, 3] },
-        ],
-      }),
-    ],
+    ['duplicate entity', state({ rows: [ROW_A, { ...ROW_B, entityId: ENTITY_A }] })],
     [
       'unavailable with a count',
       state({ status: 'unavailable', reason: 'no_baseline', totalCount: 0 }),
@@ -259,7 +273,7 @@ describe('createBridgeClient', () => {
         status: 'unavailable',
         reason: 'no_baseline',
         totalCount: null,
-        locations: [],
+        rows: [],
         returnedCount: 0,
         hasMore: false,
         nextCursor: null,
@@ -274,22 +288,110 @@ describe('createBridgeClient', () => {
     ['negative count', state({ totalCount: -1 })],
     ['unknown field', { ...state(), extra: true }],
     ['missing field', (({ coordinateSystem: _c, ...rest }) => rest)(state())],
-    ['wrong protocol', { ...state(), protocol: 2 }],
+    ['wrong protocol', { ...state(), protocol: 1 }],
+    [
+      'manufacturer config carrying a fuel',
+      state({
+        rows: [{ ...ROW_A, config: { ...ROW_A.config, fuel: null } } as BuildableRow, ROW_B],
+      }),
+    ],
+    [
+      'storage row with a manufacturer config',
+      state({ rows: [ROW_A, { ...ROW_B, config: ROW_A.config }] }),
+    ],
+    [
+      'unknown category',
+      state({ rows: [ROW_A, { ...ROW_B, category: 'decor' } as unknown as BuildableRow] }),
+    ],
+    [
+      'bad purity',
+      state({
+        rows: [
+          {
+            entityId: ENTITY_A,
+            category: 'extractor',
+            classPath: SMELTER,
+            position: [0, 0, 0],
+            config: {
+              resource: null,
+              purity: 'great',
+              node: null,
+              clockSpeed: 1,
+              powerShards: 0,
+              paused: false,
+            },
+          } as unknown as BuildableRow,
+          ROW_B,
+        ],
+      }),
+    ],
+    ['groups nobody asked for', state({ groups: [{ key: 'manufacturer', count: 1 }] })],
     ['not JSON', '<html>proxy error</html>'],
     ['JSON array', '[]'],
   ];
   it.each(invalid)('rejects %s as an invalid response', async (_label, body) => {
     const fixture = await serve((_req, res) => json(res, 200, body));
     const error = await rejection(
-      createBridgeClient(binding(fixture.port), { ca }).query({ includeLocations: true }),
+      createBridgeClient(binding(fixture.port), { ca }).query({ includeRows: true }),
     );
     expect(error.code).toBe('invalid_response');
+  });
+
+  it('accepts one valid row per category with groups when grouped', async () => {
+    const extractor: BuildableRow = {
+      entityId: '00000009-0000-4000-8000-00000000000c',
+      category: 'extractor',
+      classPath: '/Game/Build_MinerMk1.Build_MinerMk1_C',
+      position: [0, 0, 0],
+      config: {
+        resource: null,
+        purity: 'pure',
+        node: null,
+        clockSpeed: 2.5,
+        powerShards: 3,
+        paused: true,
+      },
+    };
+    const generator: BuildableRow = {
+      entityId: '00000009-0000-4000-8000-00000000000d',
+      category: 'generator',
+      classPath: '/Game/Build_GeneratorCoal.Build_GeneratorCoal_C',
+      position: [0, 0, 0],
+      config: { fuel: null, clockSpeed: null, powerShards: null, paused: null },
+    };
+    const expected = state({
+      rows: [ROW_A, ROW_B, extractor, generator],
+      returnedCount: 4,
+      groups: [{ key: null, count: 7 }],
+    });
+    const fixture = await serve((_req, res) => json(res, 200, expected));
+    const query = { includeRows: true, limit: 4, groupBy: 'recipe' as const };
+    await expect(createBridgeClient(binding(fixture.port), { ca }).query(query)).resolves.toEqual(
+      expected,
+    );
+    expect(JSON.parse(fixture.requests[0]?.body ?? '')).toEqual(query);
+  });
+
+  it('accepts a distance page with more rows and no cursor', async () => {
+    const expected = state({
+      rows: [
+        { ...ROW_A, distanceMetres: 0 },
+        { ...ROW_B, distanceMetres: 12.5 },
+      ],
+      nextCursor: null,
+    });
+    const fixture = await serve((_req, res) => json(res, 200, expected));
+    const query = { includeRows: true, limit: 2, from: [0, 0, 0] as [number, number, number] };
+    await expect(createBridgeClient(binding(fixture.port), { ca }).query(query)).resolves.toEqual(
+      expected,
+    );
+    expect(JSON.parse(fixture.requests[0]?.body ?? '')).toEqual(query);
   });
 
   it('rejects more locations than requested and locations on a count-only query', async () => {
     const fixture = await serve((_req, res) => json(res, 200, state()));
     const client = createBridgeClient(binding(fixture.port), { ca });
-    expect((await rejection(client.query({ includeLocations: true, limit: 1 }))).code).toBe(
+    expect((await rejection(client.query({ includeRows: true, limit: 1 }))).code).toBe(
       'invalid_response',
     );
     expect((await rejection(client.query({}))).code).toBe('invalid_response');

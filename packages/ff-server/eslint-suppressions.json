@@ -5,9 +5,6 @@
     }
   },
   "src/bridge/client.ts": {
-    "complexity": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 3
     }
