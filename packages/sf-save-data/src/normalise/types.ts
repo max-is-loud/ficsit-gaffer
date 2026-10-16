@@ -365,6 +365,8 @@ export interface SaveState {
   saveVersion?: number;
   /** Total in-game play time in seconds, if the header carries it. */
   playDurationSeconds?: number;
+  /** When the game wrote the save (ISO 8601 UTC), if the header recorded it. */
+  savedAt?: string;
   /** ISO timestamp of when this state was parsed. */
   parsedAt: string;
   player: PlayerState;

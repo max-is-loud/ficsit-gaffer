@@ -11,7 +11,7 @@ import { extractProgression } from './schematics.js';
 import { extractStorage } from './storage.js';
 import { extractTopology } from './topology.js';
 import type { SaveState } from './types.js';
-import { Warnings } from './util.js';
+import { saveDateTimeToIso, Warnings } from './util.js';
 
 export { emptySaveState } from './types.js';
 export type { SaveState } from './types.js';
@@ -74,6 +74,7 @@ export function normaliseSave(
     buildVersion: raw.header?.buildVersion,
     saveVersion: raw.header?.saveVersion,
     playDurationSeconds: raw.header?.playDurationSeconds,
+    savedAt: saveDateTimeToIso(raw.header?.saveDateTime, warnings),
     parsedAt,
     player: extractPlayer(objects, byInstance, warnings),
     storage: extractStorage(objects, byInstance, warnings),
