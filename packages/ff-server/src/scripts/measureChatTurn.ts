@@ -13,9 +13,12 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 import type { PrismaClient } from '@prisma/client';
 
+import { SaveSummaryCache } from '../context/saveSummaryCache.js';
+import { buildTurnContext } from '../context/turnContext.js';
 import { loadSystemPromptTemplate } from '../anthropic/systemPrompt.js';
 import { resolveServerConfig, resolveSystemPromptPath, serverLlmConfig } from '../config.js';
 import { runChat, type ChatDeps } from '../llm/chat.js';
@@ -121,27 +124,31 @@ interface RunContext {
 }
 
 /** Replays one scenario on a fresh playthrough and returns its measured turn. */
-async function runScenario(
+export async function runScenario(
   context: RunContext,
   scenario: MeasureScenario,
   run: number,
 ): Promise<MeasuredTurn> {
   const { options, deps } = context;
-  const { playthroughId, attachedSave } = await freshPlaythrough(
-    context.prisma,
-    context.saves,
-    options.savePath,
-  );
+  const { playthroughId } = await freshPlaythrough(context.prisma, context.saves, options.savePath);
+  const saveSummaries = new SaveSummaryCache(deps.mcp);
   let measured: MeasuredTurn | undefined;
   for (const [index, question] of scenario.turns.entries()) {
     await deps.playthroughs.appendMessage(playthroughId, 'user', question);
     const provider = new RecordingProvider(createProvider(options.llm));
     let metrics: TurnMetrics | undefined;
+    const turnContext = await buildTurnContext(
+      { saves: context.saves, saveSummaries },
+      playthroughId,
+    );
+    if (turnContext.contextBlocks.length === 0) {
+      throw new Error('Measurement requires a save snapshot; check the MCP server and save path.');
+    }
     const text = await runChat(
       {
         playthroughId,
         promptContext: { personality: '', pioneerProfile: '' },
-        savePath: attachedSave,
+        ...turnContext,
         provider,
         model: options.llm.model,
         maxTokens: options.llm.maxTokens,
@@ -176,6 +183,7 @@ function toMeasuredTurn(
   return {
     scenario,
     run,
+    contextChars: (lastRequest?.contextBlocks ?? []).reduce((sum, block) => sum + block.length, 0),
     rounds: metrics.rounds,
     toolCalls,
     toolResultChars: toolResultCharsByName(lastRequest?.messages ?? []),
@@ -242,7 +250,12 @@ function printReport(options: MeasureOptions, turns: MeasuredTurn[]): void {
   );
 }
 
-main().catch((error: unknown) => {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-  process.exitCode = 1;
-});
+if (
+  process.argv[1] !== undefined &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  main().catch((error: unknown) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}

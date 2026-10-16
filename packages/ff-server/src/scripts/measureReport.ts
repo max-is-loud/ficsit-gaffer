@@ -8,6 +8,8 @@ export interface MeasuredTurn {
   scenario: string;
   run: number;
   rounds: number;
+  /** Rendered context size; absent in historical measurements before snapshot validation. */
+  contextChars?: number;
   /** Calls per tool name. */
   toolCalls: Record<string, number>;
   /** Characters of tool output returned to the model, per tool name. */
