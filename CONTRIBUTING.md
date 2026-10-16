@@ -17,7 +17,9 @@ imports, points here).
 - Breaking changes: `type!: subject` plus a `BREAKING CHANGE:` footer.
 
 ### Branches
-- Prefix by work type: `feature/<slug>`, `bugfix/<slug>`, `hotfix/<slug>`.
+- Prefix by work type: `feature/<slug>`, `bugfix/<slug>`, `hotfix/<slug>`,
+  `chore/<slug>` (tooling, configuration, dependencies and other upkeep that
+  is neither a feature nor a fix).
 - `<slug>`: lowercase, words joined by `-`, drop filler words.
 - **Never commit directly to `main`** — branch first (also enforced by a ruleset).
 
