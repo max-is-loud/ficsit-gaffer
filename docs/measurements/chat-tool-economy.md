@@ -1,5 +1,69 @@
 # Chat tool economy — measurements
 
+## Traced follow-up run, 16 October 2026
+
+To tell necessary detail queries from redundant re-fetches, the CLI gained
+`--trace` (`bd75764`): per scenario turn, each tool call's round, arguments,
+error flag and result (capped at 4,000 characters), the context blocks sent,
+the final answer and the work orders afterwards. It was first checked offline
+against the real MCP and save with a scripted provider (no model calls), then
+used for one paid `follow-up` × 3 run. Each run's iron preparation turn is
+traced as well, so the run covers both scenarios. It cost about **$1.06**, and
+all six turns ended with `end_turn`. Setup otherwise matches the corrected
+stage: commit `bd75764` (prompt unchanged from `4e2cfb8`), a freshly built
+sf-mcp on port 18723 (listener PID verified as the launched process; batched
+`names`/`items`/`resources` schemas confirmed), and the same save and model.
+
+| Turn | Rounds | Tool calls | USD | Seconds |
+|---|---|---|---|---|
+| iron (preparation, unmeasured) | 7 (5–7) | 14 (14–17) | 0.261 (0.255–0.295) | 106.8 (61.9–118.6) |
+| copper (measured) | 3 (3–6) | 8 (6–13) | 0.065 (0.062–0.118) | 31.9 (28.8–40.4) |
+
+The iron turns here are preparation turns, not `iron-near-me` records, so
+they are not added to the results table below.
+
+### What the trace shows
+
+- **Follow-ups make no save re-fetches.** The three copper turns made no
+  `get_player_state`, `get_milestones`, `get_unlocked_recipes` or `get_power`
+  calls. They made seven `get_production` calls, all narrowed by `item`
+  (Copper Ore × 3, Copper Ingot × 2, Wire × 2), and one `get_storage` call
+  sorted by the pioneer's location. Each asks for detail the snapshot omits:
+  per-machine lists with locations, or containers in distance order. The
+  answers use it ("one Mk.1 miner on the normal node at (-333, 2316) feeds
+  2 smelters"). Under the prompt's own rule these are legitimate detail
+  calls. The literal zero-call target for the six save tools is still not met.
+- **First turns still fetch the unlock state.** Every iron turn called
+  `get_milestones` (9,248 characters) and `get_unlocked_recipes`
+  (16,733 characters) with no arguments. The snapshot gives the highest tier
+  and recipe counts, but not which recipes or buildings are unlocked; the
+  answers depend on that ("Steel isn't unlocked yet"). This is a gap in the
+  snapshot's contents, not a redundant call, and the largest remaining
+  first-turn payload. One iron turn of three also called `get_player_state`,
+  which repeats the snapshot's position: the only clear redundancy observed.
+- **Rounds are dependency chains plus late exact-name lookups.** Iron turns
+  ran 4–6 tool rounds. Every one called `list_buildings` for conveyors (and
+  often power poles) in round 3 or 4, just before `create_work_order`. That is
+  static game data, so it could have been requested in round 1. Two calls
+  failed on the model's input: `get_recipe` given building names, and
+  `get_schematic` given "Project Assembly Phase 2".
+- **Answer quality.** Each iron turn issued one Reinforced Iron Plate build
+  order (one revised once), grounded in the save. Copper turns sensibly
+  advised against a new copper factory; run 1 issued a small Copper Sheet
+  order. Two pre-existing problems surfaced, neither caused by this branch:
+  - In run 2 the copper answer told the pioneer to treat WO-001 as "not
+    issued", although it had been created. Persisted history is text-only and
+    no context lists existing work orders, so a follow-up turn cannot verify
+    its own earlier order. This is the same on `main`.
+  - A turn's text from every round is concatenated without a separator
+    ("…from copper.**Don't build…"). The accumulation is unchanged from `main`.
+
+No code change is made for these findings: the save tools' remaining calls are
+detail queries, and the single redundant `get_player_state` call is one
+observation. Candidate follow-ups are listing unlocked buildings in the
+snapshot, steering static exact-name lookups into the first round, and giving
+follow-up turns a list of existing work orders.
+
 ## Recovered run, 16 October 2026
 
 The interrupted Claude session's background benchmark completed at 12:18
@@ -39,10 +103,11 @@ before/after benchmark of the entire stack.
   one milestone and one storage call across the three samples. First-turn
   production calls actually increase. The retained metrics contain names and
   sizes, not arguments or final answers, so they cannot distinguish necessary
-  detail queries from redundant requests.
-- The next useful investigation is to retain tool arguments and answer/work-order
-  outputs, inspect the remaining production and milestone requests, then target
-  any demonstrably redundant lookups. Effort tuning remains separate (#43).
+  detail queries from redundant requests. The traced run above resolves this
+  for its follow-ups: every remaining save-tool call asked for item- or
+  location-scoped detail the snapshot omits.
+- Tool arguments and answer/work-order outputs are now traced (see above).
+  Effort tuning remains separate (#43).
   A clean batching comparison needs pinned MCP processes per stage. No issue is
   considered fully validated or closed by this report; PR integration and
   answer-quality review remain outstanding.
@@ -286,3 +351,5 @@ Use a new output file; the CLI appends records. The model calls incur API cost.
 - [cache](chat-tool-economy/cache.jsonl)
 - [final](chat-tool-economy/final.jsonl)
 - [corrected](chat-tool-economy/corrected.jsonl)
+- [traced](chat-tool-economy/traced.jsonl) — copper turns only, as measured
+- [traced, full trace](chat-tool-economy/traced-trace.jsonl) — all six turns, with tool arguments, capped results, answers and work orders
