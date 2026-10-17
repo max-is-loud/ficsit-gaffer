@@ -4,6 +4,8 @@
 //
 // Usage: npm run measure:turn -w @foreman/ff-server -- --save <file.sav> [--scenario <id|all>]
 //          [--runs 5] [--model <id>] [--max-tokens 16000] [--out results.jsonl]
+//          [--trace trace.jsonl] [--trace-result-chars 4000]
+// --trace appends every scenario turn's tool arguments, capped results, answer and work orders.
 // Environment: LLM_API_KEY (and LLM_PROVIDER), MCP_URL — as for the server. Run sf-mcp locally
 // with MCP_TRANSPORT=http and SAVE_DATA_DIR set to the OS temp directory (e.g. /tmp), where the
 // scratch saves are written.
@@ -23,7 +25,6 @@ import { loadSystemPromptTemplate } from '../anthropic/systemPrompt.js';
 import { resolveServerConfig, resolveSystemPromptPath, serverLlmConfig } from '../config.js';
 import { runChat, type ChatDeps } from '../llm/chat.js';
 import { createProvider } from '../llm/factory.js';
-import type { LlmProvider } from '../llm/provider.js';
 import type { LlmRequest, LlmRuntimeConfig } from '../llm/types.js';
 import type { TurnMetrics } from '../llm/turnMetrics.js';
 import { McpHttpClient } from '../mcp/client.js';
@@ -38,6 +39,7 @@ import {
   type MeasuredTurn,
 } from './measureReport.js';
 import { MEASURE_SCENARIOS, type MeasureScenario } from './measureScenarios.js';
+import { RecordingProvider, traceToolCalls, type TurnTrace } from './measureTrace.js';
 import { createScratchDb } from './scratchDb.js';
 
 interface MeasureOptions {
@@ -46,19 +48,9 @@ interface MeasureOptions {
   runs: number;
   llm: LlmRuntimeConfig;
   outPath?: string;
-}
-
-/** Keeps the last request the chat loop sent, so the turn's tool results can be measured. */
-class RecordingProvider implements LlmProvider {
-  public lastRequest: LlmRequest | undefined;
-  public constructor(private readonly inner: LlmProvider) {}
-  public runTurn(...args: Parameters<LlmProvider['runTurn']>): ReturnType<LlmProvider['runTurn']> {
-    this.lastRequest = args[0];
-    return this.inner.runTurn(...args);
-  }
-  public complete(...args: Parameters<LlmProvider['complete']>): Promise<string> {
-    return this.inner.complete(...args);
-  }
+  tracePath?: string;
+  /** Characters of each tool result kept in the trace. */
+  traceResultChars: number;
 }
 
 function parseOptions(): MeasureOptions {
@@ -70,6 +62,8 @@ function parseOptions(): MeasureOptions {
       model: { type: 'string' },
       'max-tokens': { type: 'string', default: '16000' },
       out: { type: 'string' },
+      trace: { type: 'string' },
+      'trace-result-chars': { type: 'string', default: '4000' },
     },
   });
   const config = resolveServerConfig();
@@ -89,6 +83,8 @@ function parseOptions(): MeasureOptions {
     runs: Number.parseInt(values.runs, 10),
     llm: { ...llm, model: values.model ?? llm.model, maxTokens: Number(values['max-tokens']) },
     outPath: values.out,
+    tracePath: values.trace,
+    traceResultChars: Number.parseInt(values['trace-result-chars'], 10),
   };
 }
 
@@ -121,6 +117,53 @@ interface RunContext {
   deps: ChatDeps;
   saves: SaveService;
   prisma: PrismaClient;
+  /** Receives every scenario turn's trace; the CLI appends them to `--trace`. */
+  onTrace?: (trace: TurnTrace) => void;
+}
+
+interface TurnOutcome {
+  text: string;
+  metrics: TurnMetrics | undefined;
+  lastRequest: LlmRequest | undefined;
+}
+
+/** Asks one question through production's turn context and chat loop. */
+async function runTurn(
+  context: RunContext,
+  playthroughId: string,
+  saveSummaries: SaveSummaryCache,
+  question: string,
+): Promise<TurnOutcome> {
+  const { options, deps } = context;
+  await deps.playthroughs.appendMessage(playthroughId, 'user', question);
+  const provider = new RecordingProvider(createProvider(options.llm));
+  let metrics: TurnMetrics | undefined;
+  const turnContext = await buildTurnContext(
+    { saves: context.saves, saveSummaries },
+    playthroughId,
+  );
+  if (turnContext.contextBlocks.length === 0) {
+    throw new Error('Measurement requires a save snapshot; check the MCP server and save path.');
+  }
+  const text = await runChat(
+    {
+      playthroughId,
+      promptContext: { personality: '', pioneerProfile: '' },
+      ...turnContext,
+      provider,
+      model: options.llm.model,
+      maxTokens: options.llm.maxTokens,
+    },
+    deps,
+    {
+      text: () => {},
+      toolUse: () => {},
+      workOrder: () => {},
+      metrics: (record) => (metrics = record),
+    },
+  );
+  await deps.playthroughs.appendMessage(playthroughId, 'assistant', text);
+  return { text, metrics, lastRequest: provider.lastRequest };
 }
 
 /** Replays one scenario on a fresh playthrough and returns its measured turn. */
@@ -134,37 +177,22 @@ export async function runScenario(
   const saveSummaries = new SaveSummaryCache(deps.mcp);
   let measured: MeasuredTurn | undefined;
   for (const [index, question] of scenario.turns.entries()) {
-    await deps.playthroughs.appendMessage(playthroughId, 'user', question);
-    const provider = new RecordingProvider(createProvider(options.llm));
-    let metrics: TurnMetrics | undefined;
-    const turnContext = await buildTurnContext(
-      { saves: context.saves, saveSummaries },
-      playthroughId,
-    );
-    if (turnContext.contextBlocks.length === 0) {
-      throw new Error('Measurement requires a save snapshot; check the MCP server and save path.');
+    const outcome = await runTurn(context, playthroughId, saveSummaries, question);
+    const isMeasured = index === scenario.measuredTurn;
+    if (isMeasured && outcome.metrics !== undefined) {
+      measured = toMeasuredTurn(scenario.id, run, outcome.metrics, outcome.lastRequest);
     }
-    const text = await runChat(
-      {
-        playthroughId,
-        promptContext: { personality: '', pioneerProfile: '' },
-        ...turnContext,
-        provider,
-        model: options.llm.model,
-        maxTokens: options.llm.maxTokens,
-      },
-      deps,
-      {
-        text: () => {},
-        toolUse: () => {},
-        workOrder: () => {},
-        metrics: (record) => (metrics = record),
-      },
-    );
-    await deps.playthroughs.appendMessage(playthroughId, 'assistant', text);
-    if (index === scenario.measuredTurn && metrics !== undefined) {
-      measured = toMeasuredTurn(scenario.id, run, metrics, provider.lastRequest);
-    }
+    context.onTrace?.({
+      scenario: scenario.id,
+      run,
+      turn: index,
+      measured: isMeasured,
+      question,
+      contextBlocks: outcome.lastRequest?.contextBlocks ?? [],
+      toolCalls: traceToolCalls(outcome.lastRequest?.messages ?? [], options.traceResultChars),
+      answer: outcome.text,
+      workOrders: await deps.workOrders.list(playthroughId),
+    });
   }
   if (measured === undefined) {
     throw new Error(`Scenario '${scenario.id}' produced no measured turn.`);
@@ -222,10 +250,17 @@ async function main(): Promise<void> {
     workOrders,
     mcp,
   };
+  const { tracePath } = options;
+  const onTrace =
+    tracePath === undefined
+      ? undefined
+      : (trace: TurnTrace) => fs.appendFileSync(tracePath, `${JSON.stringify(trace)}\n`);
   const turns: MeasuredTurn[] = [];
   try {
     for (const scenario of options.scenarios) {
-      turns.push(...(await runAll({ options, deps, saves, prisma: scratch.prisma }, scenario)));
+      turns.push(
+        ...(await runAll({ options, deps, saves, prisma: scratch.prisma, onTrace }, scenario)),
+      );
     }
   } finally {
     await mcp.close();
