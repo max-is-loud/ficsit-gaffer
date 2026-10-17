@@ -187,8 +187,9 @@ path. The integrity of imported bridge files is checked with
 
 ### Real game / web-chat acceptance
 
-**Status: outstanding.** Required by the design before the milestone is
-complete, on the isolated dedicated server with a linked playthrough:
+**Status: passed (confirmed 2026-10-16).** The user confirmed that all five
+checks below were completed with Claude and passed on the isolated dedicated
+server with a linked playthrough:
 
 1. Baseline: ask for Constructor counts and positions in web chat without
    uploading a save.
@@ -199,5 +200,8 @@ complete, on the isolated dedicated server with a linked playthrough:
 5. Interrupt Foreman→receiver access; chat says live data is unavailable and
    ordinary chat still works.
 
-Record observed counts/positions, the stale interval, recovery, model wording and
-the unavailable case here, separately from the automated results above.
+Evidence source: user confirmation in the continuation thread on 2026-10-16.
+The detailed counts/positions, measured stale interval and verbatim model
+responses were not included in the handoff. This records the reported manual
+acceptance result separately from the automated results above; it does not
+claim a new test run or reconstruct missing observations.

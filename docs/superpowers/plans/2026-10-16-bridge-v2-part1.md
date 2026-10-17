@@ -35,12 +35,17 @@
 
 ### Task 0: Part 0 — v1 real-game acceptance (manual, with the user)
 
+**Acceptance passed:** the user confirmed on 2026-10-16 that all five checks
+were completed with Claude and passed. The acceptance document records this
+confirmation; detailed observations were not preserved in the handoff. Do not
+repeat the manual checks solely because the original checklist was not updated.
+
 **Files:**
 - Modify: `docs/live-constructor-awareness.md` ("Real game / web-chat acceptance" section)
 
-- [ ] **Step 1:** With the user, on the isolated dedicated server with the linked playthrough and the current `main` build, run the five steps listed under "Real game / web-chat acceptance" in `docs/live-constructor-awareness.md`.
-- [ ] **Step 2:** Replace "**Status: outstanding.**" with "**Status: passed (2026-MM-DD).**" and record observed counts/positions, the stale interval, recovery, model wording and the unavailable case, separately from the automated results. If any step fails, stop and raise it with the user before Task 1.
-- [ ] **Step 3: Commit** — `docs(bridge): record v1 real-game acceptance`.
+- [x] **Step 1:** With the user, on the isolated dedicated server with the linked playthrough and the current `main` build, run the five steps listed under "Real game / web-chat acceptance" in `docs/live-constructor-awareness.md`.
+- [x] **Step 2:** Replace "**Status: outstanding.**" with "**Status: passed (2026-MM-DD).**" and record observed counts/positions, the stale interval, recovery, model wording and the unavailable case, separately from the automated results. If any step fails, stop and raise it with the user before Task 1. *(Status recorded; the detailed observations were not preserved and are deliberately not reconstructed.)*
+- [x] **Step 3: Commit** — `docs(bridge): record v1 real-game acceptance`.
 
 ### Task 1: Build mirror and Part 1 spike
 
