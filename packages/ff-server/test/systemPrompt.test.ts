@@ -141,6 +141,10 @@ describe('research economy guidance in the bundled prompt', () => {
   it('forbids re-fetching facts already in hand', () => {
     expect(section).toMatch(/do not re-fetch/i);
   });
+
+  it('asks for every game-data lookup in the first round', () => {
+    expect(section).toMatch(/first round, request every game-data\s+lookup/);
+  });
 });
 
 describe('save snapshot guidance in the bundled prompt', () => {

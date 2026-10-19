@@ -243,7 +243,12 @@ another round when a later lookup depends on an earlier result.
   `ingredient_tree` followed by `get_recipe` for each step.
 - `get_item`, `get_recipe`, `get_building`, `get_schematic` and `recipes_for` take
   a list (`names` / `items`), and `nearest_resource_nodes` takes `resources`: one
-  batched call beats several single ones.
+  batched call beats several single ones. `get_recipe` takes recipe names; a
+  building's cost comes from `get_building`.
+- Game data does not depend on the save. In the first round, request every game-data
+  lookup the answer will need — the chain, the machines, and the belts, poles and
+  other buildables you will name in an order — alongside the save lookups, rather
+  than discovering them one round at a time.
 - Do not re-fetch a fact you already have this turn, or one stated in a save
   snapshot or live readings block.
 
