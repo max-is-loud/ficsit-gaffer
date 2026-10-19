@@ -1,5 +1,20 @@
 # Chat tool economy — measurements
 
+Commit hashes below are the commits each stage was measured at. The branch was
+since rebased onto `main` and will be squash-merged, so those hashes are not in
+the final history; the commit titles identify the same changes.
+
+| Measured at | Commit | After rebase (19 Oct 2026) |
+|---|---|---|
+| `936aa5e` | feat(server): add a repeatable chat-turn measurement script | `0eea361` |
+| `66517a7` | perf(server): cache the conversation prefix across tool rounds | `3828031` |
+| `8a738a1` | feat(server): tell the foreman when the save snapshot is enough | `987077c` |
+| `4e2cfb8` | fix(server): include save context in chat measurements | `57a9677` |
+| `bd75764` | feat(server): trace tool calls and answers in chat measurements | `7f18a50` |
+| `0861ac7` | feat(server): list unlocked buildings and recipes in the save snapshot | `fd9225c` |
+| `141c16e` | feat(server): give each turn the playthrough's work orders | `29450eb` |
+| `3a1c823` | feat(server): steer save-independent game-data lookups into round 1 | `3d628fa` |
+
 ## Unlock lists, work-orders block and first-round steering, 18 October 2026
 
 The three follow-ups from the traced run were implemented: unlocked buildings,
