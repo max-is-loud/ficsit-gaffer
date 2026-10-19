@@ -52,13 +52,26 @@ function position({ player }: SaveSummary): string | undefined {
   return `- Position: ${point(player.position)}${place}.${hub}`;
 }
 
+/** ` (needs 50 Smart Plating; unlocks tier 4)`, or nothing without phase costs. */
+function spaceElevatorGoal(view: SaveSummary['progress']): string {
+  if (view.spaceElevatorCost === undefined || view.spaceElevatorCost.length === 0) {
+    return '';
+  }
+  const cost = view.spaceElevatorCost.map((entry) => `${entry.amount} ${entry.item}`).join(', ');
+  const tier =
+    view.spaceElevatorUnlocksTier === undefined
+      ? ''
+      : `; unlocks tier ${view.spaceElevatorUnlocksTier}`;
+  return ` (needs ${cost}${tier})`;
+}
+
 function progress({ progress: view }: SaveSummary): string {
   if (view.highestTier === 0 && view.tierMilestones.length === 0) {
     return '- Progress: no milestones purchased yet.';
   }
   const parts = [`tier ${view.highestTier} (milestones ${view.tierMilestones.join(', ')})`];
   if (view.spaceElevatorPhase !== undefined) {
-    parts.push(`Space Elevator phase ${view.spaceElevatorPhase}`);
+    parts.push(`Space Elevator phase ${view.spaceElevatorPhase}${spaceElevatorGoal(view)}`);
   }
   if (view.mamTrees.length > 0) {
     parts.push(`MAM trees: ${view.mamTrees.join(', ')}`);
@@ -70,6 +83,24 @@ function recipes({ recipes: view }: SaveSummary): string {
   const more = view.alternatesOmitted > 0 ? `, +${view.alternatesOmitted} more` : '';
   const names = view.alternates.length > 0 ? `: ${view.alternates.join(', ')}${more}` : '';
   return `- Recipes: ${view.standardCount} standard, ${plural(view.alternateCount, 'alternate')}${names}.`;
+}
+
+/** `A, B, +3 more`; undefined for an empty list. */
+function nameList(names: string[], omitted: number): string | undefined {
+  if (names.length === 0) {
+    return undefined;
+  }
+  return `${names.join(', ')}${omitted > 0 ? `, +${omitted} more` : ''}`;
+}
+
+function buildings({ unlocks }: SaveSummary): string | undefined {
+  const names = unlocks && nameList(unlocks.buildings, unlocks.buildingsOmitted);
+  return names === undefined ? undefined : `- Buildings unlocked (exact names): ${names}.`;
+}
+
+function partRecipes({ unlocks }: SaveSummary): string | undefined {
+  const names = unlocks && nameList(unlocks.partRecipes, unlocks.partRecipesOmitted);
+  return names === undefined ? undefined : `- Standard part recipes unlocked: ${names}.`;
 }
 
 function power({ power: view }: SaveSummary): string | undefined {
@@ -123,6 +154,8 @@ const LINES: ((summary: SaveSummary) => string | undefined)[] = [
   position,
   progress,
   recipes,
+  buildings,
+  partRecipes,
   power,
   production,
   storage,

@@ -1,5 +1,5 @@
-// Builds the game-data index the save tools join against (display names, recipes, buildings, fluid
-// classes, Project Assembly phases) from the merged dataset, and the single
+// Builds the game-data index the save tools join against (display names, recipes, buildings,
+// schematics, fluid classes, Project Assembly phases) from the merged dataset, and the single
 // class-name-to-display-name resolution rule.
 
 import {
@@ -7,6 +7,7 @@ import {
   type Building,
   type ProjectAssemblyPhase,
   type Recipe,
+  type Schematic,
 } from '@foreman/sf-game-data';
 import { humaniseClassName } from '@foreman/sf-present';
 
@@ -27,6 +28,8 @@ export interface GameDataIndex {
   fluids?: Set<string>;
   /** Project Assembly / Space Elevator phase deliverable costs (#172). Optional for test literals / pre-#172 datasets. */
   projectAssemblyPhases?: ProjectAssemblyPhase[];
+  /** Schematics keyed by class, for what each unlocks. Optional for test literals. */
+  schematics?: Record<string, Schematic>;
 }
 
 /**
@@ -71,6 +74,7 @@ export function loadGameDataIndex(): GameDataIndex {
     buildings: gameData.buildings,
     fluids,
     projectAssemblyPhases: gameData.projectAssemblyPhases ?? [],
+    schematics: gameData.schematics,
   };
 }
 

@@ -23,6 +23,8 @@ export const saveSummarySchema = z.object({
     highestTier: z.number(),
     tierMilestones: z.array(z.string()),
     spaceElevatorPhase: z.number().optional(),
+    spaceElevatorCost: z.array(z.object({ item: z.string(), amount: z.number() })).optional(),
+    spaceElevatorUnlocksTier: z.number().optional(),
     mamTrees: z.array(z.string()),
   }),
   recipes: z.object({
@@ -57,6 +59,15 @@ export const saveSummarySchema = z.object({
       biome: z.string().nullable(),
     }),
   ),
+  // Optional: an sf-mcp from before the unlock lists still yields a (shorter) snapshot.
+  unlocks: z
+    .object({
+      buildings: z.array(z.string()),
+      buildingsOmitted: z.number(),
+      partRecipes: z.array(z.string()),
+      partRecipesOmitted: z.number(),
+    })
+    .optional(),
 });
 
 export type SaveSummary = z.infer<typeof saveSummarySchema>;

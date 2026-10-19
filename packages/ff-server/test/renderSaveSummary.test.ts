@@ -169,4 +169,53 @@ describe('renderSaveSummary', () => {
     };
     expect(renderSaveSummary(full, UPLOADED).length).toBeLessThanOrEqual(4800);
   });
+
+  it('keeps the unlock lists within their own 6,000-character budget at the whole-game size', () => {
+    // 1.2 has 129 factory buildings and 179 standard part recipes, 16 characters long on average.
+    const names = (prefix: string, count: number): string[] =>
+      Array.from({ length: count }, (_, i) => `${prefix} ${i}`.padEnd(17, 'x'));
+    const unlocks = {
+      buildings: names('Building', 129),
+      buildingsOmitted: 0,
+      partRecipes: names('Recipe', 179),
+      partRecipesOmitted: 0,
+    };
+    const withUnlocks = renderSaveSummary({ ...production, unlocks }, UPLOADED);
+    const without = renderSaveSummary(production, UPLOADED);
+    expect(withUnlocks.length - without.length).toBeLessThanOrEqual(6000);
+  });
+
+  it('lists unlocked buildings by exact name, then part recipes, noting any omitted', () => {
+    const text = renderSaveSummary(
+      {
+        ...production,
+        unlocks: {
+          buildings: ['Conveyor Belt Mk.1', 'Smelter'],
+          buildingsOmitted: 2,
+          partRecipes: ['Iron Ingot', 'Iron Plate'],
+          partRecipesOmitted: 0,
+        },
+      },
+      UPLOADED,
+    );
+    expect(text).toContain(
+      '- Buildings unlocked (exact names): Conveyor Belt Mk.1, Smelter, +2 more.\n' +
+        '- Standard part recipes unlocked: Iron Ingot, Iron Plate.\n',
+    );
+  });
+
+  it("gives the current Space Elevator phase's cost and the tier it unlocks", () => {
+    const text = renderSaveSummary(
+      {
+        ...production,
+        progress: {
+          ...production.progress,
+          spaceElevatorCost: [{ item: 'Smart Plating', amount: 50 }],
+          spaceElevatorUnlocksTier: 4,
+        },
+      },
+      UPLOADED,
+    );
+    expect(text).toContain('Space Elevator phase 1 (needs 50 Smart Plating; unlocks tier 4);');
+  });
 });

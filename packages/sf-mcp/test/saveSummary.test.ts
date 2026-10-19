@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { ResourceNodeHit } from '@foreman/sf-game-data';
 
-import { nearestPerResource, summariseSave, type SaveViews } from '../src/query/saveSummary.js';
+import {
+  nearestPerResource,
+  SUMMARY_CAPS,
+  summariseSave,
+  type SaveViews,
+} from '../src/query/saveSummary.js';
 
 function views(overrides: Partial<SaveViews> = {}): SaveViews {
   return {
@@ -28,6 +33,7 @@ function views(overrides: Partial<SaveViews> = {}): SaveViews {
     production: { producerCount: 0, extractorCount: 0, estimatedPowerMW: 0, items: [], note: '' },
     storage: { containerCount: 0, containers: [], dimensionalDepot: [] },
     nearbyResources: [],
+    unlocks: { buildings: [], partRecipes: [] },
     ...overrides,
   };
 }
@@ -226,6 +232,44 @@ describe('summariseSave', () => {
     expect(summary.progress.tierMilestones).toHaveLength(8);
     expect(summary.progress.spaceElevatorPhase).toBe(2);
     expect(summary.progress.mamTrees).toEqual(['Caterium', 'Power Slugs']);
+    expect(summary.progress.spaceElevatorCost).toBeUndefined();
+  });
+
+  it("states the current Space Elevator phase's cost and the tier it unlocks", () => {
+    const phase = (number: number, current: boolean, amount: number) => ({
+      phase: number,
+      unlocksTier: number * 2 + 2,
+      current,
+      cost: [{ itemClass: 'Desc_SpaceElevatorPart_1_C', displayName: 'Smart Plating', amount }],
+    });
+    const summary = summariseSave(
+      views({
+        progress: {
+          milestonesByTier: [],
+          tutorials: [],
+          other: [],
+          mamResearch: [],
+          projectAssembly: [phase(1, true, 50), phase(2, false, 1000)],
+          assemblyPhase: { phase: 1 },
+        },
+      }),
+    );
+    expect(summary.progress.spaceElevatorCost).toEqual([{ item: 'Smart Plating', amount: 50 }]);
+    expect(summary.progress.spaceElevatorUnlocksTier).toBe(4);
+  });
+
+  it('caps the unlocked buildings and part recipes and counts the rest', () => {
+    const names = (prefix: string, count: number) =>
+      Array.from({ length: count }, (_, i) => `${prefix} ${String(i).padStart(3, '0')}`);
+    const unlocks = {
+      buildings: names('Building', SUMMARY_CAPS.buildings + 5),
+      partRecipes: names('Recipe', 3),
+    };
+    const summary = summariseSave(views({ unlocks }));
+    expect(summary.unlocks.buildings).toHaveLength(SUMMARY_CAPS.buildings);
+    expect(summary.unlocks.buildingsOmitted).toBe(5);
+    expect(summary.unlocks.partRecipes).toEqual(names('Recipe', 3));
+    expect(summary.unlocks.partRecipesOmitted).toBe(0);
   });
 });
 

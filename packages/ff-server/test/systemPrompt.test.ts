@@ -155,4 +155,8 @@ describe('save snapshot guidance in the bundled prompt', () => {
   it('takes "near you" positions from the snapshot', () => {
     expect(section).toMatch(/near you.*from the save snapshot/is);
   });
+
+  it('takes unlock status from the snapshot', () => {
+    expect(section).toMatch(/whether a building or recipe is unlocked/);
+  });
 });

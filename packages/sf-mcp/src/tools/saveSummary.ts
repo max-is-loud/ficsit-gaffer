@@ -24,6 +24,7 @@ import {
   storageView,
   unlockedRecipes,
 } from '../query/selectors.js';
+import { unlockedNames } from '../query/unlocks.js';
 import type { SaveStore } from '../store/saveStore.js';
 import type { SaveStoreRegistry } from '../store/registry.js';
 import type { ToolResult } from './toolResult.js';
@@ -80,6 +81,7 @@ function collectViews(store: SaveStore, sources: SaveSummarySources): SaveViews 
     production: productionView(state, gameData, sources.locations),
     storage: storageView(state, resolve),
     nearbyResources: location === undefined ? [] : nearbyResources(sources.queries, location),
+    unlocks: unlockedNames(state, gameData),
   };
 }
 
@@ -97,7 +99,7 @@ export function registerSaveSummaryTool(
     {
       title: 'Get save summary',
       description:
-        "Host-internal: a compact, capped summary of a save (position, progress, recipes, power, top production and storage, nearest resource types) that the backend places in the foreman's context. Not for answering pioneer questions directly.",
+        "Host-internal: a compact, capped summary of a save (position, progress, recipes, unlocked buildings, power, top production and storage, nearest resource types) that the backend places in the foreman's context. Not for answering pioneer questions directly.",
       inputSchema: {
         savePath: z.string().optional().describe('Managed by the host — the save to read.'),
       },

@@ -13,8 +13,13 @@ import type {
   RecipeSummary,
   StorageView,
 } from './selectors.js';
+import type { UnlockedNames } from './unlocks.js';
 
-/** List caps: they keep the rendered summary within its token budget. */
+/**
+ * List caps: they keep the rendered summary within its token budget. The unlock caps cover the
+ * whole game (129 factory buildings, 179 standard part recipes in 1.2), so those lists are never
+ * cut: a partial unlock list would send the foreman back to the full milestone and recipe views.
+ */
 export const SUMMARY_CAPS = {
   tierMilestones: 8,
   alternates: 30,
@@ -22,6 +27,8 @@ export const SUMMARY_CAPS = {
   production: 15,
   storage: 15,
   resourceTypes: 8,
+  buildings: 140,
+  partRecipes: 200,
 } as const;
 
 /** A nearby resource node as the summary reports it (metres; bearing from the player). */
@@ -44,6 +51,7 @@ export interface SaveViews {
   production: ProductionView;
   storage: StorageView;
   nearbyResources: SummaryResourceNode[];
+  unlocks: UnlockedNames;
 }
 
 /**
@@ -62,6 +70,9 @@ export interface SaveSummary {
     highestTier: number;
     tierMilestones: string[];
     spaceElevatorPhase?: number;
+    /** The current phase's deliverables (effective amounts) and the tier it unlocks. */
+    spaceElevatorCost?: { item: string; amount: number }[];
+    spaceElevatorUnlocksTier?: number;
     mamTrees: string[];
   };
   recipes: {
@@ -81,6 +92,12 @@ export interface SaveSummary {
   production: { item: string; perMinute: number; machines: number; unit?: 'm³' }[];
   storage: { item: string; quantity: number }[];
   nearbyResources: SummaryResourceNode[];
+  unlocks: {
+    buildings: string[];
+    buildingsOmitted: number;
+    partRecipes: string[];
+    partRecipesOmitted: number;
+  };
 }
 
 const oneDecimal = (value: number): number => Math.round(value * 10) / 10;
@@ -123,7 +140,31 @@ function summariseProgress(progress: MilestoneSummary): SaveSummary['progress'] 
       .map((milestone) => milestone.displayName)
       .slice(0, SUMMARY_CAPS.tierMilestones),
     ...(phase === undefined ? {} : { spaceElevatorPhase: phase }),
+    ...spaceElevatorGoal(progress),
     mamTrees: [...progress.mamResearch].sort(),
+  };
+}
+
+/** The current Space Elevator phase's cost and unlock, when the game data carries phase costs. */
+function spaceElevatorGoal(progress: MilestoneSummary): Partial<SaveSummary['progress']> {
+  const current = progress.projectAssembly.find((phase) => phase.current);
+  return current === undefined
+    ? {}
+    : {
+        spaceElevatorCost: current.cost.map((entry) => ({
+          item: entry.displayName,
+          amount: entry.amount,
+        })),
+        spaceElevatorUnlocksTier: current.unlocksTier,
+      };
+}
+
+function summariseUnlocks(unlocks: UnlockedNames): SaveSummary['unlocks'] {
+  return {
+    buildings: unlocks.buildings.slice(0, SUMMARY_CAPS.buildings),
+    buildingsOmitted: Math.max(0, unlocks.buildings.length - SUMMARY_CAPS.buildings),
+    partRecipes: unlocks.partRecipes.slice(0, SUMMARY_CAPS.partRecipes),
+    partRecipesOmitted: Math.max(0, unlocks.partRecipes.length - SUMMARY_CAPS.partRecipes),
   };
 }
 
@@ -208,6 +249,7 @@ export function summariseSave(views: SaveViews): SaveSummary {
     production: summariseProduction(views.production),
     storage: summariseStorage(views.storage),
     nearbyResources: views.nearbyResources.slice(0, SUMMARY_CAPS.resourceTypes),
+    unlocks: summariseUnlocks(views.unlocks),
   };
 }
 
