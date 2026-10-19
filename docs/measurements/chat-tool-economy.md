@@ -1,5 +1,58 @@
 # Chat tool economy — measurements
 
+## Unlock lists, work-orders block and first-round steering, 18 October 2026
+
+The three follow-ups from the traced run were implemented: unlocked buildings,
+part recipes and the current Space Elevator phase cost in the snapshot
+(#45, `0861ac7`); a work-orders context block (#47, `141c16e`); and prompt
+steering of save-independent game-data lookups into the first round (#46,
+`3a1c823`). On the measurement save the snapshot grows from 1,624 to
+2,926 characters; with the work-orders block, follow-up context is 3,221–3,245.
+The real snapshot was rendered offline through the rebuilt MCP before any paid
+call. One paid traced `follow-up` × 3 run followed at `3a1c823`. The setup was a
+freshly built sf-mcp on port 18723 (listener PID 32767, `node dist/index.js`,
+verified with `ss` and `ps`), with the same save and model and no effort
+override. It cost about **$0.93**, and all six turns ended with `end_turn`.
+
+| Turn | Rounds | Tool calls | USD |
+|---|---|---|---|
+| iron (preparation), 16 Oct | 7 (5–7) | 14 (14–17) | 0.261 (0.255–0.295) |
+| iron (preparation), 18 Oct | 5 (3–7) | 13 (5–13) | 0.234 (0.174–0.262) |
+| copper (measured), 16 Oct | 3 (3–6) | 8 (6–13) | 0.065 (0.062–0.118) |
+| copper (measured), 18 Oct | 3 (3–7) | 7 (7–14) | 0.060 (0.052–0.150) |
+
+Per-turn USD is split from the usage log by turn; rounds include the final
+answer round. Three samples per row cannot separate these medians from
+run-to-run variation; the trace findings below are the stronger evidence.
+
+### What the trace shows
+
+- **The unlock fetches are gone.** No iron turn called `get_milestones`,
+  `get_unlocked_recipes` or `list_buildings` (16 Oct: all three called the
+  first two, and every one called `list_buildings` late). The answers still
+  reason from unlock state and the phase cost ("Smart Plating is what unlocks
+  Tier 4").
+- **Work orders carry over.** All three copper answers treat WO-001 as issued
+  and open ("Finish WO-001 first"; "queued behind WO-001"). On 16 Oct, run 2
+  told the pioneer to treat it as not issued.
+- **Remaining save calls.** `get_player_state` appeared in two iron turns. The
+  answers use the inventory it gives ("the 34 RIP you're carrying"), which the
+  snapshot lacks. One iron turn called `get_power` with no arguments, which the
+  snapshot's totals largely cover. One copper turn called `get_milestones`
+  next to Tier 4 schematic lookups. Everything else was item-narrowed
+  `get_production` or location-sorted `get_storage`.
+- **Round spread is wide.** One iron turn finished in 3 rounds and 5 calls.
+  Another took 7 rounds because `create_work_order` was rejected: it named
+  "Project Assembly Phase 1" as a schematic. That is the same confusion the
+  16 Oct `get_schematic` call showed, and the server's rejection hint did not
+  fix it in one retry. One copper turn (7 rounds) went on to issue a Copper
+  Sheet order.
+
+Candidate follow-ups: Space Elevator phases are not schematics, so the
+order schema or prompt could name them, or the rejection could point to the
+phase. The prompt could also say that power totals need no `get_power` call.
+Neither is changed here; both rest on single observations.
+
 ## Traced follow-up run, 16 October 2026
 
 To tell necessary detail queries from redundant re-fetches, the CLI gained
@@ -62,7 +115,8 @@ No code change is made for these findings: the save tools' remaining calls are
 detail queries, and the single redundant `get_player_state` call is one
 observation. Candidate follow-ups are listing unlocked buildings in the
 snapshot, steering static exact-name lookups into the first round, and giving
-follow-up turns a list of existing work orders.
+follow-up turns a list of existing work orders (all three since implemented;
+see the 18 October run above).
 
 ## Recovered run, 16 October 2026
 
@@ -353,3 +407,5 @@ Use a new output file; the CLI appends records. The model calls incur API cost.
 - [corrected](chat-tool-economy/corrected.jsonl)
 - [traced](chat-tool-economy/traced.jsonl) — copper turns only, as measured
 - [traced, full trace](chat-tool-economy/traced-trace.jsonl) — all six turns, with tool arguments, capped results, answers and work orders
+- [unlocks](chat-tool-economy/unlocks.jsonl) — copper turns at `3a1c823`, as measured
+- [unlocks, full trace](chat-tool-economy/unlocks-trace.jsonl) — all six turns at `3a1c823`
