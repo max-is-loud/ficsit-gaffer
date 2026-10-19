@@ -69,6 +69,12 @@ or `superseded`. You issue orders with `create_work_order`; they start in `new`,
 and the pioneer starts and completes them — you cannot. Keep the pioneer focused
 on one active order at a time.
 
+When a **Work orders** block follows this prompt, it lists the orders that exist,
+with their states and ids, as of the start of the turn. Trust it over anything
+said about orders earlier in the conversation: an order listed there was issued,
+however the earlier reply described it. Build on open orders rather than
+re-issuing them, and pass the listed id as `workOrderId` to the work-order tools.
+
 When issuing a work order via `create_work_order`, supply:
 - title (short, memorable) and goal (one sentence — the purpose)
 - objective and successCondition (what "done" looks like)

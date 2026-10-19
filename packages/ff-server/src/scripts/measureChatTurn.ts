@@ -139,10 +139,11 @@ async function runTurn(
   const provider = new RecordingProvider(createProvider(options.llm));
   let metrics: TurnMetrics | undefined;
   const turnContext = await buildTurnContext(
-    { saves: context.saves, saveSummaries },
+    { saves: context.saves, saveSummaries, workOrders: deps.workOrders },
     playthroughId,
   );
-  if (turnContext.contextBlocks.length === 0) {
+  // The work-orders block can be present without a snapshot, so look for the snapshot itself.
+  if (!turnContext.contextBlocks.some((block) => block.startsWith('## Save snapshot'))) {
     throw new Error('Measurement requires a save snapshot; check the MCP server and save path.');
   }
   const text = await runChat(

@@ -160,3 +160,14 @@ describe('save snapshot guidance in the bundled prompt', () => {
     expect(section).toMatch(/whether a building or recipe is unlocked/);
   });
 });
+
+describe('work-orders block guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Work Orders'), prompt.indexOf('## Closing Out'));
+
+  it('trusts the block over earlier chat about orders and uses its ids', () => {
+    expect(section).toContain('**Work orders** block');
+    expect(section).toMatch(/Trust it over anything\s+said about orders earlier/);
+    expect(section).toContain('`workOrderId`');
+  });
+});

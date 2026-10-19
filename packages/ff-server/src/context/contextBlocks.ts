@@ -1,6 +1,8 @@
-// The per-turn context blocks placed after the system prompt, each from one source. Today only the
-// save snapshot; a live-readings contributor (bridge v2) is added as one more table entry.
+// The per-turn context blocks placed after the system prompt, each from one source: the save
+// snapshot, then the work orders. A live-readings contributor (bridge v2) is one more table entry.
 
+import type { WorkOrderService } from '../services/workOrderService.js';
+import { renderWorkOrders } from './renderWorkOrders.js';
 import type { CurrentSave, SaveSummaryCache } from './saveSummaryCache.js';
 
 /** What a contributor may read to build its block. */
@@ -14,7 +16,7 @@ export interface ContextRequest {
  * states which earlier figures it supersedes — so a stable block stays byte-identical and cached.
  */
 export interface ContextContributor {
-  source: 'save' | 'live';
+  source: 'save' | 'workOrders' | 'live';
   build(request: ContextRequest): Promise<string | undefined>;
 }
 
@@ -33,5 +35,18 @@ export function saveContributor(cache: SaveSummaryCache): ContextContributor {
     source: 'save',
     build: async (request) =>
       request.currentSave === undefined ? undefined : cache.get(request.currentSave),
+  };
+}
+
+/**
+ * The playthrough's work orders; nothing when it has none. It follows the save snapshot: it
+ * changes more often, and only the last block carries the cache breakpoint.
+ */
+export function workOrdersContributor(
+  workOrders: Pick<WorkOrderService, 'list'>,
+): ContextContributor {
+  return {
+    source: 'workOrders',
+    build: async (request) => renderWorkOrders(await workOrders.list(request.playthroughId)),
   };
 }

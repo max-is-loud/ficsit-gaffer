@@ -64,17 +64,18 @@ function saveAwareMcp(): McpGateway & { summaryCalls: number } {
 }
 
 async function setUp(): Promise<{
-  deps: { saves: SaveService; saveSummaries: SaveSummaryCache };
+  deps: { saves: SaveService; saveSummaries: SaveSummaryCache; workOrders: WorkOrderService };
   mcp: ReturnType<typeof saveAwareMcp>;
   playthroughId: string;
 }> {
   const mcp = saveAwareMcp();
-  const saves = new SaveService(db.prisma, mcp, saveDir, new WorkOrderService(db.prisma));
+  const workOrders = new WorkOrderService(db.prisma);
+  const saves = new SaveService(db.prisma, mcp, saveDir, workOrders);
   const userId = await createTestUser(db.prisma);
   const foremanId = await createTestForeman(db.prisma, userId);
   const playthrough = await new PlaythroughService(db.prisma).create({ userId, foremanId });
   return {
-    deps: { saves, saveSummaries: new SaveSummaryCache(mcp) },
+    deps: { saves, saveSummaries: new SaveSummaryCache(mcp), workOrders },
     mcp,
     playthroughId: playthrough.id,
   };
@@ -107,6 +108,43 @@ describe('buildTurnContext', () => {
     const context = await buildTurnContext({ saves: deps.saves }, playthroughId);
     expect(context.contextBlocks).toEqual([]);
     expect(context.savePath).toBeDefined();
+  });
+
+  it('adds the work orders after the save snapshot once an order exists', async () => {
+    const { deps, playthroughId } = await setUp();
+    await deps.saves.addVersion(playthroughId, { fileName: 'a.sav', bytes: Buffer.from('First') });
+    const order = await deps.workOrders.create(
+      playthroughId,
+      {
+        title: 'Reinforced Plate Works',
+        goal: 'Make 10 plates per minute.',
+        buildSteps: [{ title: 'Place assemblers' }],
+        expectedOutputs: [{ kind: 'infrastructure', description: 'Assemblers online.' }],
+      },
+      '1.2.3.0',
+    );
+    const context = await buildTurnContext(deps, playthroughId);
+    expect(context.contextBlocks).toEqual([
+      expect.stringContaining('Save "First"'),
+      expect.stringContaining(`- WO-001 "Reinforced Plate Works": new, revision 1, id ${order.id}`),
+    ]);
+  });
+
+  it('gives the work orders without a save', async () => {
+    const { deps, playthroughId } = await setUp();
+    await deps.workOrders.create(
+      playthroughId,
+      {
+        title: 'First Order',
+        goal: 'Begin.',
+        buildSteps: [{ title: 'Start' }],
+        expectedOutputs: [{ kind: 'infrastructure', description: 'Started.' }],
+      },
+      '1.2.3.0',
+    );
+    const context = await buildTurnContext(deps, playthroughId);
+    expect(context.savePath).toBeUndefined();
+    expect(context.contextBlocks).toEqual([expect.stringContaining('WO-001 "First Order"')]);
   });
 });
 

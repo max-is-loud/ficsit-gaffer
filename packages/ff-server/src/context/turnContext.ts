@@ -1,11 +1,17 @@
-// Assembles what a chat turn needs from the playthrough's current save: the save path the save
-// tools read and the context blocks (the save snapshot) sent after the system prompt.
+// Assembles what a chat turn needs from the playthrough: the save path the save tools read and the
+// context blocks (the save snapshot and the work orders) sent after the system prompt.
 
 import type { AppDeps } from '../deps.js';
 import { logger } from '../logger.js';
-import { buildContextBlocks, saveContributor, type ContextContributor } from './contextBlocks.js';
+import {
+  buildContextBlocks,
+  saveContributor,
+  workOrdersContributor,
+  type ContextContributor,
+} from './contextBlocks.js';
 
-type TurnContextDeps = Pick<AppDeps, 'saves' | 'saveSummaries'>;
+type TurnContextDeps = Pick<AppDeps, 'saves' | 'saveSummaries'> &
+  Partial<Pick<AppDeps, 'workOrders'>>;
 
 /** The save path for save-game tools and the context blocks for the provider. */
 export interface TurnContext {
@@ -13,13 +19,18 @@ export interface TurnContext {
   contextBlocks: string[];
 }
 
+/** The contributors these deps can serve, in block order. */
 function contributors(deps: TurnContextDeps): ContextContributor[] {
-  return deps.saveSummaries === undefined ? [] : [saveContributor(deps.saveSummaries)];
+  return [
+    ...(deps.saveSummaries === undefined ? [] : [saveContributor(deps.saveSummaries)]),
+    ...(deps.workOrders === undefined ? [] : [workOrdersContributor(deps.workOrders)]),
+  ];
 }
 
 /**
  * Resolves the playthrough's current save and builds its context blocks. Without a save, or
- * without a summary cache, there are no blocks; the save tools still work.
+ * without a summary cache, there is no snapshot block; the save tools still work. Without work
+ * orders (or the service), there is no work-orders block.
  */
 export async function buildTurnContext(
   deps: TurnContextDeps,
