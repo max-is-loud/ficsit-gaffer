@@ -14,7 +14,6 @@ import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 import type { PrismaClient } from '@prisma/client';
@@ -22,10 +21,10 @@ import type { PrismaClient } from '@prisma/client';
 import { SaveSummaryCache } from '../context/saveSummaryCache.js';
 import { buildTurnContext } from '../context/turnContext.js';
 import { loadSystemPromptTemplate } from '../anthropic/systemPrompt.js';
-import { resolveServerConfig, resolveSystemPromptPath, serverLlmConfig } from '../config.js';
+import { resolveServerConfig, resolveSystemPromptPath } from '../config.js';
 import { runChat, type ChatDeps } from '../llm/chat.js';
 import { createProvider } from '../llm/factory.js';
-import type { LlmRequest, LlmRuntimeConfig } from '../llm/types.js';
+import type { LlmRequest } from '../llm/types.js';
 import type { TurnMetrics } from '../llm/turnMetrics.js';
 import { McpHttpClient } from '../mcp/client.js';
 import { PlaythroughService } from '../services/playthroughService.js';
@@ -38,55 +37,10 @@ import {
   toolResultCharsByName,
   type MeasuredTurn,
 } from './measureReport.js';
-import { MEASURE_SCENARIOS, type MeasureScenario } from './measureScenarios.js';
+import { parseOptions, type MeasureOptions } from './measureOptions.js';
+import type { MeasureScenario } from './measureScenarios.js';
 import { RecordingProvider, traceToolCalls, type TurnTrace } from './measureTrace.js';
 import { createScratchDb } from './scratchDb.js';
-
-interface MeasureOptions {
-  savePath: string;
-  scenarios: MeasureScenario[];
-  runs: number;
-  llm: LlmRuntimeConfig;
-  outPath?: string;
-  tracePath?: string;
-  /** Characters of each tool result kept in the trace. */
-  traceResultChars: number;
-}
-
-function parseOptions(): MeasureOptions {
-  const { values } = parseArgs({
-    options: {
-      save: { type: 'string' },
-      scenario: { type: 'string', default: 'all' },
-      runs: { type: 'string', default: '5' },
-      model: { type: 'string' },
-      'max-tokens': { type: 'string', default: '16000' },
-      out: { type: 'string' },
-      trace: { type: 'string' },
-      'trace-result-chars': { type: 'string', default: '4000' },
-    },
-  });
-  const config = resolveServerConfig();
-  if (values.save === undefined || config.hostedApiKey === undefined) {
-    throw new Error('Pass --save <file.sav> and set LLM_API_KEY.');
-  }
-  const scenarios = MEASURE_SCENARIOS.filter(
-    (scenario) => values.scenario === 'all' || scenario.id === values.scenario,
-  );
-  if (scenarios.length === 0) {
-    throw new Error(`Unknown scenario '${values.scenario}'.`);
-  }
-  const llm = serverLlmConfig(config, config.hostedApiKey);
-  return {
-    savePath: path.resolve(values.save),
-    scenarios,
-    runs: Number.parseInt(values.runs, 10),
-    llm: { ...llm, model: values.model ?? llm.model, maxTokens: Number(values['max-tokens']) },
-    outPath: values.out,
-    tracePath: values.trace,
-    traceResultChars: Number.parseInt(values['trace-result-chars'], 10),
-  };
-}
 
 /** Creates a fresh playthrough with the save attached; returns its id and save path. */
 async function freshPlaythrough(
