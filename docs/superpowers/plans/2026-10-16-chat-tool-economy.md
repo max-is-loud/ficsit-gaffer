@@ -63,7 +63,7 @@ Each PR includes a measurement run, appended to `docs/measurements/chat-tool-eco
 
 ### D3. Contents and size budget
 
-The budget is **≤ 1,200 tokens (about 4,800 characters) rendered**, enforced by fixed caps on every list, not by truncating text. One summary replaces 6–7 tool results per turn, and `get_production` and `get_storage` alone are often larger than the whole summary. The measurement script records the actual size of each tool result it replaces, so the comparison is measured, not assumed.
+The budget is **≤ 3,000 tokens (about 12,000 characters) rendered**, enforced by fixed caps on every list, not by truncating text. *(Raised on 18 October 2026 from 1,200 tokens / 4,800 characters, when the snapshot gained the unlocked buildings and part recipes (#45). Those lists are capped at the whole game's size and alone add up to about 5,800 characters late in the game. They replace about 26K characters of `get_milestones` and `get_unlocked_recipes` results per first turn. Listing what is still locked once most is unlocked would shrink them again (#48).)* One summary replaces 6–7 tool results per turn, and `get_production` and `get_storage` alone are often larger than the whole summary. The measurement script records the actual size of each tool result it replaces, so the comparison is measured, not assumed.
 
 | Section | Contents | Cap |
 |---|---|---|
@@ -295,7 +295,7 @@ Implements D1–D7. The work is split into four commits, in order.
 - Modify: `src/llm/types.ts` (`LlmRequest.contextBlocks?: string[]`), `src/llm/chat.ts` (`ChatRequest.contextBlocks?: string[]`, passed through on every round, unchanged within the turn), `src/llm/anthropic.ts` (system becomes `[persona with cache_control, ...blocks]`, with `cache_control` on the last block only), `src/llm/openai.ts` (one extra `system` message per block, after the persona).
 - Modify: `src/llm/chat.ts` `assembleTools`: filter out `HOST_INTERNAL_TOOLS = new Set(['describe_save', 'get_save_summary'])`. The direct dispatch path stays, as `saveService` still calls them.
 - Tests:
-  - `test/renderSaveSummary.test.ts`: the same input gives byte-identical output; the heading has both timestamps; there is no save-time clause when `savedAt` is absent; the **budget** holds, with a synthetic summary at every cap (long names of 40 characters) rendering to ≤ 4,800 characters.
+  - `test/renderSaveSummary.test.ts`: the same input gives byte-identical output; the heading has both timestamps; there is no save-time clause when `savedAt` is absent; the **budget** holds, with a synthetic summary at every cap (long names of 32 characters; unlock lists at the whole game's size) rendering to ≤ 12,000 characters.
   - `test/saveSummaryCache.test.ts`, with a counting fake gateway: two `get`s for the same save make one MCP call; a new `saveId` (re-upload) makes a new call and returns the new text; a failed call returns `undefined` and the next `get` retries; `evict` forces a rebuild; capacity 2 evicts the least recently used entry.
   - `test/anthropic.test.ts`: with `contextBlocks: ['X']`, `system` is two blocks, both `cache_control`; without blocks the request equals today's.
   - `test/openai-stream.test.ts` (or a new `openai-messages.test.ts`): a block becomes a second `system` message.

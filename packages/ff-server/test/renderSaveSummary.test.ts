@@ -126,9 +126,13 @@ describe('renderSaveSummary', () => {
     expect(text).toContain('31 alternates: Alternate: Cheap Silica, +30 more.');
   });
 
-  it('stays within the 4,800-character budget with every list at its cap', () => {
+  it('stays within the 12,000-character budget with every list full', () => {
     // 32 characters: longer than real names ("Alternate: Turbo Electric Motor" is 31).
     const name = (prefix: string, i: number): string => `${prefix} ${i}`.padEnd(32, 'x');
+    // The unlock lists at the whole game's size (129 factory buildings and 179 standard part
+    // recipes in 1.2), with names of 17 characters: 1.2's mean is 16.
+    const names = (prefix: string, count: number): string[] =>
+      Array.from({ length: count }, (_, i) => `${prefix} ${i}`.padEnd(17, 'x'));
     const full: SaveSummary = {
       save: { ...production.save, saveName: name('Save', 0) },
       player: production.player,
@@ -136,6 +140,11 @@ describe('renderSaveSummary', () => {
         highestTier: 9,
         tierMilestones: Array.from({ length: 8 }, (_, i) => name('Milestone', i)),
         spaceElevatorPhase: 5,
+        spaceElevatorCost: Array.from({ length: 4 }, (_, i) => ({
+          item: name('Project Part', i),
+          amount: 99999,
+        })),
+        spaceElevatorUnlocksTier: 9,
         mamTrees: Array.from({ length: 14 }, (_, i) => `MAM tree ${i}`.padEnd(20, 'x')),
       },
       recipes: {
@@ -166,23 +175,15 @@ describe('renderSaveSummary', () => {
         bearing: 'NE',
         biome: 'BIOME NAME'.padEnd(25, 'x'),
       })),
+      unlocks: {
+        buildings: names('Building', 129),
+        buildingsOmitted: 0,
+        partRecipes: names('Recipe', 179),
+        partRecipesOmitted: 0,
+      },
     };
-    expect(renderSaveSummary(full, UPLOADED).length).toBeLessThanOrEqual(4800);
-  });
-
-  it('keeps the unlock lists within their own 6,000-character budget at the whole-game size', () => {
-    // 1.2 has 129 factory buildings and 179 standard part recipes, 16 characters long on average.
-    const names = (prefix: string, count: number): string[] =>
-      Array.from({ length: count }, (_, i) => `${prefix} ${i}`.padEnd(17, 'x'));
-    const unlocks = {
-      buildings: names('Building', 129),
-      buildingsOmitted: 0,
-      partRecipes: names('Recipe', 179),
-      partRecipesOmitted: 0,
-    };
-    const withUnlocks = renderSaveSummary({ ...production, unlocks }, UPLOADED);
-    const without = renderSaveSummary(production, UPLOADED);
-    expect(withUnlocks.length - without.length).toBeLessThanOrEqual(6000);
+    const text = renderSaveSummary(full, UPLOADED);
+    expect(text.length).toBeLessThanOrEqual(12000);
   });
 
   it('lists unlocked buildings by exact name, then part recipes, noting any omitted', () => {
