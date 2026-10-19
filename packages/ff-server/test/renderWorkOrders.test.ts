@@ -48,6 +48,19 @@ describe('renderWorkOrders', () => {
     expect(renderWorkOrders([order(1, 'cancelled')])).toContain('- No open orders.\n');
   });
 
+  it('keeps the active order and the newest open ones when over the cap', () => {
+    const paused = Array.from({ length: WORK_ORDER_CAPS.open + 2 }, (_, i) =>
+      order(i + 2, 'paused'),
+    );
+    const text = renderWorkOrders([order(1, 'active'), ...paused]) ?? '';
+    const shown = text.split('\n').filter((entry) => /^- [WE]O-/.test(entry));
+    expect(shown).toHaveLength(WORK_ORDER_CAPS.open);
+    expect(shown[0]).toContain('WO-001 "Order 1": active');
+    expect(text).toContain(`WO-0${WORK_ORDER_CAPS.open + 3}`);
+    expect(text).not.toContain('WO-002');
+    expect(text).toContain('- …and 3 more open.');
+  });
+
   it('caps the open orders and counts the rest', () => {
     const open = Array.from({ length: WORK_ORDER_CAPS.open + 3 }, (_, i) => order(i + 1, 'new'));
     expect(renderWorkOrders(open)).toContain('- …and 3 more open.');

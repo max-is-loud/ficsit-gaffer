@@ -21,14 +21,28 @@ function line(order: WorkOrder): string {
   );
 }
 
+/**
+ * The open orders to show: every active one, then the newest of the rest, up to the cap, in
+ * sequence order. Older paused or blocked orders give way first, so the order the work-order
+ * tools treat as current (active, else the newest open) is never dropped.
+ */
+function shownOpen(open: WorkOrder[]): WorkOrder[] {
+  const active = open.filter((order) => order.state === 'active');
+  const others = open.filter((order) => order.state !== 'active');
+  const room = Math.max(0, WORK_ORDER_CAPS.open - active.length);
+  const newest = room === 0 ? [] : others.slice(-room);
+  const shown = [...active.slice(0, WORK_ORDER_CAPS.open), ...newest];
+  return shown.sort((left, right) => left.sequenceNumber - right.sequenceNumber);
+}
+
 /** `- …and 3 older closed orders.`, or nothing. */
 function olderLine(count: number): string[] {
   return count > 0 ? [`- …and ${count} older closed order${count === 1 ? '' : 's'}.`] : [];
 }
 
 /**
- * The work-orders block: every open order (up to the cap), then the most recent closed ones, each
- * with its label, state, revision and id. Undefined when the playthrough has no orders, so a new
+ * The work-orders block: the open orders (see {@link shownOpen}), then the most recent closed
+ * ones, each with its label, state, revision and id. Undefined when the playthrough has no orders, so a new
  * playthrough's prompt prefix is unchanged. `orders` is oldest first, as the service lists them.
  */
 export function renderWorkOrders(orders: WorkOrder[]): string | undefined {
@@ -38,7 +52,7 @@ export function renderWorkOrders(orders: WorkOrder[]): string | undefined {
   const open = orders.filter((order) => !CLOSED_STATES.has(order.state));
   const closed = orders.filter((order) => CLOSED_STATES.has(order.state));
   const recentClosed = closed.slice(-WORK_ORDER_CAPS.closed);
-  const openShown = open.slice(0, WORK_ORDER_CAPS.open);
+  const openShown = shownOpen(open);
   const openMore =
     open.length > openShown.length ? [`- …and ${open.length - openShown.length} more open.`] : [];
   return [
