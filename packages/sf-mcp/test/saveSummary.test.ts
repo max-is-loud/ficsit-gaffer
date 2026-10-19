@@ -164,7 +164,7 @@ describe('summariseSave', () => {
       buildingClass: `Build_Gen${i}_C`,
       count: 1,
       capacityMW: i * 10,
-      variableOutput: false,
+      variableOutput: i === 7,
       fuels: [],
     }));
     const circuit = (status: 'ok' | 'overloaded') => ({
@@ -196,6 +196,8 @@ describe('summariseSave', () => {
       circuits: 2,
       overloadedCircuits: 1,
     });
+    expect(summary.power.generators[0]).toEqual({ type: 'Gen7', count: 1, mw: 70, variable: true });
+    expect(summary.power.generators[1]).not.toHaveProperty('variable');
     expect(summary.power.generators.map((generator) => generator.type)).toEqual([
       'Gen7',
       'Gen6',

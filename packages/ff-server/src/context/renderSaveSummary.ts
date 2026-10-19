@@ -108,12 +108,18 @@ function power({ power: view }: SaveSummary): string | undefined {
     return undefined;
   }
   const generators = view.generators
-    .map((generator) => `${generator.count} × ${generator.type} (${generator.mw} MW)`)
+    .map(
+      (generator) =>
+        `${generator.count} × ${generator.type} (${generator.variable ? 'variable' : `${generator.mw} MW`})`,
+    )
     .join(', ');
+  // get_power's caveats, shortened: the totals are estimates, and headroom can overstate.
   return (
-    `- Power: ${view.capacityMw} MW capacity, ${view.consumptionMw} MW draw, ` +
+    `- Power, estimated: ${view.capacityMw} MW capacity, ${view.consumptionMw} MW draw, ` +
     `${view.headroomMw} MW headroom; ${plural(view.circuits, 'circuit')}, ` +
-    `${view.overloadedCircuits} overloaded.${generators === '' ? '' : ` Generators: ${generators}.`}`
+    `${view.overloadedCircuits} overloaded.${generators === '' ? '' : ` Generators: ${generators}.`} ` +
+    'Capacity counts unfuelled generators and leaves out variable (geothermal) output and ' +
+    'batteries; draw is estimated from machines and clock speeds.'
   );
 }
 

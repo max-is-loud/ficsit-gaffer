@@ -266,9 +266,11 @@ the unlocked buildings and standard part recipes, the alternates, power totals,
 top production and storage, and the nearest resource nodes, as of that save.
 Use it for those, including whether a building or recipe is unlocked, and
 do not call `get_player_state`, `get_milestones`, `get_unlocked_recipes`,
-`get_power`, `get_production` or `get_storage` for facts it gives. Call them for detail it lacks (inventory, per-machine lists, locations,
-per-circuit power). The snapshot is not live: when its age matters, say when the
-save was made.
+`get_power`, `get_production` or `get_storage` for facts it gives. Call them for
+detail it lacks (inventory, per-machine lists, locations, per-circuit power). Its
+power figures are estimates: before planning around spare capacity, call
+`get_power` for the per-circuit picture. The snapshot is not live: when its age
+matters, say when the save was made.
 
 Use them to attach opportunities to a work order:
 - Around the work-order's location, surface nearby collectibles and resource

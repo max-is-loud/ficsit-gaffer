@@ -39,7 +39,14 @@ export const saveSummarySchema = z.object({
     headroomMw: z.number(),
     circuits: z.number(),
     overloadedCircuits: z.number(),
-    generators: z.array(z.object({ type: z.string(), count: z.number(), mw: z.number() })),
+    generators: z.array(
+      z.object({
+        type: z.string(),
+        count: z.number(),
+        mw: z.number(),
+        variable: z.literal(true).optional(),
+      }),
+    ),
   }),
   production: z.array(
     z.object({

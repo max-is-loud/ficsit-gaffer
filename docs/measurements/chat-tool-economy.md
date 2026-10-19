@@ -53,7 +53,7 @@ run-to-run variation; the trace findings below are the stronger evidence.
 - **Remaining save calls.** `get_player_state` appeared in two iron turns. The
   answers use the inventory it gives ("the 34 RIP you're carrying"), which the
   snapshot lacks. One iron turn called `get_power` with no arguments, which the
-  snapshot's totals largely cover. One copper turn called `get_milestones`
+  snapshot's totals largely cover (but see the caveats below). One copper turn called `get_milestones`
   next to Tier 4 schematic lookups. Everything else was item-narrowed
   `get_production` or location-sorted `get_storage`.
 - **Round spread is wide.** One iron turn finished in 3 rounds and 5 calls.
@@ -65,8 +65,13 @@ run-to-run variation; the trace findings below are the stronger evidence.
 
 Candidate follow-ups: Space Elevator phases are not schematics, so the
 order schema or prompt could name them, or the rejection could point to the
-phase. The prompt could also say that power totals need no `get_power` call.
-Neither is changed here; both rest on single observations.
+phase. This is not changed here; it rests on a single observation.
+
+The `get_power` call is not redundant after all. A review of the PR found that
+the snapshot dropped `get_power`'s caveats: capacity counts unfuelled generators
+and leaves out geothermal output and batteries, and draw is estimated. The
+snapshot now says so and marks variable-output generators instead of printing
+"0 MW". The prompt asks for `get_power` before planning around spare capacity.
 
 ## Traced follow-up run, 16 October 2026
 

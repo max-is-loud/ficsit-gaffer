@@ -87,7 +87,8 @@ export interface SaveSummary {
     headroomMw: number;
     circuits: number;
     overloadedCircuits: number;
-    generators: { type: string; count: number; mw: number }[];
+    /** `variable` marks output that is not in `mw` or the capacity (geothermal). */
+    generators: { type: string; count: number; mw: number; variable?: true }[];
   };
   production: { item: string; perMinute: number; machines: number; unit?: 'm³' }[];
   storage: { item: string; quantity: number }[];
@@ -197,6 +198,7 @@ function summarisePower(power: PowerView): SaveSummary['power'] {
         type: generator.building,
         count: generator.count,
         mw: oneDecimal(generator.capacityMW),
+        ...(generator.variableOutput ? { variable: true as const } : {}),
       })),
   };
 }

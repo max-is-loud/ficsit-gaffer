@@ -160,6 +160,10 @@ describe('save snapshot guidance in the bundled prompt', () => {
     expect(section).toMatch(/near you.*from the save snapshot/is);
   });
 
+  it('checks power with get_power before planning around spare capacity', () => {
+    expect(section).toMatch(/power figures are estimates.*`get_power`/s);
+  });
+
   it('takes unlock status from the snapshot', () => {
     expect(section).toMatch(/whether a building or recipe is unlocked/);
   });

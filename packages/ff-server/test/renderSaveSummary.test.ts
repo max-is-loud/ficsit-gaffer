@@ -64,7 +64,7 @@ describe('renderSaveSummary', () => {
         '- Position: (-363, 2516, -14) m, in the SW of GRASS FIELDS. HUB: (-397, 2437, -25) m.',
         '- Progress: tier 3 (milestones 3-1, 3-2); Space Elevator phase 1; MAM trees: Caterium, Power Slugs.',
         '- Recipes: 171 standard, 1 alternate: Alternate: Cheap Silica.',
-        '- Power: 660 MW capacity, 146 MW draw, 514 MW headroom; 1 circuit, 0 overloaded. Generators: 22 × Biomass Burner (660 MW).',
+        '- Power, estimated: 660 MW capacity, 146 MW draw, 514 MW headroom; 1 circuit, 0 overloaded. Generators: 22 × Biomass Burner (660 MW). Capacity counts unfuelled generators and leaves out variable (geothermal) output and batteries; draw is estimated from machines and clock speeds.',
         '- Production, configured per minute (machines): Screws 240 (6), Water 120 m³ (1).',
         '- Storage, containers and depot: Screws 12364.',
         '- Nearest resource node of each type (existing miners not checked): Iron Ore impure 60 m N (GRASS FIELDS).',
@@ -184,6 +184,21 @@ describe('renderSaveSummary', () => {
     };
     const text = renderSaveSummary(full, UPLOADED);
     expect(text.length).toBeLessThanOrEqual(12000);
+  });
+
+  it('marks variable-output generators instead of printing 0 MW', () => {
+    const text = renderSaveSummary(
+      {
+        ...production,
+        power: {
+          ...production.power,
+          generators: [{ type: 'Geothermal Generator', count: 2, mw: 0, variable: true }],
+        },
+      },
+      UPLOADED,
+    );
+    expect(text).toContain('Generators: 2 × Geothermal Generator (variable).');
+    expect(text).not.toContain('(0 MW)');
   });
 
   it('lists unlocked buildings by exact name, then part recipes, noting any omitted', () => {
