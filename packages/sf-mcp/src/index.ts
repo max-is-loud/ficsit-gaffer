@@ -14,6 +14,7 @@ import { loadDataset, WorldQueries } from '@foreman/sf-game-data';
 import type { GameData } from '@foreman/sf-game-data';
 import { initGraph } from '@foreman/sf-game-data-graph';
 
+import { loadGameDataIndex } from './gameData.js';
 import { resolveSavePath, resolveServerConfig, type ServerConfig } from './config.js';
 import { startHttpServer } from './http.js';
 import { logger } from './logger.js';
@@ -21,6 +22,7 @@ import { SaveStoreRegistry } from './store/registry.js';
 import { SaveStore } from './store/saveStore.js';
 import { registerGameDataTools } from './tools/gameData.js';
 import { registerSaveTools } from './tools/save.js';
+import { registerSaveSummaryTool } from './tools/saveSummary.js';
 
 const SERVER_NAME = 'foreman-sf-mcp';
 const SERVER_VERSION = '0.1.0';
@@ -85,22 +87,29 @@ async function main(): Promise<void> {
   const config = resolveServerConfig();
   const registry = buildRegistry(config);
 
+  // Loaded once: the summary tool is registered per HTTP request and must not re-read the data.
+  const summarySources = { locations: world, queries: worldQueries, gameData: loadGameDataIndex() };
+  const registerTools = (server: McpServer): void => {
+    registerGameDataTools(server, graph, worldQueries);
+    registerSaveTools(server, registry);
+    registerSaveSummaryTool(server, registry, summarySources);
+  };
+
   if (config.transport === 'http') {
-    await startHttpServer(
+    await startHttpServer({
+      registerTools,
       graph,
-      worldQueries,
       registry,
-      config.host,
-      config.port,
-      SERVER_NAME,
-      SERVER_VERSION,
-    );
+      host: config.host,
+      port: config.port,
+      serverName: SERVER_NAME,
+      serverVersion: SERVER_VERSION,
+    });
     return;
   }
 
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
-  registerGameDataTools(server, graph, worldQueries);
-  registerSaveTools(server, registry);
+  registerTools(server);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   logger.info('Transport: stdio (no network port — the client talks over stdin/stdout).');

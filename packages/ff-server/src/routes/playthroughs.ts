@@ -4,6 +4,7 @@
 import { Router, type Request } from 'express';
 import multer from 'multer';
 
+import { warmSaveSummary } from '../context/turnContext.js';
 import type { AppDeps } from '../deps.js';
 import { requirePlaythroughOwnership } from '../middleware/auth.js';
 import { createPlaythroughSchema, updatePlaythroughSchema } from '../validation.js';
@@ -169,6 +170,7 @@ export function playthroughsRouter(deps: AppDeps): Router {
       fileName: file.originalname,
       bytes: file.buffer,
     });
+    void warmSaveSummary(deps, playthroughId(req));
     res.status(201).json(result);
   });
 
@@ -185,6 +187,7 @@ export function playthroughsRouter(deps: AppDeps): Router {
       res.status(404).json({ error: 'Save not found for this playthrough.' });
       return;
     }
+    void warmSaveSummary(deps, playthroughId(req));
     res.json(save);
   });
 
@@ -196,6 +199,8 @@ export function playthroughsRouter(deps: AppDeps): Router {
       res.status(404).json({ error: 'Save not found for this playthrough.' });
       return;
     }
+    deps.saveSummaries?.evict(saveId);
+    void warmSaveSummary(deps, playthroughId(req));
     res.status(204).end();
   });
 

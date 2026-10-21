@@ -37,6 +37,7 @@ export class SaveStore {
   private current: SaveState;
   private currentGraph: SaveGraph;
   private loadedMtimeMs = Number.NaN;
+  private hasLoaded = false;
   private readonly statMtime: (filePath: string) => number;
   private readonly load: (filePath: string) => LoadedSave;
   private readonly now: () => string;
@@ -72,10 +73,20 @@ export class SaveStore {
   public static fromState(state: SaveState, graph?: SaveGraph): SaveStore {
     const store = new SaveStore(undefined);
     store.current = state;
+    store.hasLoaded = true;
     if (graph !== undefined) {
       store.currentGraph = graph;
     }
     return store;
+  }
+
+  /**
+   * True once a save has been parsed successfully (always for {@link SaveStore.fromState}). While
+   * false the store serves its empty fallback, which must not be presented as the pioneer's save.
+   * Reflects the last refresh; call `getState()` first to retry a failed load.
+   */
+  public get loaded(): boolean {
+    return this.hasLoaded;
   }
 
   public get version(): string {
@@ -117,6 +128,7 @@ export class SaveStore {
       this.current = loaded.state;
       this.currentGraph = loaded.graph;
       this.loadedMtimeMs = mtime;
+      this.hasLoaded = true;
       logger.info(
         `Loaded save '${this.current.saveName}' (${this.current.version}); ` +
           `${this.current.warnings.length} parse warning(s).`,

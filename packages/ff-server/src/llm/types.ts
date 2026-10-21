@@ -56,6 +56,15 @@ export type LlmStreamEvent =
 /** Why a turn ended: the model wants tools run, or it is finished. */
 export type StopReason = 'stop' | 'tool_use';
 
+/** Token counts for one model call (or summed over a chat turn). */
+export interface TurnUsage {
+  /** Input tokens billed at the full rate (excludes cache reads and writes). */
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
 /** The assembled outcome of a single turn. */
 export interface LlmTurnResult {
   /** Full assistant text emitted this turn. */
@@ -65,11 +74,21 @@ export interface LlmTurnResult {
   stopReason: StopReason;
   /** Complete native assistant content needed to continue a tool-use loop. */
   continuation?: ProviderContinuation;
+  /** Token usage, when the provider reported it. */
+  usage?: TurnUsage;
+  /** The provider's own stop reason (e.g. `end_turn`, `max_tokens`, `length`), for logs. */
+  rawStopReason?: string;
 }
 
 /** A single turn request to a provider. */
 export interface LlmRequest {
   system: string;
+  /**
+   * Per-playthrough context placed after the system prompt, one block per source (save snapshot,
+   * later live readings). Stable within a turn, and kept out of `system` so a change here never
+   * invalidates the cached persona.
+   */
+  contextBlocks?: string[];
   messages: NeutralMessage[];
   tools: ToolDefinition[];
   model: string;

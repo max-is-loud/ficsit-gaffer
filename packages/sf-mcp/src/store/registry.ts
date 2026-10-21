@@ -33,12 +33,19 @@ export class SaveStoreRegistry {
     private readonly storeDeps: SaveStoreDeps = {},
   ) {}
 
+  /** True when `savePath` lies inside the allowed save directory, so `resolve` would honour it. */
+  public allows(savePath: string): boolean {
+    return (
+      this.allowedBaseDir !== undefined && isWithin(this.allowedBaseDir, path.resolve(savePath))
+    );
+  }
+
   public resolve(savePath?: string): SaveStore {
     if (savePath === undefined || savePath.trim().length === 0) {
       return this.defaultStore;
     }
     const abs = path.resolve(savePath);
-    if (this.allowedBaseDir === undefined || !isWithin(this.allowedBaseDir, abs)) {
+    if (!this.allows(abs)) {
       logger.warn(
         `Ignoring savePath '${savePath}' (outside the allowed save directory); using the default save.`,
       );

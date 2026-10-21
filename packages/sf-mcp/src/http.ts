@@ -1,5 +1,5 @@
 // Streamable HTTP transport for the unified MCP server: a stateless POST /mcp endpoint that
-// registers both tool sets per request, plus a /health route reporting game-data and save identity.
+// registers every tool per request, plus a /health route reporting game-data and save identity.
 // Server wiring lives in index.ts.
 
 import express from 'express';
@@ -7,41 +7,41 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
 import type { GraphDB } from '@foreman/sf-game-data-graph';
-import type { WorldQueries } from '@foreman/sf-game-data';
 import { lanAddresses } from './config.js';
 import { logger } from './logger.js';
 import type { SaveStoreRegistry } from './store/registry.js';
-import { registerGameDataTools } from './tools/gameData.js';
-import { registerSaveTools } from './tools/save.js';
 
 const MCP_ENDPOINT = '/mcp';
 
+/** What the HTTP server needs: a tool registrar plus the graph and saves /health reports on. */
+export interface HttpServerOptions {
+  /** Registers every tool on a fresh server; called once per request (stateless mode). */
+  registerTools: (server: McpServer) => void;
+  graph: GraphDB;
+  registry: SaveStoreRegistry;
+  host: string;
+  port: number;
+  serverName: string;
+  serverVersion: string;
+}
+
 /**
  * Starts the unified MCP server over Streamable HTTP in **stateless** mode: each
- * POST gets a fresh McpServer + transport bound to the shared (already-loaded)
- * game-data graph, world queries and save store, so there is no per-session
- * bookkeeping. Both tool sets — the game-data graph tools and the save-game
- * tools — are registered on the one server. GET/DELETE are not supported.
+ * POST gets a fresh McpServer + transport, with every tool registered by
+ * `registerTools` against the shared (already-loaded) data, so there is no
+ * per-session bookkeeping. GET/DELETE are not supported.
  *
  * Security note: no authentication is applied. Do not expose this beyond a
  * trusted localhost/LAN without putting an auth layer in front of it.
  */
-export async function startHttpServer(
-  graph: GraphDB,
-  world: WorldQueries,
-  registry: SaveStoreRegistry,
-  host: string,
-  port: number,
-  serverName: string,
-  serverVersion: string,
-): Promise<void> {
+export async function startHttpServer(options: HttpServerOptions): Promise<void> {
+  const { registerTools, graph, registry, host, port } = options;
   const app = express();
   app.use(express.json({ limit: '4mb' }));
 
   app.post(MCP_ENDPOINT, async (req, res) => {
-    const server = new McpServer({ name: serverName, version: serverVersion });
-    registerGameDataTools(server, graph, world);
-    registerSaveTools(server, registry);
+    const server = new McpServer({ name: options.serverName, version: options.serverVersion });
+    registerTools(server);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => {
       void transport.close();

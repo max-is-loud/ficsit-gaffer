@@ -133,3 +133,21 @@ function toVec3(raw: RawVector | undefined): Vec3 | undefined {
   }
   return { x, y, z };
 }
+
+/**
+ * Converts the header's save time (unix milliseconds as a string, as the parser library gives it)
+ * to ISO 8601 UTC. "0" means no time was recorded and yields undefined silently; anything else
+ * unusable yields undefined plus a warning.
+ */
+export function saveDateTimeToIso(raw: string | undefined, warnings: Warnings): string | undefined {
+  if (raw === undefined || raw === '0') {
+    return undefined;
+  }
+  const milliseconds = Number(raw);
+  const date = new Date(milliseconds);
+  if (!/^\d+$/.test(raw) || Number.isNaN(date.getTime())) {
+    warnings.add(`Unreadable save timestamp '${raw}'; save time unknown.`);
+    return undefined;
+  }
+  return date.toISOString();
+}

@@ -9,17 +9,15 @@ import type { WorkOrder } from '../types.js';
 import { logger } from '../logger.js';
 import { buildSystemPrompt, type PromptContext } from '../anthropic/systemPrompt.js';
 import {
-  handleLiveStateTool,
   isLiveStateTool,
   liveStateToolDefinitions,
   type LiveStateService,
 } from '../tools/liveStateTools.js';
-import {
-  handleWorkOrderTool,
-  isWorkOrderTool,
-  workOrderToolDefinitions,
-} from '../tools/workOrderTools.js';
+import { isHostInternalTool } from '../tools/hostInternalTools.js';
+import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
+import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
+import { runToolCalls, type ToolOutcome } from './toolRunner.js';
 import type { NeutralMessage, NeutralToolCall } from './types.js';
 
 /** Backing services and settings the chat loop needs (provider-agnostic). */
@@ -40,6 +38,8 @@ export interface ChatRequest {
   promptContext: PromptContext;
   /** Absolute path of the playthrough's save, injected into save-game tools. */
   savePath?: string;
+  /** Context blocks (save snapshot, …) sent after the system prompt on every round. */
+  contextBlocks?: string[];
   /** The LLM provider for this request, already built from the effective config. */
   provider: LlmProvider;
   model: string;
@@ -51,6 +51,8 @@ export interface ChatEvents {
   text(delta: string): void;
   toolUse(name: string): void;
   workOrder(order: WorkOrder): void;
+  /** Called once when the turn ends, with its rounds, tool calls and token usage. */
+  metrics?(metrics: TurnMetrics): void;
 }
 
 /** Safety bound on tool-use round-trips within a single turn. */
@@ -71,17 +73,27 @@ export async function runChat(
   const system = buildSystemPrompt(deps.systemPromptTemplate, req.promptContext);
   const tools = await assembleTools(deps.mcp, req.playthroughId, deps.liveState);
 
-  const history = await deps.playthroughs.recentMessages(req.playthroughId, deps.historyWindow);
-  const messages: NeutralMessage[] = history.map((message) => ({
-    role: message.role,
-    content: message.content,
-  }));
+  const messages = await loadHistory(deps, req.playthroughId);
 
   let streamedText = '';
+  const recorder = new TurnMetricsRecorder();
+  const finish = (hitIterationCap: boolean): string => {
+    const metrics = recorder.finish(hitIterationCap);
+    logger.info(formatTurnMetrics(metrics));
+    events.metrics?.(metrics);
+    return streamedText;
+  };
 
   for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
     const result = await req.provider.runTurn(
-      { system, messages, tools, model: req.model, maxTokens: req.maxTokens },
+      {
+        system,
+        contextBlocks: req.contextBlocks,
+        messages,
+        tools,
+        model: req.model,
+        maxTokens: req.maxTokens,
+      },
       (event) => {
         if (event.type === 'text') {
           streamedText += event.delta;
@@ -90,6 +102,7 @@ export async function runChat(
       },
     );
 
+    recorder.recordRound(result);
     messages.push({
       role: 'assistant',
       text: result.text,
@@ -98,37 +111,44 @@ export async function runChat(
     });
 
     if (result.stopReason !== 'tool_use') {
-      return streamedText;
+      return finish(false);
     }
 
-    for (const call of result.toolCalls) {
-      events.toolUse(call.name);
-      const outcome = await dispatchTool(req.playthroughId, req.savePath, call, deps, events);
-      messages.push({
-        role: 'tool',
-        toolCallId: call.id,
-        content: outcome.text,
-        isError: outcome.isError,
-      });
-    }
+    recorder.recordToolCalls(result.toolCalls);
+    const outcomes = await runToolCalls(result.toolCalls, {
+      playthroughId: req.playthroughId,
+      savePath: req.savePath,
+      deps,
+      events,
+    });
+    appendToolResults(messages, result.toolCalls, outcomes);
   }
 
   logger.warn(
     `Tool loop hit the ${MAX_TOOL_ITERATIONS}-iteration cap; returning partial response.`,
   );
-  return streamedText;
+  return finish(true);
+}
+
+/** The windowed conversation so far, as plain text turns (tool rounds are never persisted). */
+async function loadHistory(deps: ChatDeps, playthroughId: string): Promise<NeutralMessage[]> {
+  const history = await deps.playthroughs.recentMessages(playthroughId, deps.historyWindow);
+  return history.map((message) => ({ role: message.role, content: message.content }));
 }
 
 /**
  * Merges the MCP game-data tools with the server-local work-order and live tools.
- * The live tool's name is reserved: an MCP tool of the same name is never offered.
+ * The live tool's name is reserved: an MCP tool of the same name is never offered, and
+ * host-internal tools are not offered either.
  */
 async function assembleTools(
   mcp: McpGateway,
   playthroughId: string,
   liveState: LiveStateService | undefined,
 ): Promise<ToolDefinition[]> {
-  const mcpTools = (await mcp.listTools()).filter((tool) => !isLiveStateTool(tool.name));
+  const mcpTools = (await mcp.listTools()).filter(
+    (tool) => !isLiveStateTool(tool.name) && !isHostInternalTool(tool.name),
+  );
   return [
     ...mcpTools,
     ...workOrderToolDefinitions(),
@@ -136,34 +156,19 @@ async function assembleTools(
   ];
 }
 
-interface ToolOutcome {
-  text: string;
-  isError: boolean;
-}
-
-/** Routes a tool call to the live, work-order or MCP handler. */
-async function dispatchTool(
-  playthroughId: string,
-  savePath: string | undefined,
-  call: NeutralToolCall,
-  deps: ChatDeps,
-  events: ChatEvents,
-): Promise<ToolOutcome> {
-  // Local and authority-checked even when unadvertised; never falls through to MCP.
-  if (isLiveStateTool(call.name)) {
-    return handleLiveStateTool(playthroughId, call.arguments, deps.liveState);
-  }
-  if (isWorkOrderTool(call.name)) {
-    const outcome = await handleWorkOrderTool(playthroughId, call.name, call.arguments, {
-      workOrders: deps.workOrders,
-      gameVersion: () => deps.mcp.gameVersion,
-      mcp: deps.mcp,
+/** Adds one tool message per call, in call order, so each result matches its call id. */
+function appendToolResults(
+  messages: NeutralMessage[],
+  calls: NeutralToolCall[],
+  outcomes: ToolOutcome[],
+): void {
+  calls.forEach((call, index) => {
+    const outcome = outcomes[index] ?? { text: 'Tool produced no result.', isError: true };
+    messages.push({
+      role: 'tool',
+      toolCallId: call.id,
+      content: outcome.text,
+      isError: outcome.isError,
     });
-    if (outcome.workOrder !== undefined) {
-      events.workOrder(outcome.workOrder);
-    }
-    return { text: outcome.text, isError: outcome.isError };
-  }
-  // savePath is injected into save-game tool calls by the aggregate gateway.
-  return deps.mcp.callTool(call.name, call.arguments, { savePath });
+  });
 }

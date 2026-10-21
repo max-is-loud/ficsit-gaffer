@@ -5,6 +5,7 @@ import { Router } from 'express';
 
 import type { AppDeps } from '../deps.js';
 import { clientLlmConfig, serverLlmConfig } from '../config.js';
+import { buildTurnContext } from '../context/turnContext.js';
 import { runChat, type ChatDeps } from '../llm/chat.js';
 import type { LlmRuntimeConfig } from '../llm/types.js';
 import { logger } from '../logger.js';
@@ -78,9 +79,8 @@ export function chatRouter(deps: AppDeps): Router {
     // windowed context sent to the model.
     await deps.playthroughs.appendMessage(playthroughId, 'user', parsed.data.message);
 
-    // If this playthrough has a save attached, the save-game tools should read
-    // it (injected by the gateway). Undefined → tools fall back to the default.
-    const savePath = await deps.saves.getSavePath(playthroughId);
+    // The current save feeds the save tools (path) and the save snapshot block.
+    const { savePath, contextBlocks } = await buildTurnContext(deps, playthroughId);
 
     const sse = openSse(res);
     try {
@@ -94,6 +94,7 @@ export function chatRouter(deps: AppDeps): Router {
             summary: playthrough.summary,
           },
           savePath,
+          contextBlocks,
           provider,
           model: llm.model,
           maxTokens: llm.maxTokens,

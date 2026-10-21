@@ -50,6 +50,8 @@ export interface RawHeader {
   saveName?: string;
   mapName?: string;
   playDurationSeconds?: number;
+  /** When the game wrote the save, as unix milliseconds in a string ("0" when unrecorded). */
+  saveDateTime?: string;
   /** Whether Creative Mode is enabled for this save — the authoritative creative flag (#172). */
   creativeModeEnabled?: boolean;
 }

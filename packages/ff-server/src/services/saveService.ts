@@ -8,6 +8,7 @@ import path from 'node:path';
 
 import type { PrismaClient, Save as SaveRow } from '@prisma/client';
 
+import type { CurrentSave } from '../context/saveSummaryCache.js';
 import { logger } from '../logger.js';
 import type { McpGateway } from '../mcp/client.js';
 import type {
@@ -81,6 +82,19 @@ export class SaveService {
       return undefined;
     }
     return this.savePathFor(playthroughId, pt.currentSaveId);
+  }
+
+  /** The playthrough's current save — id, path and upload time — if it has one. */
+  public async getCurrentSave(playthroughId: string): Promise<CurrentSave | undefined> {
+    const row = await this.currentSave(playthroughId);
+    if (row === null) {
+      return undefined;
+    }
+    return {
+      id: row.id,
+      path: this.savePathFor(playthroughId, row.id),
+      uploadedAt: row.uploadedAt,
+    };
   }
 
   /** The playthrough's current save row, if any. */

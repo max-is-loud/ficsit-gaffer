@@ -113,3 +113,73 @@ describe('live Constructor guidance in the bundled prompt', () => {
     expect(section).toMatch(/recipes|power|production/i);
   });
 });
+
+describe('research economy guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Research Efficiently'));
+
+  it('has a dedicated section', () => {
+    expect(prompt).toContain('## Research Efficiently');
+  });
+
+  it('asks for independent lookups in the same round', () => {
+    expect(section).toContain('same round');
+  });
+
+  it('prefers full_production_line over chained lookups', () => {
+    expect(section).toContain('full_production_line');
+    expect(prompt).not.toContain(
+      'Full production breakdown with machine counts → `ingredient_tree`',
+    );
+  });
+
+  it('tells the foreman to batch lookups by name', () => {
+    expect(section).toContain('`names`');
+    expect(section).toContain('recipes_for');
+  });
+
+  it('forbids re-fetching facts already in hand', () => {
+    expect(section).toMatch(/do not re-fetch/i);
+  });
+
+  it('asks for every game-data lookup in the first round', () => {
+    expect(section).toMatch(/first round, request every game-data\s+lookup/);
+  });
+});
+
+describe('save snapshot guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Save State & Opportunities'));
+
+  it('tells the foreman to use the snapshot instead of re-fetching what it covers', () => {
+    expect(section).toContain('Save snapshot');
+    expect(section).toContain('do not call `get_player_state`');
+  });
+
+  it('takes "near you" positions from the snapshot', () => {
+    expect(section).toMatch(/near you.*from the save snapshot/is);
+  });
+
+  it('checks power with get_power before planning around spare capacity', () => {
+    expect(section).toMatch(/power figures are estimates.*`get_power`/s);
+  });
+
+  it('takes unlock status from the snapshot', () => {
+    expect(section).toMatch(/whether a building or recipe is unlocked/);
+  });
+
+  it('lets a Creative Mode line override the snapshot unlock lists', () => {
+    expect(section).toMatch(/Creative\s+Mode line overrides the unlock lists/);
+  });
+});
+
+describe('work-orders block guidance in the bundled prompt', () => {
+  const prompt = loadSystemPromptTemplate(resolveSystemPromptPath({}));
+  const section = prompt.slice(prompt.indexOf('## Work Orders'), prompt.indexOf('## Closing Out'));
+
+  it('trusts the block over earlier chat about orders and uses its ids', () => {
+    expect(section).toContain('**Work orders** block');
+    expect(section).toMatch(/Trust it over anything\s+said about orders earlier/);
+    expect(section).toContain('`workOrderId`');
+  });
+});

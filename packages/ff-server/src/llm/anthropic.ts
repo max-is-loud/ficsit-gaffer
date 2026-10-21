@@ -12,6 +12,7 @@ import type {
   LlmTurnResult,
   NeutralMessage,
   NeutralToolCall,
+  TurnUsage,
 } from './types.js';
 
 /** Native Anthropic adapter — the foreman's first-class path for Claude models. */
@@ -33,8 +34,8 @@ export class AnthropicProvider implements LlmProvider {
       // is reused across requests and across tool rounds within a turn. Two
       // breakpoints — one on the tool list, one on system — mean a system-prompt
       // change still reuses the tools cache.
-      system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
-      messages: toAnthropicMessages(req.messages),
+      system: systemBlocks(req.system, req.contextBlocks ?? []),
+      messages: markLastMessageCacheable(toAnthropicMessages(req.messages)),
       tools: cacheableTools(req.tools),
     });
 
@@ -45,10 +46,16 @@ export class AnthropicProvider implements LlmProvider {
     });
 
     const final = await stream.finalMessage();
+    const usage: TurnUsage = {
+      inputTokens: final.usage.input_tokens,
+      outputTokens: final.usage.output_tokens,
+      cacheReadTokens: final.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: final.usage.cache_creation_input_tokens ?? 0,
+    };
     logger.info(
-      `Anthropic usage: ${final.usage.input_tokens} input, ` +
-        `${final.usage.cache_creation_input_tokens ?? 0} cache-write, ` +
-        `${final.usage.cache_read_input_tokens ?? 0} cache-read.`,
+      `Anthropic usage: ${usage.inputTokens} input, ${usage.cacheWriteTokens} cache-write, ` +
+        `${usage.cacheReadTokens} cache-read, ${usage.outputTokens} output; ` +
+        `stop_reason=${final.stop_reason ?? 'none'}.`,
     );
     const toolCalls: NeutralToolCall[] = [];
     for (const block of final.content) {
@@ -68,6 +75,8 @@ export class AnthropicProvider implements LlmProvider {
       toolCalls,
       stopReason: final.stop_reason === 'tool_use' ? 'tool_use' : 'stop',
       continuation: { provider: 'anthropic', content: final.content },
+      usage,
+      rawStopReason: final.stop_reason ?? undefined,
     };
   }
 
@@ -87,6 +96,23 @@ export class AnthropicProvider implements LlmProvider {
 }
 
 /**
+ * The persona, then each context block, as system text blocks. The persona keeps its own
+ * breakpoint, so a changed context block (a re-uploaded save) still reuses the cached persona;
+ * the last context block gets the other, caching the whole stable prefix.
+ */
+function systemBlocks(system: string, contextBlocks: string[]): Anthropic.TextBlockParam[] {
+  const blocks: Anthropic.TextBlockParam[] = [
+    { type: 'text', text: system, cache_control: { type: 'ephemeral' } },
+    ...contextBlocks.map((text): Anthropic.TextBlockParam => ({ type: 'text', text })),
+  ];
+  const last = blocks[blocks.length - 1];
+  if (last !== undefined) {
+    last.cache_control = { type: 'ephemeral' };
+  }
+  return blocks;
+}
+
+/**
  * Maps the neutral tool definitions to Anthropic tools, placing a cache
  * breakpoint on the last one so the whole tool list is cached as part of the
  * stable prefix. The tool set is deterministic, so the cache holds across turns.
@@ -102,6 +128,32 @@ function cacheableTools(tools: LlmRequest['tools']): Anthropic.Tool[] {
     last.cache_control = { type: 'ephemeral' };
   }
   return mapped;
+}
+
+/**
+ * Puts a cache breakpoint on the last block of the final (user) message. A turn's tool rounds
+ * re-send the whole growing message list, so without it every round pays full price for the
+ * conversation so far; with it each round reads the previous round's prefix from the cache.
+ * Cache lookups scan back at most 20 blocks from a breakpoint, so a round with more than about
+ * nine tool calls may miss once and write afresh. The input is not mutated.
+ */
+export function markLastMessageCacheable(
+  messages: Anthropic.MessageParam[],
+): Anthropic.MessageParam[] {
+  const last = messages.at(-1);
+  if (last === undefined || last.role !== 'user') {
+    return messages;
+  }
+  const blocks: Anthropic.ContentBlockParam[] =
+    typeof last.content === 'string'
+      ? [{ type: 'text', text: last.content }]
+      : last.content.map((block) => ({ ...block }));
+  const tail = blocks.at(-1);
+  if (tail === undefined) {
+    return messages;
+  }
+  Object.assign(tail, { cache_control: { type: 'ephemeral' } });
+  return [...messages.slice(0, -1), { role: 'user', content: blocks }];
 }
 
 /**
