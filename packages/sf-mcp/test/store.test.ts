@@ -20,6 +20,32 @@ describe('SaveStore', () => {
     expect(store.saveName).toBe('none');
     expect(state.recipes).toEqual([]);
     expect(store.getGraph().stats().actors).toBe(0);
+    expect(store.loaded).toBe(false);
+  });
+
+  it('is loaded only once a parse succeeds, and stays loaded after a later failure', () => {
+    let mtime = 1;
+    let readable = false;
+    const store = new SaveStore('save.sav', {
+      statMtime: () => mtime,
+      load: () => {
+        if (!readable) {
+          throw new Error('truncated');
+        }
+        return loaded('A');
+      },
+      now: () => NOW,
+    });
+    expect(store.loaded).toBe(false);
+    readable = true;
+    mtime = 2;
+    store.getState();
+    expect(store.loaded).toBe(true);
+    readable = false;
+    mtime = 3;
+    expect(store.getState().saveName).toBe('A');
+    expect(store.loaded).toBe(true);
+    expect(SaveStore.fromState(emptySaveState('v', 'F', NOW)).loaded).toBe(true);
   });
 
   it('re-parses only when the file mtime changes', () => {

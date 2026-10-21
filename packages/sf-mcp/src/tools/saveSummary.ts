@@ -27,7 +27,7 @@ import {
 import { unlockedNames } from '../query/unlocks.js';
 import type { SaveStore } from '../store/saveStore.js';
 import type { SaveStoreRegistry } from '../store/registry.js';
-import type { ToolResult } from './toolResult.js';
+import { errorResult, type ToolResult } from './toolResult.js';
 
 /** Nodes scanned around the player when picking the nearest of each resource type. */
 const NODE_SCAN = 200;
@@ -86,6 +86,26 @@ function collectViews(store: SaveStore, sources: SaveSummarySources): SaveViews 
 }
 
 /**
+ * Why no summary can be given, or undefined when the store holds a real save. Unlike the other
+ * save tools, the summary never falls back to the default store for a refused path, nor summarises
+ * the empty fallback state: the host caches it under the save's id, so a fallback would show the
+ * foreman the wrong (or an empty) save until the next upload.
+ */
+function unavailableReason(
+  registry: SaveStoreRegistry,
+  savePath: string | undefined,
+  store: SaveStore,
+): string | undefined {
+  if (savePath !== undefined && savePath.trim().length > 0 && !registry.allows(savePath)) {
+    return `Save path '${savePath}' is outside the allowed save directory.`;
+  }
+  store.getState();
+  return store.loaded
+    ? undefined
+    : 'No save is loaded: the save file could not be read or parsed, or no save is configured.';
+}
+
+/**
  * Registers `get_save_summary`. Host-internal: the backend calls it once per save and keeps the
  * result in the foreman's context; the model is not offered it.
  */
@@ -106,6 +126,10 @@ export function registerSaveSummaryTool(
     },
     async ({ savePath }): Promise<ToolResult> => {
       const store = registry.resolve(savePath);
+      const reason = unavailableReason(registry, savePath, store);
+      if (reason !== undefined) {
+        return errorResult(store.version, reason);
+      }
       const summary = summariseSave(collectViews(store, sources));
       const payload = { version: store.version, saveName: store.saveName, summary };
       return { content: [{ type: 'text', text: JSON.stringify(payload) }] };
