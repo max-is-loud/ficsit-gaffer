@@ -103,6 +103,35 @@ function partRecipes({ unlocks }: SaveSummary): string | undefined {
   return names === undefined ? undefined : `- Standard part recipes unlocked: ${names}.`;
 }
 
+type CreativeFlags = NonNullable<SaveSummary['progress']['creative']>;
+
+/** Creative Mode's boolean blanket unlocks, in render order, with their wording. */
+const CREATIVE_FLAGS: [keyof Omit<CreativeFlags, 'startingTier'>, string][] = [
+  ['unlockAllResearch', 'all MAM research unlocked'],
+  ['unlockAllShop', 'all AWESOME Shop items unlocked'],
+  ['unlockInstantAltRecipes', 'alternate recipes unlock instantly'],
+  ['noUnlockCost', 'unlocks cost nothing'],
+];
+
+/** The Creative Mode line: it overrides the unlock lists, which hold only what was purchased. */
+function creative({ progress: view }: SaveSummary): string | undefined {
+  const flags = view.creative;
+  if (flags === undefined) {
+    return undefined;
+  }
+  const grants = CREATIVE_FLAGS.filter(([flag]) => flags[flag]).map(([, wording]) => wording);
+  if (flags.startingTier > 0) {
+    grants.unshift(`every milestone to tier ${flags.startingTier} granted`);
+  }
+  if (grants.length === 0) {
+    return '- Creative Mode is on, with no blanket unlocks.';
+  }
+  return (
+    `- Creative Mode: ${grants.join('; ')}. ` +
+    'The unlock lists show only what was purchased; these grants apply on top.'
+  );
+}
+
 function power({ power: view }: SaveSummary): string | undefined {
   if (view.circuits === 0 && view.generators.length === 0) {
     return undefined;
@@ -162,6 +191,7 @@ const LINES: ((summary: SaveSummary) => string | undefined)[] = [
   recipes,
   buildings,
   partRecipes,
+  creative,
   power,
   production,
   storage,

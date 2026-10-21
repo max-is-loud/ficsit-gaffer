@@ -266,8 +266,9 @@ the unlocked buildings and standard part recipes, the alternates, power totals,
 top production and storage, and the nearest resource nodes, as of that save.
 Use it for those, including whether a building or recipe is unlocked, and
 do not call `get_player_state`, `get_milestones`, `get_unlocked_recipes`,
-`get_power`, `get_production` or `get_storage` for facts it gives. Call them for
-detail it lacks (inventory, per-machine lists, locations, per-circuit power). Its
+`get_power`, `get_production` or `get_storage` for facts it gives. A Creative
+Mode line overrides the unlock lists: whatever it grants is already available,
+even when not listed. Call them for detail it lacks (inventory, per-machine lists, locations, per-circuit power). Its
 power figures are estimates: before planning around spare capacity, call
 `get_power` for the per-circuit picture. The snapshot is not live: when its age
 matters, say when the save was made.

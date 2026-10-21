@@ -5,6 +5,7 @@
 import type { ResourceNodeHit } from '@foreman/sf-game-data';
 
 import type {
+  CreativeProgression,
   MilestoneSummary,
   NamedStack,
   PlayerSummary,
@@ -74,6 +75,8 @@ export interface SaveSummary {
     spaceElevatorCost?: { item: string; amount: number }[];
     spaceElevatorUnlocksTier?: number;
     mamTrees: string[];
+    /** Creative Mode's blanket unlocks; present only on a creative save. */
+    creative?: CreativeProgression;
   };
   recipes: {
     standardCount: number;
@@ -143,6 +146,7 @@ function summariseProgress(progress: MilestoneSummary): SaveSummary['progress'] 
     ...(phase === undefined ? {} : { spaceElevatorPhase: phase }),
     ...spaceElevatorGoal(progress),
     mamTrees: [...progress.mamResearch].sort(),
+    ...(progress.creative === undefined ? {} : { creative: { ...progress.creative } }),
   };
 }
 

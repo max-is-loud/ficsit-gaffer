@@ -26,6 +26,16 @@ export const saveSummarySchema = z.object({
     spaceElevatorCost: z.array(z.object({ item: z.string(), amount: z.number() })).optional(),
     spaceElevatorUnlocksTier: z.number().optional(),
     mamTrees: z.array(z.string()),
+    // Optional: present only on a creative save, and absent from an older sf-mcp.
+    creative: z
+      .object({
+        startingTier: z.number(),
+        unlockAllResearch: z.boolean(),
+        unlockAllShop: z.boolean(),
+        unlockInstantAltRecipes: z.boolean(),
+        noUnlockCost: z.boolean(),
+      })
+      .optional(),
   }),
   recipes: z.object({
     standardCount: z.number(),

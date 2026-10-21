@@ -167,6 +167,10 @@ describe('save snapshot guidance in the bundled prompt', () => {
   it('takes unlock status from the snapshot', () => {
     expect(section).toMatch(/whether a building or recipe is unlocked/);
   });
+
+  it('lets a Creative Mode line override the snapshot unlock lists', () => {
+    expect(section).toMatch(/Creative\s+Mode line overrides the unlock lists/);
+  });
 });
 
 describe('work-orders block guidance in the bundled prompt', () => {

@@ -146,6 +146,13 @@ describe('renderSaveSummary', () => {
         })),
         spaceElevatorUnlocksTier: 9,
         mamTrees: Array.from({ length: 14 }, (_, i) => `MAM tree ${i}`.padEnd(20, 'x')),
+        creative: {
+          startingTier: 9,
+          unlockAllResearch: true,
+          unlockAllShop: true,
+          unlockInstantAltRecipes: true,
+          noUnlockCost: true,
+        },
       },
       recipes: {
         standardCount: 300,
@@ -233,5 +240,31 @@ describe('renderSaveSummary', () => {
       UPLOADED,
     );
     expect(text).toContain('Space Elevator phase 1 (needs 50 Smart Plating; unlocks tier 4);');
+  });
+
+  it('states the Creative Mode grants after the unlock lists', () => {
+    const creative = {
+      startingTier: 4,
+      unlockAllResearch: true,
+      unlockAllShop: false,
+      unlockInstantAltRecipes: true,
+      noUnlockCost: true,
+    };
+    const text = renderSaveSummary(
+      { ...production, progress: { ...production.progress, creative } },
+      UPLOADED,
+    );
+    expect(text).toContain(
+      '- Recipes: 171 standard, 1 alternate: Alternate: Cheap Silica.\n' +
+        '- Creative Mode: every milestone to tier 4 granted; all MAM research unlocked; ' +
+        'alternate recipes unlock instantly; unlocks cost nothing. ' +
+        'The unlock lists show only what was purchased; these grants apply on top.\n',
+    );
+  });
+
+  it('adds no Creative Mode line to a non-creative save', () => {
+    const text = renderSaveSummary(production, UPLOADED);
+    expect(text).not.toContain('Creative');
+    expect(text.split('\n')).toHaveLength(12);
   });
 });
