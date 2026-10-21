@@ -3,6 +3,7 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 
 import { logger } from '../logger.js';
 
@@ -121,13 +122,20 @@ export class McpHttpClient implements McpGateway {
     return client;
   }
 
-  /** Drops the current client so the next call reconnects with a fresh transport. */
-  private reset(): void {
-    const client = this.client;
-    this.client = undefined;
-    if (client !== undefined) {
-      void client.close().catch(() => undefined);
+  /**
+   * Drops `failed` after `error` so the next call reconnects with a fresh
+   * transport — but only when the error means the connection itself is broken,
+   * and only if `failed` is still the current client. Calls run concurrently on
+   * the shared client, so tearing it down for one call's timeout would reject
+   * every healthy sibling call, and a stale failure must not close a newer
+   * client another call has already reconnected.
+   */
+  private resetAfter(failed: Client | undefined, error: unknown): void {
+    if (failed === undefined || failed !== this.client || !isConnectionFailure(error)) {
+      return;
     }
+    this.client = undefined;
+    void failed.close().catch(() => undefined);
   }
 
   public async listTools(): Promise<ToolDefinition[]> {
@@ -144,7 +152,7 @@ export class McpHttpClient implements McpGateway {
       }));
       return this.cachedTools;
     } catch (error) {
-      this.reset();
+      this.resetAfter(client, error);
       throw error;
     }
   }
@@ -161,8 +169,9 @@ export class McpHttpClient implements McpGateway {
     // savePath in args directly and supplies no context, so it is unaffected.
     const effectiveArgs =
       context?.savePath !== undefined ? { ...args, savePath: context.savePath } : args;
+    let client: Client | undefined;
     try {
-      const client = await this.ensureClient();
+      client = await this.ensureClient();
       const result = await client.callTool({ name, arguments: effectiveArgs });
       const content = Array.isArray(result.content) ? (result.content as RawToolContent[]) : [];
       const text = content
@@ -172,8 +181,8 @@ export class McpHttpClient implements McpGateway {
       return { text: text.length > 0 ? text : '(no output)', isError: result.isError === true };
     } catch (error) {
       logger.error(`MCP tool '${name}' failed:`, error);
-      // A transport/protocol failure poisons the connection — reconnect next time.
-      this.reset();
+      // A transport failure poisons the connection — reconnect next time.
+      this.resetAfter(client, error);
       return { text: `Tool '${name}' failed: ${describeError(error)}`, isError: true };
     }
   }
@@ -205,6 +214,17 @@ export class McpHttpClient implements McpGateway {
       return { version: 'unknown', build: undefined };
     }
   }
+}
+
+/**
+ * Whether `error` means the MCP connection is unusable. The SDK reports a
+ * server-side error response and a per-request timeout as an `McpError`; the
+ * connection survives those. A closed connection is an `McpError` with code
+ * `ConnectionClosed`; anything else (HTTP/fetch failures from the transport,
+ * an expired session) is not an `McpError` at all.
+ */
+function isConnectionFailure(error: unknown): boolean {
+  return !(error instanceof McpError) || error.code === ErrorCode.ConnectionClosed;
 }
 
 function describeError(error: unknown): string {
