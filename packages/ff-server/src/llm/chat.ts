@@ -13,6 +13,7 @@ import {
   liveStateToolDefinitions,
   type LiveStateService,
 } from '../tools/liveStateTools.js';
+import { isHostInternalTool } from '../tools/hostInternalTools.js';
 import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
 import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
@@ -135,9 +136,6 @@ async function loadHistory(deps: ChatDeps, playthroughId: string): Promise<Neutr
   return history.map((message) => ({ role: message.role, content: message.content }));
 }
 
-/** MCP tools the backend calls itself; offering them would only lengthen the tool list. */
-const HOST_INTERNAL_TOOLS = new Set(['describe_save', 'get_save_summary']);
-
 /**
  * Merges the MCP game-data tools with the server-local work-order and live tools.
  * The live tool's name is reserved: an MCP tool of the same name is never offered, and
@@ -149,7 +147,7 @@ async function assembleTools(
   liveState: LiveStateService | undefined,
 ): Promise<ToolDefinition[]> {
   const mcpTools = (await mcp.listTools()).filter(
-    (tool) => !isLiveStateTool(tool.name) && !HOST_INTERNAL_TOOLS.has(tool.name),
+    (tool) => !isLiveStateTool(tool.name) && !isHostInternalTool(tool.name),
   );
   return [
     ...mcpTools,

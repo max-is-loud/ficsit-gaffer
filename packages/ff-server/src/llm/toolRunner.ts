@@ -3,6 +3,7 @@
 // single call to the live, work-order or MCP handler also lives here.
 
 import { logger } from '../logger.js';
+import { isHostInternalTool } from '../tools/hostInternalTools.js';
 import { handleLiveStateTool, isLiveStateTool } from '../tools/liveStateTools.js';
 import { handleWorkOrderTool, isWorkOrderTool } from '../tools/workOrderTools.js';
 import type { ChatDeps, ChatEvents } from './chat.js';
@@ -93,7 +94,7 @@ async function safeDispatch(call: NeutralToolCall, context: ToolRunContext): Pro
   }
 }
 
-/** Routes a tool call to the live, work-order or MCP handler. */
+/** Routes a tool call to the live, work-order or MCP handler; host-internal tools are refused. */
 async function dispatchTool(call: NeutralToolCall, context: ToolRunContext): Promise<ToolOutcome> {
   const { deps, events, playthroughId } = context;
   // Local and authority-checked even when unadvertised; never falls through to MCP.
@@ -110,6 +111,10 @@ async function dispatchTool(call: NeutralToolCall, context: ToolRunContext): Pro
       events.workOrder(outcome.workOrder);
     }
     return { text: outcome.text, isError: outcome.isError };
+  }
+  // The backend calls these itself; a model that names one gets the unknown-tool answer.
+  if (isHostInternalTool(call.name)) {
+    return { text: `Tool '${call.name}' is not available.`, isError: true };
   }
   // savePath is injected into save-game tool calls by the aggregate gateway.
   return deps.mcp.callTool(call.name, call.arguments, { savePath: context.savePath });
