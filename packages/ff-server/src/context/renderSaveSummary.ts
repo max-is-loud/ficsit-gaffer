@@ -121,7 +121,7 @@ function creative({ progress: view }: SaveSummary): string | undefined {
   }
   const grants = CREATIVE_FLAGS.filter(([flag]) => flags[flag]).map(([, wording]) => wording);
   if (flags.startingTier > 0) {
-    grants.unshift(`every milestone to tier ${flags.startingTier} granted`);
+    grants.unshift(`starting tier ${flags.startingTier} granted`);
   }
   if (grants.length === 0) {
     return '- Creative Mode is on, with no blanket unlocks.';

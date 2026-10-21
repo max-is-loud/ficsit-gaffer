@@ -256,7 +256,7 @@ describe('renderSaveSummary', () => {
     );
     expect(text).toContain(
       '- Recipes: 171 standard, 1 alternate: Alternate: Cheap Silica.\n' +
-        '- Creative Mode: every milestone to tier 4 granted; all MAM research unlocked; ' +
+        '- Creative Mode: starting tier 4 granted; all MAM research unlocked; ' +
         'alternate recipes unlock instantly; unlocks cost nothing. ' +
         'The unlock lists show only what was purchased; these grants apply on top.\n',
     );
