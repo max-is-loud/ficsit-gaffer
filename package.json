@@ -15,11 +15,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.68.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
     "@typescript-eslint/parser": "^8.62.0",
-    "eslint": "^10.9.1",
+    "eslint": "^10.13.0",
     "globals": "^17.13.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.10"
   },
   "scripts": {
     "build": "npm run build -w @foreman/sf-core && npm run build -w @foreman/sf-present && npm run build -w @foreman/sf-game-data && npm run build -w @foreman/sf-game-data-graph && npm run build -w @foreman/sf-save-data && npm run build -w @foreman/sf-save-data-graph && npm run build --workspaces --if-present",
