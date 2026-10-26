@@ -19,7 +19,13 @@ name: Dependabot auto-merge
 # that actor (`gh pr merge --admin`), while auto-merge waits for every merge
 # requirement, review included.
 #
-# So the workflow approves as well as queues. CODEOWNERS makes @StuartMeeks the
+# This repository (ficsit-gaffer) has no such ruleset and no AUTOMERGE_TOKEN
+# secret yet. Here the approval is not a merge requirement, and the workflow
+# only warns. Auto-merge waits only for required checks, so add the ruleset,
+# with build-test and validate-game-data as required checks, before you add the
+# token.
+#
+# So the workflow approves as well as queues. CODEOWNERS makes @max-is-loud the
 # owner of every path, and GITHUB_TOKEN cannot stand in for them: the repository
 # disallows Actions approvals, and github-actions[bot] is not a code owner.
 # Both the approval and the merge therefore use AUTOMERGE_TOKEN, a fine-grained

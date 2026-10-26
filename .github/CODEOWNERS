@@ -1,11 +1,11 @@
-# Code owners for ficsit-foreman.
+# Code owners for ficsit-gaffer.
 #
-# Listed owners are automatically requested for review on pull requests that
-# touch matching paths, and their approval is required to merge — enforced by
-# the repository's "main protection" ruleset (require_code_owner_review).
+# GitHub automatically requests a review from the listed owners on pull
+# requests that touch matching paths. This repository has no ruleset that
+# requires code-owner approval, so the approval is not a merge requirement.
 #
 # Later entries take precedence over earlier ones. The catch-all below makes
 # the repository owner the default reviewer for everything; add more specific
 # path rules above it as the project grows.
 
-*       @StuartMeeks
+*       @max-is-loud
