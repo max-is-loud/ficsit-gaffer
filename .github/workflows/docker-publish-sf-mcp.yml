@@ -1,15 +1,20 @@
 name: Docker image (sf-mcp)
 
 # Builds the unified MCP server image (game-data graph tools + save-game tools)
-# and publishes it to GHCR on pushes to main and on version tags. To avoid
-# rebuilding :latest on every main push, a `changes` job gates the build: it
-# always runs for tags (releases), manual runs and PRs, but for a main-branch
-# push it builds only when image-relevant files changed.
+# on pushes to main and on version tags. To avoid rebuilding :latest on every
+# main push, a `changes` job gates the build: it always runs for tags (releases),
+# manual runs and PRs, but for a main-branch push it builds only when
+# image-relevant files changed.
 # (A `paths:` filter on the push trigger can't be used here — it would also
-# filter tag pushes, which must always publish.)
+# filter tag pushes, which must always build.)
 #
 # The whole lib chain it bundles is path-watched: sf-core, sf-game-data,
 # sf-game-data-graph (kuzu) and sf-save-data (the .sav parser).
+#
+# Gaffer does not publish images yet. While Gaffer is in development, this
+# workflow only builds the image, to check that it still builds. It never logs
+# in to a registry and never pushes. Before the first release, set the image
+# name, set `push`, add a registry login and grant `packages: write`.
 
 on:
   push:
@@ -33,7 +38,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   changes:
@@ -92,19 +96,11 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/stuartmeeks/foreman-sf-mcp
+          images: foreman-sf-mcp
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -112,12 +108,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
+      - name: Build
         uses: docker/build-push-action@v7
         with:
           context: .
           file: packages/sf-mcp/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

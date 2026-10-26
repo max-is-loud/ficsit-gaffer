@@ -1,9 +1,14 @@
 name: Docker image (ff-client)
 
-# Builds the web client image and publishes it to GHCR on pushes to main and on
-# version tags. Mirrors the other image workflows: a `changes` job gates :latest
-# so it only rebuilds when web-image-relevant files change (always builds for
-# tags, manual runs, and the path-filtered PR trigger).
+# Builds the web client image on pushes to main and on version tags. Mirrors
+# the other image workflows: a `changes` job gates :latest so it only rebuilds
+# when web-image-relevant files change (always builds for tags, manual runs, and
+# the path-filtered PR trigger).
+#
+# Gaffer does not publish images yet. While Gaffer is in development, this
+# workflow only builds the image, to check that it still builds. It never logs
+# in to a registry and never pushes. Before the first release, set the image
+# name, set `push`, add a registry login and grant `packages: write`.
 
 on:
   push:
@@ -20,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   changes:
@@ -78,19 +82,11 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/stuartmeeks/foreman-ff-client
+          images: foreman-ff-client
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -98,12 +94,12 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push
+      - name: Build
         uses: docker/build-push-action@v7
         with:
           context: .
           file: packages/ff-client/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=foreman-ff-client
