@@ -119,9 +119,14 @@ export interface TwoFactorEnrolment {
  * The pioneer must then confirm a TOTP code via {@link verifyTotp} to finish.
  */
 export async function enableTwoFactor(password: string): Promise<TwoFactorEnrolment> {
-  const { data, error } = await authClient.twoFactor.enable({ password });
+  const { data, error } = await authClient.twoFactor.enable({ password, method: 'totp' });
   if (error !== null || data === null) {
     throw new Error(messageOf(error, 'Could not start two-factor setup.'));
+  }
+  // Better Auth 1.7 also offers email/SMS 'otp' enrolment, which returns no TOTP
+  // URI or backup codes. We always ask for 'totp', so any other answer is an error.
+  if (data.method !== 'totp') {
+    throw new Error('Two-factor setup did not return an authenticator secret.');
   }
   return { totpURI: data.totpURI, backupCodes: data.backupCodes };
 }
