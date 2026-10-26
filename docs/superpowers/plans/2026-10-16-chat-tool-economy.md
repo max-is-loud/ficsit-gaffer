@@ -8,7 +8,7 @@
 
 **Tech stack:** TypeScript (ESM), Express, Prisma/SQLite, `@anthropic-ai/sdk`, `openai`, MCP SDK, zod, Vitest.
 
-**Spec:** issues #36, #37, #38 and #39 (`gh issue view N -R max-is-loud/ficsit-foreman`); the bridge v2 design on `feature/bridge-v2-spec` (`docs/superpowers/specs/2026-10-15-bridge-v2-live-world-design.md`); and the "#36 design" section below, which settles the design questions in #36.
+**Spec:** issues #36, #37, #38 and #39 (`gh issue view N -R max-is-loud/ficsit-gaffer`); the bridge v2 design on `feature/bridge-v2-spec` (`docs/superpowers/specs/2026-10-15-bridge-v2-live-world-design.md`); and the "#36 design" section below, which settles the design questions in #36.
 
 ## Global constraints
 
