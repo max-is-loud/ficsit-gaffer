@@ -9,9 +9,12 @@ Gaffer is a derivative of [FICSIT Foreman](https://github.com/StuartMeeks/ficsit
 through a server-side SML bridge. The code, packages and images still use the
 `foreman` names until the pre-release rename (#15); keep using them until then.
 
-This file is a **map**, not a spec — it points at the canonical docs and states
-the conventions' home. Read the relevant doc before working in an area.
-`CLAUDE.md` imports this file; edit `AGENTS.md`, never `CLAUDE.md`.
+The Gaffer part of this file is a **map**, not a spec — it points at the canonical
+docs and states the conventions' home. Read the relevant doc before working in an area.
+`CLAUDE.md` imports this file. Mainspring manages `CLAUDE.md` and the block between
+the `mainspring:begin` and `mainspring:end` markers at the end of this file. Do not
+edit them by hand: the installer reports such an edit as a conflict. Edit the Gaffer
+text above the block.
 
 ## Monorepo layout (npm workspaces)
 
@@ -113,8 +116,11 @@ committing.
   gh project item-add 4 --owner max-is-loud --url "$url"
   ```
 
-  New items start in **Backlog**; move them to Todo → In Progress as work is
-  scheduled and started. Closing the issue moves it to Done.
+  New items start in **Backlog**. After that, only the project orchestrator
+  changes the board. It moves each item through the Mainspring stages (Backlog,
+  Ready, In progress, In review, Awaiting approval, Done, and the Blocked field)
+  with `mainspring project-sync`. An item goes to Done only after `merge-execute`
+  reports `merged`. Workers and reviewers do not change issues or the board.
 - **Issue references:** a bare `#N` means a Gaffer issue or PR. References to the
   upstream tracker are written as links labelled `upstream #N`
   (`[upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207)`).
@@ -129,7 +135,9 @@ For anything to do with **Unreal Engine** or **Satisfactory modding** (SML, the
 classes and engine APIs), look it up in Context7 (`query-docs`) **before**
 answering from memory or writing code; treat it as the source of truth over
 training data. Cite what you used when it shapes a decision. If Context7 has
-nothing on the point, say so and fall back to the upstream sites.
+nothing on the point, say so and fall back to the upstream sites. A reviewer has
+no network, so the orchestrator puts the relevant Context7 findings in the review
+brief.
 
 | Topic | Context7 library ID |
 |---|---|
@@ -155,3 +163,80 @@ runtime and is never committed. The VM and the running server load the bundled m
 `sf-game-data.json` (or `SF_GAME_DATA_PATH`). The C# extractor itself only builds/runs
 on the Windows host (CUE4Parse + a game install) — do not assume a game directory is
 mounted at runtime.
+
+<!-- mainspring:begin (managed by Mainspring; the installer reports edits in this block as conflicts) -->
+# Repository instructions for agents
+
+This file holds the rules for every agent. The rules for your role are in a separate file:
+
+| Role | Role file |
+| --- | --- |
+| Project orchestrator | `agents/orchestrator.md` |
+| Assigned worker | `agents/worker.md` |
+| Independent reviewer | `agents/reviewer.md` |
+
+The dispatch brief names your role and your role file. Read your role file before you start. If you have no brief, read `agents/orchestrator.md` only if the user made you the project orchestrator. Otherwise, follow the user's instructions and the shared rules in this file.
+
+## Precedence
+
+From the highest:
+
+1. A direct instruction from the user.
+2. This file and your role file.
+3. The dispatch brief. A brief adds task rules. If a brief contradicts this file or your role file, report the conflict to the orchestrator before you continue.
+4. The default behaviour of a skill.
+
+If a skill tells you to do something that your role file does not permit, do not do it. Request that action from the orchestrator.
+
+## Writing standard: ASD-STE100 Simplified Technical English
+
+Write all prose in ASD-STE100 Simplified Technical English (STE). Go approximately 80% of the way toward strict compliance.
+
+This standard applies to:
+
+- specs and plans, including the specs and plans that Superpowers skills write (for example, `superpowers:brainstorming` and `superpowers:writing-plans`)
+- other documents, templates, and skills
+- issue text, pull request text, and review findings
+- commit message bodies
+- reports to the project orchestrator and to the user
+
+This instruction has priority over the default writing style of a skill.
+
+### Rules
+
+1. Write short sentences. A procedural sentence has a maximum of 20 words. A descriptive sentence has a maximum of 25 words.
+2. Write one instruction in each sentence. Use the imperative for instructions.
+3. Use the active voice.
+4. Use simple, common words. Give each word one meaning. Use the same term for the same thing.
+5. Write paragraphs of six sentences or fewer.
+6. Do not omit articles ("a", "an", "the").
+7. Do not use a verb form that ends in "-ing" or a phrasal verb when a simple verb is available.
+8. Use lists for steps. Use tables for comparisons.
+
+### Exemptions
+
+These items are exempt: code, commands, identifiers, file paths, quotations, product names, model names, and necessary technical terms. If strict STE makes a statement less precise, keep the precise statement.
+
+### Checks
+
+Run `mainspring ste-check <file>...` for advisory warnings. The check does not fail a build.
+
+## Agent principles
+
+These principles apply to every role. Andrej Karpathy's agentic engineering recommendations inspired them.
+
+1. Think before you code. Identify the important assumptions, ambiguities, and tradeoffs. Ask a question only when the answer changes the result. Your role file says which decisions are yours.
+2. Keep it simple. Write the minimum that meets the acceptance criteria. Do not add speculative features or abstractions.
+3. Make surgical changes. Change only what the task needs. Do not refactor working code that the task does not touch.
+4. Work toward the goal. Meet the objective, the interfaces, and the acceptance criteria. Where they leave a choice, choose the method yourself.
+5. Verify, then report. Run the tests, builds, and checks. A worker fixes the failures. A reviewer reports them. Give evidence, not confidence.
+6. Collaborate through the project orchestrator. Only the orchestrator dispatches agents.
+7. Keep people informed. Report significant changes, decisions, assumptions, verification results, and remaining risks.
+
+## Communication with the user
+
+These rules apply to every message to the user, from any role.
+
+- Start each update with "Needs you" and "At risk". If nothing is necessary, write one line.
+- Choose the format for the information: text for decisions, tables for comparisons, Mermaid diagrams for structure and flow, and interactive HTML for systems that the user must explore.
+<!-- mainspring:end -->

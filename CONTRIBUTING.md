@@ -49,9 +49,11 @@ never upstream's. When you open an issue, label it and slot it onto the roadmap:
 - **A milestone** — *Foundations — identity & standards*, *Live world*, or
   *Public release*. If none fits, leave it unset and explain why in the body.
 - **A card on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4)**
-  board. New cards start in **Backlog**; move them through **Todo** and
-  **In Progress** as work is scheduled and started. Closing the issue moves the
-  card to **Done**.
+  board. New cards start in **Backlog**. After that, only the Mainspring project
+  orchestrator changes the board, with `mainspring project-sync`. The stages are
+  **Backlog**, **Ready**, **In progress**, **In review**, **Awaiting approval**
+  and **Done**; the **Blocked** field marks a blocked card. A card goes to
+  **Done** only after its PR merges.
 
 References to the upstream FICSIT Foreman tracker are written as links labelled
 `upstream #N`; a bare `#N` always means a Gaffer issue or PR.
