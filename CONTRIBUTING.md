@@ -38,7 +38,7 @@ imports, points here).
   carefully.`
 
 ### Issues
-Issues live in [Gaffer's tracker](https://github.com/max-is-loud/ficsit-foreman/issues),
+Issues live in [Gaffer's tracker](https://github.com/max-is-loud/ficsit-gaffer/issues),
 never upstream's. When you open an issue, label it and slot it onto the roadmap:
 - **One type label** — `enhancement` (a feature or capability), `bug`,
   `documentation`, or `question` (an open decision to settle).
@@ -152,8 +152,8 @@ three. Example: `Function 'build' has too many parameters (5). Maximum allowed i
 `npm run lint`. `npm run format` rewrites files to match. `.editorconfig` covers
 C#, and `tools/sf-map-renderer/` has its own. C++ has a `.clang-format`
 (`integrations/foreman-bridge/mod/`), not enforced until bridge v2
-([#10](https://github.com/max-is-loud/ficsit-foreman/issues/10)). C# formatting
-enforcement is tracked in [#30](https://github.com/max-is-loud/ficsit-foreman/issues/30).
+([#10](https://github.com/max-is-loud/ficsit-gaffer/issues/10)). C# formatting
+enforcement is tracked in [#30](https://github.com/max-is-loud/ficsit-gaffer/issues/30).
 
 **The ratchet.** Code that predates the standard is recorded, not excused:
 nothing new may be added to the record, and the record can only shrink. There are

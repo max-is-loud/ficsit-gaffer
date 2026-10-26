@@ -70,7 +70,7 @@ recipe quantity checks, [upstream #222](https://github.com/StuartMeeks/ficsit-fo
 for an in-memory adjacency projection ([upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243)) — no `sf-*` package carries a native
 dependency now. Gaffer's own work — starting with live-world awareness via the
 SML bridge (`integrations/foreman-bridge`) — is tracked in Gaffer's
-[issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the
+[issue tracker](https://github.com/max-is-loud/ficsit-gaffer/issues) and on the
 [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4) board.
 
 ## Conventions
@@ -104,14 +104,14 @@ committing.
 
 - **Never create issues, PRs, comments, labels or board items on upstream**
   (`StuartMeeks/ficsit-foreman`). The `upstream` git remote is read-only, for
-  fetching and cherry-picking. `gh` defaults to `max-is-loud/ficsit-foreman`
-  (`gh repo set-default`); pass `-R max-is-loud/ficsit-foreman` if unsure.
+  fetching and cherry-picking. `gh` defaults to `max-is-loud/ficsit-gaffer`
+  (`gh repo set-default`); pass `-R max-is-loud/ficsit-gaffer` if unsure.
 - **Every new issue goes on the Gaffer roadmap board** (user project 4) with a
   status. The `gh issue create --project` flag fails on this board, so add it
   separately:
 
   ```sh
-  url=$(gh issue create -R max-is-loud/ficsit-foreman --title "…" --body-file body.md \
+  url=$(gh issue create -R max-is-loud/ficsit-gaffer --title "…" --body-file body.md \
     --label "enhancement,area:ff-server" --milestone "Live world")
   gh project item-add 4 --owner max-is-loud --url "$url"
   ```

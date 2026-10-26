@@ -125,8 +125,8 @@ Prefer not to use Docker, or want to develop on FICSIT Foreman? You'll need **No
 **npm 10+** (Windows / macOS / Linux).
 
 ```bash
-git clone https://github.com/max-is-loud/ficsit-foreman
-cd ficsit-foreman
+git clone https://github.com/max-is-loud/ficsit-gaffer
+cd ficsit-gaffer
 npm install
 npm run build
 npm test
@@ -205,7 +205,7 @@ Resolution order for game data: `SF_GAME_DATA_PATH` → bundled channel
 
 Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the workflow
 and conventions, including how to supply bundled `sf-game-data.json` game-data updates. Planned
-work and open design questions live in the [issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the
+work and open design questions live in the [issue tracker](https://github.com/max-is-loud/ficsit-gaffer/issues) and on the
 [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4);
 the parser and graph design are documented in [`PARSER.md`](./packages/sf-game-data/PARSER.md).
 
@@ -228,7 +228,7 @@ at upstream commit `3514182` (2026-10-01). Everything up to that point — the g
 backbone, the foreman chat backend, work orders, the save subsystem and the web UI — is
 Stuart Meeks's work, used under the [Apache 2.0](./LICENSE) licence; see [`NOTICE`](./NOTICE).
 
-Gaffer is a separate project with its own [issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues)
+Gaffer is a separate project with its own [issue tracker](https://github.com/max-is-loud/ficsit-gaffer/issues)
 and [roadmap](https://github.com/users/max-is-loud/projects/4). Where FICSIT Foreman works
 from uploaded saves, Gaffer adds near-real-time awareness of the game world through a
 server-side SML bridge: what has been built, where the pioneer is, and whether work orders

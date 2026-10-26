@@ -219,5 +219,5 @@ Foreman-first. The path that got here (all shipped):
 
 Remaining: the **per-repo split** (still monorepo) and the [upstream #172](https://github.com/StuartMeeks/ficsit-foreman/issues/172) Advanced-Game-Settings
 modifier overlay. Live work is tracked in the
-[issue tracker](https://github.com/max-is-loud/ficsit-foreman/issues) and on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4); work from before
+[issue tracker](https://github.com/max-is-loud/ficsit-gaffer/issues) and on the [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4); work from before
 the split is in the [upstream tracker](https://github.com/StuartMeeks/ficsit-foreman/issues).
