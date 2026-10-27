@@ -107,9 +107,10 @@ MCP_TRANSPORT=http MCP_HTTP_HOST=0.0.0.0 MCP_HTTP_PORT=8723 \
 
 ### Docker
 
-A container image (`ghcr.io/stuartmeeks/foreman-sf-mcp`) ships the bundled stable
-game data and defaults to HTTP on `:8723`. The `sf-mcp` service is part of the
-project [`compose.yaml`](../../compose.yaml). See
+The container image ([`Dockerfile`](./Dockerfile)) bundles the stable game data and
+defaults to HTTP on `:8723`. Gaffer publishes no images yet, so build the image from
+the repository root. The `sf-mcp` service is part of the project
+[`compose.yaml`](../../compose.yaml): run `docker compose up -d --build sf-mcp`. See
 [Quick start (Docker)](../../README.md#quick-start-docker--recommended).
 
 ## Inspecting without an MCP client

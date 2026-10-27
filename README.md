@@ -38,8 +38,9 @@ in one Docker Compose project.
 
 ## Quick start (Docker — recommended)
 
-FICSIT Foreman ships as a Docker image with the latest **stable** game data baked in, so it runs
-with **zero setup — you don't even need to find your game files**.
+Gaffer publishes no Docker images yet. Docker Compose builds the images from a checkout
+of this repository. The `sf-mcp` image bundles the latest **stable** game data, so you
+do not need your game files.
 
 ### Windows (Docker Desktop)
 
@@ -47,34 +48,23 @@ Most Satisfactory players are on Windows, so here's the full path:
 
 1. Install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** and start
    it. (It sets up the WSL 2 backend for you — just accept the prompts and let it finish.)
-2. Save the [`compose.yaml`](./compose.yaml) from this repo into a folder (or copy this):
-
-   ```yaml
-   name: foreman
-   services:
-     sf-mcp:
-       image: ghcr.io/stuartmeeks/foreman-sf-mcp:latest
-       container_name: foreman-sf-mcp
-       ports:
-         - "8723:8723"
-       restart: unless-stopped
-   ```
-
-   *(The snippet above is the MCP server on its own — all you need to use FICSIT Foreman
-   from Claude Desktop. The full [`compose.yaml`](./compose.yaml) in this repo runs the
-   whole stack: the `sf-mcp` server, the `server` backend (`:8724`), and the `web` UI (`:8725`).
-   To run it all and chat with the foreman in your browser, set `ANTHROPIC_API_KEY` (or
-   enter a key in the UI's settings) and run `docker compose up -d --build`, then open
-   **<http://localhost:8725>**.)*
-3. Open a terminal in that folder and run:
+2. Get the source. Clone the repository, or download it from GitHub as a ZIP and unzip it:
 
    ```powershell
-   docker compose up -d
+   git clone https://github.com/max-is-loud/ficsit-gaffer
+   cd ficsit-gaffer
    ```
 
-   *(GUI alternative: in Docker Desktop's **Images** tab, search
-   `ghcr.io/stuartmeeks/foreman-sf-mcp`, click **Run**, expand **Optional settings**, set the
-   name to `foreman-sf-mcp` and the host port to `8723`.)*
+3. In that folder, build the images and start the stack:
+
+   ```powershell
+   docker compose up -d --build
+   ```
+
+   This starts the `sf-mcp` server (`:8723`), the backend (`:8724`) and the web UI
+   (`:8725`). To chat with the foreman in your browser, set `ANTHROPIC_API_KEY` (or enter
+   a key in the UI's settings), then open **<http://localhost:8725>**. To use the foreman
+   from Claude Desktop only, start just the MCP server: `docker compose up -d --build sf-mcp`.
 4. Confirm it's running: open **<http://localhost:8723/health>** — you should see
    `{"status":"ok","version":"1.2.3.1"}`.
 
@@ -82,20 +72,19 @@ Most Satisfactory players are on Windows, so here's the full path:
 project), or with `docker compose stop` and `docker compose start` — this keeps the
 containers in place (they stay listed in Docker Desktop, just stopped). Use
 `docker compose down` only when you want to **remove** the containers; your data
-survives in the `foreman-db` volume either way. **Update** to a newer build with
-`docker compose pull` then `docker compose up -d`.
-
-> **Prefer not to install Docker Desktop?** On Windows 11 you can run the same images
-> with WSL's built-in container runtime (`wslc`, public preview) instead — see
-> [Installation — WSL Containers](https://github.com/StuartMeeks/ficsit-foreman/wiki/Installation-wslc)
-> in the upstream wiki for the full walkthrough.
+survives in the `foreman-db` volume either way. **Update** to newer source, then run
+`docker compose up -d --build` again. In a clone, get the newer source with `git pull`.
+If you used a ZIP, download the newer ZIP and unzip it into a new folder. The data
+volumes belong to the `foreman` project, not to the folder, so the new folder uses them.
 
 ### macOS / Linux
 
-Use the same `compose.yaml` (`docker compose up -d`), or a one-off container:
+Follow the same steps: clone the repository, then run `docker compose up -d --build` in
+it. To build and run only the MCP server, without Compose:
 
 ```bash
-docker run -d --name foreman-sf-mcp -p 8723:8723 ghcr.io/stuartmeeks/foreman-sf-mcp:latest
+docker build -f packages/sf-mcp/Dockerfile -t foreman-sf-mcp .
+docker run -d --name foreman-sf-mcp -p 8723:8723 foreman-sf-mcp
 ```
 
 > **Note:** the server speaks the MCP **Streamable-HTTP** protocol at
