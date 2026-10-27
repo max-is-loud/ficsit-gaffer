@@ -3,8 +3,8 @@
 # Everything is grouped in Docker Desktop under the "foreman" PROJECT (the `name:`
 # below), so you start/stop it as one unit even as more services are added.
 #
-#   docker compose up -d                          # start (pulls images first time)
-#   docker compose pull && docker compose up -d   # update to newer images
+#   docker compose up -d --build                  # build from this checkout, start
+#   git pull && docker compose up -d --build      # update: rebuild from new source
 #   docker compose stop                           # turn OFF but KEEP the containers
 #   docker compose start                          # turn them back on
 #   docker compose down                           # REMOVE containers + network
@@ -15,6 +15,9 @@
 #
 # The project groups separate services (sf-mcp, ff-server, ff-client) under the
 # one "foreman" project so you start and stop them as a unit.
+#
+# Gaffer publishes no images yet. Compose builds each image from this checkout
+# under a local name, and `pull_policy: build` stops it from pulling any image.
 name: foreman
 
 services:
@@ -23,9 +26,9 @@ services:
   # data, so it works out of the box; it reads each playthrough's uploaded .sav
   # from the shared saves volume (SAVE_DATA_DIR).
   sf-mcp:
-    # Pull the published image, or build locally if it is not present:
-    #   docker compose up -d --build
-    image: ghcr.io/stuartmeeks/foreman-sf-mcp:latest
+    # Built from this checkout (Gaffer publishes no images yet).
+    image: foreman-sf-mcp
+    pull_policy: build
     build:
       context: .
       dockerfile: packages/sf-mcp/Dockerfile
@@ -61,9 +64,9 @@ services:
     #   - "C:/Users/you/AppData/Local/FactoryGame/Saved/SaveGames:/saves:ro"
 
   ff-server:
-    # Pull the published image, or build locally if it is not present:
-    #   docker compose up -d --build
-    image: ghcr.io/stuartmeeks/foreman-ff-server:latest
+    # Built from this checkout (Gaffer publishes no images yet).
+    image: foreman-ff-server
+    pull_policy: build
     build:
       context: .
       dockerfile: packages/ff-server/Dockerfile
@@ -103,8 +106,8 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-}
     volumes:
       # The SQLite database lives in a named volume, so your sessions and work
-      # orders SURVIVE upgrades: `docker compose pull` + `up -d` recreates the
-      # container against the new image and re-attaches this volume. Migrations
+      # orders SURVIVE upgrades: `docker compose up -d --build` recreates the
+      # container against the rebuilt image and re-attaches this volume. Migrations
       # run automatically at start and are additive (never drop data). Plain
       # `docker compose down` keeps it too — only `down -v` (or removing the
       # volume) deletes your data.
@@ -120,9 +123,9 @@ services:
     restart: unless-stopped
 
   ff-client:
-    # Pull the published image, or build locally if it is not present:
-    #   docker compose up -d --build
-    image: ghcr.io/stuartmeeks/foreman-ff-client:latest
+    # Built from this checkout (Gaffer publishes no images yet).
+    image: foreman-ff-client
+    pull_policy: build
     build:
       context: .
       dockerfile: packages/ff-client/Dockerfile

@@ -165,7 +165,7 @@ work orders therefore survive upgrades:
 
 | Action | Data |
 |---|---|
-| `docker compose pull` then `up -d` (recreate on a new image) | safe |
+| `git pull` then `docker compose up -d --build` (recreate on a rebuilt image) | safe |
 | `docker compose stop` / `start` / `restart` | safe |
 | `docker compose down` | safe — named volumes are not removed |
 | `docker compose down -v`, or removing the volume | **deleted** |
