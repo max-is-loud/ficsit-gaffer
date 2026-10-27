@@ -72,8 +72,10 @@ Most Satisfactory players are on Windows, so here's the full path:
 project), or with `docker compose stop` and `docker compose start` — this keeps the
 containers in place (they stay listed in Docker Desktop, just stopped). Use
 `docker compose down` only when you want to **remove** the containers; your data
-survives in the `foreman-db` volume either way. **Update** to newer source with
-`git pull`, then `docker compose up -d --build`.
+survives in the `foreman-db` volume either way. **Update** to newer source, then run
+`docker compose up -d --build` again. In a clone, get the newer source with `git pull`.
+If you used a ZIP, download the newer ZIP and unzip it into a new folder. The data
+volumes belong to the `foreman` project, not to the folder, so the new folder uses them.
 
 ### macOS / Linux
 
