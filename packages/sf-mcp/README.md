@@ -67,7 +67,10 @@ mtime changes, so progress shows up as you play without a restart.
 
 In the hosted app, the backend uploads per-playthrough saves into a shared directory
 (`SAVE_DATA_DIR`) and injects each tool call's `savePath`; the server LRU-caches one
-parsed store per path. Paths outside `SAVE_DATA_DIR` are refused.
+parsed store per path. Paths outside `SAVE_DATA_DIR` are refused. The server checks only
+that a path is inside `SAVE_DATA_DIR`. It does not check which playthrough or user owns the
+save. A host must never forward a `savePath` from the model; it must remove it and inject its
+own.
 
 ## Running
 

@@ -46,7 +46,9 @@ const collectibleKindSchema = z.enum([
 
 // The host (foreman backend) injects the active playthrough's save path; the
 // model never needs to set it. Optional so the legacy single-save mode still
-// works when no path is supplied.
+// works when no path is supplied. The registry checks only that the path is
+// inside SAVE_DATA_DIR, not who owns the save: a host must never forward a
+// savePath from the model; it must remove it and inject its own.
 const savePathSchema = z
   .string()
   .optional()

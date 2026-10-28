@@ -22,6 +22,10 @@ function isWithin(baseDir: string, target: string): boolean {
  * parse, so a save is parsed once and re-parsed only when its file changes (a
  * re-upload), never per request. Paths outside the allowed base dir are refused
  * (defends against a tool argument trying to read arbitrary files).
+ *
+ * The registry checks only that a path is inside `SAVE_DATA_DIR`. It does not check which
+ * playthrough or user owns the save. A host must never forward a `savePath` from the model; it
+ * must remove it and inject its own.
  */
 export class SaveStoreRegistry {
   private readonly cache = new Map<string, SaveStore>();
