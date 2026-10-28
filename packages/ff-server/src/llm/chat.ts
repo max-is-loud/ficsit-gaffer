@@ -18,7 +18,8 @@ import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
 import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
 import { runToolCalls, type ToolOutcome } from './toolRunner.js';
-import type { NeutralMessage, NeutralToolCall } from './types.js';
+import { describeTruncation, type TruncatedTurn } from './truncation.js';
+import type { LlmTurnResult, NeutralMessage, NeutralToolCall } from './types.js';
 
 /** Backing services and settings the chat loop needs (provider-agnostic). */
 export interface ChatDeps {
@@ -53,6 +54,11 @@ export interface ChatEvents {
   workOrder(order: WorkOrder): void;
   /** Called once when the turn ends, with its rounds, tool calls and token usage. */
   metrics?(metrics: TurnMetrics): void;
+  /**
+   * Called once when the model was cut off before it finished (output limit). The text streamed
+   * so far stays, and no tool call from the cut-off round runs.
+   */
+  truncated?(turn: TruncatedTurn): void;
 }
 
 /** Safety bound on tool-use round-trips within a single turn. */
@@ -63,7 +69,9 @@ const MAX_TOOL_ITERATIONS = 12;
  * assembles the windowed history and system prompt, then drives the tool-use
  * loop server-side — streaming text and invoking MCP game-data tools and
  * work-order tools — until the model returns a final answer. Returns the full
- * assistant text for persistence.
+ * assistant text for persistence. When the model was cut off, the returned text ends with a
+ * marker that says so (the marker is never streamed), so the next turn does not read the
+ * unfinished reply as a complete answer.
  */
 export async function runChat(
   req: ChatRequest,
@@ -77,11 +85,11 @@ export async function runChat(
 
   let streamedText = '';
   const recorder = new TurnMetricsRecorder();
-  const finish = (hitIterationCap: boolean): string => {
+  const finish = (hitIterationCap: boolean, marker?: string): string => {
     const metrics = recorder.finish(hitIterationCap);
     logger.info(formatTurnMetrics(metrics));
     events.metrics?.(metrics);
-    return streamedText;
+    return marker === undefined ? streamedText : appendMarker(streamedText, marker);
   };
 
   for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
@@ -103,6 +111,9 @@ export async function runChat(
     );
 
     recorder.recordRound(result);
+    if (result.stopReason === 'truncated') {
+      return finish(false, reportTruncation(result, events));
+    }
     messages.push({
       role: 'assistant',
       text: result.text,
@@ -128,6 +139,25 @@ export async function runChat(
     `Tool loop hit the ${MAX_TOOL_ITERATIONS}-iteration cap; returning partial response.`,
   );
   return finish(true);
+}
+
+/**
+ * Logs and reports a cut-off round to the client. Its tool calls are dropped, never run: their
+ * arguments may be cut short. Returns the marker to save after the text.
+ */
+function reportTruncation(round: LlmTurnResult, events: ChatEvents): string {
+  const truncated = describeTruncation(round);
+  logger.warn(
+    `Chat turn cut off (${round.rawStopReason ?? 'truncated'}, ${truncated.kind}); ` +
+      'tool calls from the round are discarded.',
+  );
+  events.truncated?.(truncated);
+  return truncated.historyMarker;
+}
+
+/** The streamed text, then the marker on its own paragraph (the marker alone if no text). */
+function appendMarker(text: string, marker: string): string {
+  return text.length > 0 ? `${text}\n\n${marker}` : marker;
 }
 
 /** The windowed conversation so far, as plain text turns (tool rounds are never persisted). */

@@ -13,8 +13,21 @@ import type {
   LlmTurnResult,
   NeutralMessage,
   NeutralToolCall,
+  StopReason,
   TurnUsage,
 } from './types.js';
+
+/**
+ * How each OpenAI `finish_reason` ends a turn. `length` and `content_filter` cut the reply short.
+ * A reason missing from the table, or none at all (some compatible servers omit it), counts as a
+ * normal stop.
+ */
+const STOP_REASONS = new Map<string, StopReason>([
+  ['stop', 'stop'],
+  ['tool_calls', 'tool_use'],
+  ['length', 'truncated'],
+  ['content_filter', 'truncated'],
+]);
 
 /**
  * Minimal shape of an OpenAI streaming chunk we depend on. Kept local (rather
@@ -111,7 +124,7 @@ export async function consumeOpenAiStream(
   return {
     text,
     toolCalls,
-    stopReason: finishReason === 'tool_calls' ? 'tool_use' : 'stop',
+    stopReason: STOP_REASONS.get(finishReason ?? '') ?? 'stop',
     usage,
     rawStopReason: finishReason ?? undefined,
   };

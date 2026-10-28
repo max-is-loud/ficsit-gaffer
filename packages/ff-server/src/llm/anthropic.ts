@@ -12,8 +12,23 @@ import type {
   LlmTurnResult,
   NeutralMessage,
   NeutralToolCall,
+  StopReason,
   TurnUsage,
 } from './types.js';
+
+/**
+ * How each Anthropic `stop_reason` ends a turn. `max_tokens` and `pause_turn` leave the reply
+ * unfinished (the loop does not resume a paused turn). A `refusal` is the model's final word, so
+ * it is shown as an answer. A reason missing from the table counts as a normal stop.
+ */
+const STOP_REASONS = new Map<string, StopReason>([
+  ['end_turn', 'stop'],
+  ['stop_sequence', 'stop'],
+  ['tool_use', 'tool_use'],
+  ['max_tokens', 'truncated'],
+  ['pause_turn', 'truncated'],
+  ['refusal', 'stop'],
+]);
 
 /** Native Anthropic adapter — the foreman's first-class path for Claude models. */
 export class AnthropicProvider implements LlmProvider {
@@ -73,7 +88,7 @@ export class AnthropicProvider implements LlmProvider {
     return {
       text,
       toolCalls,
-      stopReason: final.stop_reason === 'tool_use' ? 'tool_use' : 'stop',
+      stopReason: STOP_REASONS.get(final.stop_reason ?? '') ?? 'stop',
       continuation: { provider: 'anthropic', content: final.content },
       usage,
       rawStopReason: final.stop_reason ?? undefined,
