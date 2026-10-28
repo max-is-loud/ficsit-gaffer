@@ -41,3 +41,5 @@ npm-debug.log*
 # The base-map renderer (#246) is a real committed tool — exempt it.
 /tools/*
 !/tools/sf-map-renderer/
+# The server test-bed tooling (#65) is committed too.
+!/tools/testbed/
