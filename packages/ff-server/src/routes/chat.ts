@@ -83,6 +83,7 @@ export function chatRouter(deps: AppDeps): Router {
     const { savePath, contextBlocks } = await buildTurnContext(deps, playthroughId);
 
     const sse = openSse(res);
+    let truncated = false;
     try {
       const provider = deps.llmProviderFactory(llm);
       const finalText = await runChat(
@@ -105,12 +106,19 @@ export function chatRouter(deps: AppDeps): Router {
           text: (delta) => sse.send('text', { delta }),
           toolUse: (name) => sse.send('tool_use', { name }),
           workOrder: (order) => sse.send('work_order', order),
+          // The client shows this as the turn's error; its text and `done` mirror a failed turn.
+          truncated: (turn) => {
+            truncated = true;
+            sse.send('error', { message: turn.clientMessage });
+          },
         },
       );
       if (finalText.length > 0) {
         await deps.playthroughs.appendMessage(playthroughId, 'assistant', finalText);
       }
-      sse.send('done', { ok: true });
+      if (!truncated) {
+        sse.send('done', { ok: true });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`Chat turn failed for playthrough '${playthroughId}':`, error);
