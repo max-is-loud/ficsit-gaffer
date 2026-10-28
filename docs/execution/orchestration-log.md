@@ -122,3 +122,21 @@
 - Message author (T3 `createdBy`): user
 - Scope digest: `sha256:127053f3b51f57433df6dd3ea87410144a30d71856bc7e8947c59b09cb382e44` (batch `board-setup`)
 - Consequences: `mainspring merge-execute` squash-merged head `650502b` onto base `e8a76b7` as `8a6b9a5`. #63 closed.
+
+## 2026-10-28 — Merge PR #70
+
+- Kind: merge
+- Source: message `17153050-e98d-43fd-98fa-e86830257680` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:b69d0730ef21fa64e12c7da0c67ac915d6c2b42204334cc3a1582b774d961a5f` (batch `fix-measure-test`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `464cbb4` onto base `8a6b9a5` as `a3e5f8c`. #69 closed.
+  - #70 and #68 both appended entries to this record, so #68 had a conflict. The orchestrator rebased #68 onto `a3e5f8c` and kept the entries of `main` unchanged before those of #68. The new head of #68 needs a new review round, contrary to the expectation in the `fix-measure-test` entry.
+
+## 2026-10-28 — Give #69 no parent issue
+
+- Kind: drift exception
+- Source: message `17153050-e98d-43fd-98fa-e86830257680` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: the batch `fix-measure-test` has only one task. #69 closed when #70 merged, so the audit no longer reports the drift, and no exception was necessary.
