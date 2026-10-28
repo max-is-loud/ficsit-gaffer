@@ -137,6 +137,28 @@ describe('consumeOpenAiStream', () => {
   });
 });
 
+describe('consumeOpenAiStream stop reasons', () => {
+  it.each([
+    ['stop', 'stop'],
+    ['tool_calls', 'tool_use'],
+    ['length', 'truncated'],
+    ['content_filter', 'truncated'],
+  ] as const)('maps finish_reason %s to %s', async (raw, expected) => {
+    const result = await consumeOpenAiStream(chunks([textChunk('Partial', raw)]), () => {});
+    expect(result.stopReason).toBe(expected);
+    expect(result.rawStopReason).toBe(raw);
+  });
+
+  it('treats a missing or unknown finish_reason as a normal stop', async () => {
+    const missing = await consumeOpenAiStream(chunks([textChunk('Hi')]), () => {});
+    expect(missing.stopReason).toBe('stop');
+    for (const odd of ['novel_reason', 'constructor']) {
+      const result = await consumeOpenAiStream(chunks([textChunk('Hi', odd)]), () => {});
+      expect(result.stopReason).toBe('stop');
+    }
+  });
+});
+
 describe('consumeOpenAiStream usage', () => {
   it('reads usage from the final chunk, splitting out cached prompt tokens', async () => {
     const result = await consumeOpenAiStream(

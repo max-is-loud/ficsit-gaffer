@@ -53,8 +53,12 @@ export type NeutralMessage = NeutralTextMessage | NeutralAssistantTurn | Neutral
 export type LlmStreamEvent =
   { type: 'text'; delta: string } | { type: 'tool_call'; call: NeutralToolCall };
 
-/** Why a turn ended: the model wants tools run, or it is finished. */
-export type StopReason = 'stop' | 'tool_use';
+/**
+ * Why a turn ended: the model is finished, wants tools run, or was cut off before it finished
+ * (output-token limit, a paused turn or a content filter). A truncated turn's text is incomplete
+ * and its tool calls, if any, are unreliable (their arguments may be cut short).
+ */
+export type StopReason = 'stop' | 'tool_use' | 'truncated';
 
 /** Token counts for one model call (or summed over a chat turn). */
 export interface TurnUsage {
@@ -69,7 +73,7 @@ export interface TurnUsage {
 export interface LlmTurnResult {
   /** Full assistant text emitted this turn. */
   text: string;
-  /** Tool calls to run (empty when stopReason is 'stop'). */
+  /** Tool calls to run (empty when stopReason is 'stop'; never to be run when 'truncated'). */
   toolCalls: NeutralToolCall[];
   stopReason: StopReason;
   /** Complete native assistant content needed to continue a tool-use loop. */

@@ -335,6 +335,23 @@ describe('Anthropic continuation through runChat', () => {
     expect(result.rawStopReason).toBe('end_turn');
   });
 
+  it.each([
+    ['end_turn', 'stop'],
+    ['stop_sequence', 'stop'],
+    ['tool_use', 'tool_use'],
+    ['max_tokens', 'truncated'],
+    ['pause_turn', 'truncated'],
+    ['refusal', 'stop'],
+  ] as const)('maps the Anthropic stop reason %s to %s', async (raw, expected) => {
+    wire.responses.push(response([{ type: 'text', text: 'Partial', citations: null }], raw));
+    const result = await new AnthropicProvider('test-key').runTurn(
+      { system: 'Foreman', model: 'test-model', maxTokens: 1024, tools: [], messages: [] },
+      () => {},
+    );
+    expect(result.stopReason).toBe(expected);
+    expect(result.rawStopReason).toBe(raw);
+  });
+
   it('sends each context block as its own system block, the last one cached', async () => {
     wire.responses.push(response([{ type: 'text', text: 'Hi.', citations: null }]));
     await new AnthropicProvider('test-key').runTurn(
