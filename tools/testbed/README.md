@@ -52,20 +52,48 @@ label is. The script also makes each `pre-install` file read-only.
 
 ### How the backup avoids a save that is being written
 
-The game writes autosaves while it runs. A copy of a half-written file is useless. The
-script uses "wait, copy, verify":
+A copy of a half-written file is useless. A quiet period cannot prove that a save is
+complete: a writer can write half of a file, keep it open and pause for longer than any
+threshold. (Review finding R1-01 reproduced this: a 15 s threshold archived the first half.)
+The script therefore decides by the **state** of the file, not by time:
 
-1. **Wait for a quiet moment.** It waits until no file has changed in the last 15 seconds
-   (`GAFFER_QUIET_SECONDS`). It gives up after 120 seconds (`GAFFER_MAX_WAIT_SECONDS`).
-2. **Copy** the whole directory to a private staging directory with `cp -a`.
-3. **Verify.** The script accepts the copy only if both conditions are true:
+1. **Refuse while a process holds a save open for writing.** The script scans
+   `/proc/*/fd` for any descriptor that points into `SaveGames`. It reads the access
+   mode from `/proc/<pid>/fdinfo/<fd>`. A write or read-write descriptor means "busy".
+   A read-only descriptor (for example `foreman-save-sync`) does not block the backup.
+   The script waits up to 120 seconds (`GAFFER_MAX_WAIT_SECONDS`), then exits with an
+   error and makes **no archive**.
+2. **Fail closed.** The scan sees only processes that the user may inspect. Before it
+   starts, the script checks that it can read the `fd` directory of every process that
+   belongs to the owner of the saves. If it cannot, it stops with an error. A helper
+   process that marks itself non-dumpable (for example `(sd-pam)`) trips this check;
+   `GAFFER_ALLOW_UNINSPECTABLE=1` is the logged opt-out for such a machine.
+3. **Quiet period as a second guard.** No file may have changed in the last 15 seconds
+   (`GAFFER_QUIET_SECONDS`). This only covers a writer that closes and reopens a file
+   between writes. It does not decide alone.
+4. **Copy** the whole directory to a private staging directory with `cp -a`.
+5. **Verify.** The script accepts the copy only if all three conditions are true:
+   - no process holds a save open for writing after the copy,
    - no file in the source changed after the copy began, and
-   - `diff -r` shows that every copied file equals its source. This also catches a file that
-     the game created or renamed during the copy.
-4. **Retry** the copy up to 5 times (`GAFFER_COPY_ATTEMPTS`). If the saves never become
-   stable, the script exits with an error and makes **no archive**. It does not keep a doubtful copy.
-5. Only then does it write the `.tar` and a `.sha256` file. It builds the `.tar` in the
-   staging directory and renames it into place, so an archive is complete or absent.
+   - `diff -r` shows that every copied file equals its source. This also catches a file
+     that the game created or renamed during the copy.
+6. **Retry** the copy up to 5 times (`GAFFER_COPY_ATTEMPTS`). If the saves never become
+   stable, the script exits with an error and makes **no archive**.
+7. **Publish last.** The script builds the `.tar` and the `.sha256` file in the staging
+   directory. It moves them into `daily/` or `pre-install/` only after every step has
+   succeeded. A failure at any step leaves nothing in those directories.
+
+On `openclaw` (read-only checks): the game runs as `satisfactory`, as does the backup. Run
+as that user, the scan sees the game's open files (it found the game's open log file) and
+the visibility check passes. `ProtectProc=invisible` in the unit hides only the processes
+of **other** users, so the sandbox does not blind the scan.
+
+**Residual risk.** I could not confirm whether the game writes a save atomically (to a
+temporary name, then a rename). The game log does not say. The scan does not need this
+answer while the game keeps the file open during a write. A game that writes, closes the
+file, and later reopens it to append would not be seen between the two writes. The
+quiet period and the post-copy checks narrow this gap but cannot close it. The first
+pre-install archive should be restored to a copy (step 4) before you rely on it.
 
 A lock file stops the timer and a manual run from running at the same time. The script
 also refuses to start if less than 1 GiB is free (`GAFFER_MIN_FREE_MB`).
@@ -101,7 +129,7 @@ All commands run from a checkout of this repository on your machine, in this fol
 tools/testbed/test-save-backup.sh
 ```
 
-The script must print `all 17 checks passed`. It uses only a temporary directory.
+The script must print `all 30 checks passed`. It uses only a temporary directory.
 
 ### 1. Install (needs user approval, every step)
 
@@ -244,7 +272,8 @@ The scripts read these environment variables. The defaults suit the server.
 | `GAFFER_SAVE_DIR` | `/home/satisfactory/.config/Epic/FactoryGame/Saved/SaveGames` | Directory to back up |
 | `GAFFER_BACKUP_DIR` | `/home/satisfactory/save-backups` | Root of `daily/` and `pre-install/` |
 | `GAFFER_KEEP_DAILY` | `14` | Number of daily archives to keep |
-| `GAFFER_QUIET_SECONDS` | `15` | A file changed more recently than this is "being written" |
-| `GAFFER_MAX_WAIT_SECONDS` | `120` | Longest wait for a quiet moment |
+| `GAFFER_QUIET_SECONDS` | `15` | Second guard: a file changed more recently than this is "being written" |
+| `GAFFER_MAX_WAIT_SECONDS` | `120` | Longest wait for the saves to be idle |
 | `GAFFER_COPY_ATTEMPTS` | `5` | Copy retries when the saves change during a copy |
 | `GAFFER_MIN_FREE_MB` | `1024` | The backup refuses to run with less free space |
+| `GAFFER_ALLOW_UNINSPECTABLE` | `0` | `1` skips the check that every process of the saves' owner can be inspected |

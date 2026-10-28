@@ -10,7 +10,9 @@ Type=oneshot
 User=satisfactory
 Group=satisfactory
 ExecStart=/opt/gaffer-testbed/backup-saves.sh daily
-# The script waits up to 120 s for a quiet moment, and it retries a changing copy.
+# The script waits up to 120 s until no process writes a save, and it retries a changing copy.
+# It scans /proc/*/fd for open saves. ProtectProc=invisible below hides only other users'
+# processes, so the game (same user) stays visible.
 TimeoutStartSec=10min
 UMask=0077
 Nice=10
