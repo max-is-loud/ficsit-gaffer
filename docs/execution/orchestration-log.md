@@ -140,3 +140,22 @@
 - Message author (T3 `createdBy`): user
 - Scope digest: none. No batch applies.
 - Consequences: the batch `fix-measure-test` has only one task. #69 closed when #70 merged, so the audit no longer reports the drift, and no exception was necessary.
+
+## 2026-10-28 — Merge PR #68
+
+- Kind: merge
+- Source: message `24f5bd4a-438a-4f66-8df1-3dbe42b70d37` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:ef4310d43fc6c708e76d1788fd256e4be07948aadb061c313cdb52cfb3d318a3` (batch `adopt-mainspring`)
+- Consequences: `mainspring merge-execute` squash-merged head `d69e801` onto base `a3e5f8c` as `70908d3`. #66 closed. The Mainspring adoption is complete.
+
+## 2026-10-28 — Run the batch `first-work`
+
+- Kind: batch
+- Source: message `c95e6a90-06e2-4895-98a6-942ca7d66554` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6`
+- Consequences:
+  - The batch has four tasks: #52 (the planning step only), #33, #35, and task 1 of #65 (the save backup).
+  - Mainspring blocks a substantial task until its batch names a user-approved plan. So the batch records #52 as a planning task. After the user approves the plan, the orchestrator records #52 again as substantial, with the plan digest.
+  - Nothing runs on the test server for #65 until the user approves that step.
