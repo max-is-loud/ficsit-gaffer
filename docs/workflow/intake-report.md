@@ -57,10 +57,10 @@ The existing agent instruction files are `AGENTS.md` (Gaffer part, lines 1-165),
 
 | Item | File and lines at the base commit | Check against the files | Proposed change |
 | --- | --- | --- | --- |
-| 1. GitHub writes | `CONTRIBUTING.md:26-38`, `CONTRIBUTING.md:61-84` | Correct. Both sections address the reader as the one who opens PRs, closes and comments on issues, re-scopes siblings and edits milestones. `agents/orchestrator.md:10` gives all GitHub writes to the orchestrator; `agents/worker.md:20` forbids them for a worker. | A short paragraph at the start of each section. The rules stay for human contributors. `CONTRIBUTING.md:40-56` (Issues) also addresses the reader as the one who opens issues; the intake left it unchanged, because line 51-56 already names the orchestrator for the board. |
+| 1. GitHub writes | `CONTRIBUTING.md:26-38`, `CONTRIBUTING.md:61-84` | Correct. Both sections address the reader as the one who opens PRs, closes and comments on issues, re-scopes siblings and edits milestones. `agents/orchestrator.md:10` gives all GitHub writes to the orchestrator; `agents/worker.md:22` forbids them for a worker. | A short paragraph at the start of each section. The rules stay for human contributors. `CONTRIBUTING.md:40-56` (Issues) also addresses the reader as the one who opens issues; the intake left it unchanged, because line 51-56 already names the orchestrator for the board. |
 | 2. Rebase | `CONTRIBUTING.md:30` | Correct. `.claude/skills/project-chief/SKILL.md:212` says that a new commit needs a new review round and a new user approval. The ruleset does not require an up-to-date branch. | Rebase only to resolve a conflict, or when the orchestrator asks. |
 | 3. Issue recipe | `AGENTS.md:109-117` | Correct. The recipe uses `gh issue create` and `gh project item-add`. In the installed Mainspring 0.4.22, `issue-ensure` takes `repository`, `operation_id`, `title`, `body`, `issue` and `artifact`, and no labels or milestone. `project-sync` adds a missing issue to the board. | Three steps: `issue-ensure`, `gh issue edit`, `project-sync` with stage `Backlog`. `project-sync` needs `project.id`, which PR #64 sets. |
-| 4. Status by hand | `AGENTS.md:58-74` | Correct. `docs/architecture.md:143-149` already has the phase history and the links to the tracker and the board. The shipped capabilities and their upstream links are only in `AGENTS.md:60-71`. | A pointer to the board, to `docs/workflow/project.md` and to `docs/architecture.md` › Status / history. The project record (Architecture) now keeps the shipped capabilities with their upstream links. |
+| 4. Status by hand | `AGENTS.md:58-74` | Correct. `docs/architecture.md:143-149` already has the phase history and the links to the tracker and the board. `AGENTS.md:60-71` lists the shipped capabilities with their upstream links. Design documents also record the shipped status of the pipeline, ingest-time verification, the flow solver and the Kùzu removal. The intake found the shipped status of Work Orders v2 and explore orders only in `AGENTS.md`. | A pointer to the board, to `docs/workflow/project.md` and to `docs/architecture.md` › Status / history. The project record (Architecture) now keeps the list, the upstream links, and the other documents that record each item. |
 | 5. PR description | `CONTRIBUTING.md:31-32` | Correct. | Allow an edit when a later commit changes what the PR does. |
 | 6. Ruleset | `CONTRIBUTING.md:24` | Correct: the text says only "also enforced by a ruleset". | Describe the `main protection` ruleset with the facts of the brief. |
 | 7. Dev environment | `AGENTS.md:157-165` | Correct. The note names a Proxmox VM over SSH. | WSL2 on the Windows host. The statement "game files are not accessible" was about the VM, and nobody checked it for WSL2. The diff changes it to "do not assume that the game files are accessible from WSL2". The other facts stay. |
@@ -219,17 +219,17 @@ The capacity is two implementation slots and two review slots (`.mainspring/conf
 | #18 | refactor(server): split workOrderTools.ts by responsibility | Yes | Later wave. 1629 and 1113 lines (`source-limits.json:22-30`). |
 | #19 | refactor(server): split workOrderService.ts by responsibility | Yes | Later wave. 1420 lines (`source-limits.json:32-34`). Conflicts with #18 are likely; do not run them in parallel. |
 | #20 | refactor(mcp): split selectors.ts by responsibility | Yes | Later wave. 1400 lines (`source-limits.json:37-39`). |
-| #21 | refactor(client): split useForeman.ts by responsibility | No | Later wave. 870 lines; mechanical, ratchet-tracked. |
-| #22 | refactor(client): split WorkOrderPanel.tsx by responsibility | No | Later wave. 737 lines; mechanical. |
-| #24 | refactor(server): split routes.test.ts by responsibility | No | Later wave. 624 lines; tests only. |
-| #25 | refactor(save-data): split normalise.test.ts by responsibility | No | Later wave. 585 lines; tests only. |
-| #26 | refactor(client): split api/client.ts by responsibility | No | Later wave. 560 lines; mechanical. |
-| #27 | refactor(mcp): split bottlenecks.ts by responsibility | No | Later wave. 550 and 527 lines; mechanical. |
-| #28 | refactor(game-data-graph): split production.ts by responsibility | No | Later wave. 541 lines; mechanical. |
+| #21 | refactor(client): split useForeman.ts by responsibility | No | Later wave. 870 lines (`source-limits.json:42-43`); mechanical, ratchet-tracked. |
+| #22 | refactor(client): split WorkOrderPanel.tsx by responsibility | No | Later wave. 737 lines (`source-limits.json:47-48`); mechanical. |
+| #24 | refactor(server): split routes.test.ts by responsibility | No | Later wave. 624 lines (`source-limits.json:57-58`); tests only. |
+| #25 | refactor(save-data): split normalise.test.ts by responsibility | No | Later wave. 585 lines (`source-limits.json:62-63`); tests only. |
+| #26 | refactor(client): split api/client.ts by responsibility | No | Later wave. 560 lines (`source-limits.json:67-68`); mechanical. |
+| #27 | refactor(mcp): split bottlenecks.ts by responsibility | No | Later wave. 550 and 527 lines (`source-limits.json:72-78`); mechanical. |
+| #28 | refactor(game-data-graph): split production.ts by responsibility | No | Later wave. 541 lines (`source-limits.json:82-83`); mechanical. |
 | #23 | refactor(map-renderer): split WaterModelBuilder.cs by responsibility | No | Blocked here: no .NET SDK, and the renderer needs the Windows host. |
 | #29 | refactor(map-renderer): split SceneCollector.cs by responsibility | No | Blocked here, as #23. |
 | #30 | ci: enforce C# formatting with dotnet format | No | Needs a .NET SDK to verify locally (open question 2). |
-| #15 | chore: rename FICSIT Foreman to Gaffer before public release | Yes | Later. It touches most files, so run it when few branches are open. |
+| #15 | chore: rename FICSIT Foreman to Gaffer before public release | Yes | Later. At the base commit, 273 of 584 tracked files contain "foreman" (any case). Commands: `git grep -l -i foreman e8a76b7 -- . \| wc -l` and `git ls-tree -r --name-only e8a76b7 \| wc -l`. The count is an upper limit, because "foreman" is also the name of the companion persona, which can keep that name. Run it when few branches are open. |
 | #16 | Choose a publication licence for the bridge plugin | No | A user decision, not agent work. |
 | #10 | feat(bridge): live world — building category registry and player position | Yes | Later. The plugin part needs the Windows and Unreal toolchain. |
 | #13 | feat(bridge): progression events — milestones, research, collectibles | Yes | Later. The plugin part needs the Windows and Unreal toolchain. |

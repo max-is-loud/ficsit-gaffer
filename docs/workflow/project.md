@@ -67,22 +67,24 @@ Gaffer is a monorepo of npm workspaces under `packages/` [S14]. Three services r
 - `ff-server` is the Express backend on port 8724. It is the LLM proxy (Anthropic or OpenAI-compatible) with SSE streaming. It keeps the playthroughs and the work orders in Prisma (SQLite, Postgres later), and it is the MCP gateway to `sf-mcp` [S26] [S27].
 - `ff-client` is the React and Vite web UI on port 8725 [S26] [S12].
 
-The `sf-*` libraries carry no native dependency [S28]. The production graph is an in-memory adjacency projection, not a database [S29]. The game data is one merged `sf-game-data.json` for each release channel. The offline C# extractor makes it from the game install; the runtime loads the bundled file or `SF_GAME_DATA_PATH` [S30] [S31]. Work orders are application state in `ff-server`, not in an MCP server [S32].
+`sf-mcp` uses six workspace libraries: `sf-flow`, `sf-game-data`, `sf-game-data-graph`, `sf-present`, `sf-save-data` and `sf-save-data-graph`. `sf-game-data` uses `sf-core` [S35]. The `sf-*` libraries carry no native dependency [S28] [S36].
+
+The production graph is an in-memory adjacency projection, not a database [S29]. The game data is one merged `sf-game-data.json` for each release channel. The offline C# extractor makes it from the game install; the runtime loads the bundled file or `SF_GAME_DATA_PATH` [S30] [S31]. Work orders are application state in `ff-server`, not in an MCP server [S32].
 
 The live-world part is the foreman bridge in `integrations/foreman-bridge/`. It is outside the npm workspaces [S33]. A server-only SML plugin reports Constructor placement and removal to an independent HTTPS and SQLite receiver. `ff-server` reads the receiver state through an authenticated, read-only query, for one linked playthrough [S33] [S34]. The receiver is the only store of live state [S34].
 
 The offline tools are the game-data extractor (`packages/sf-game-data/extract/`) and the base-map renderer (`tools/sf-map-renderer/`). Both are .NET 10 and run on the Windows host [S16] [S17].
 
-Only `AGENTS.md` › Status records these shipped capabilities [S28]. The intake proposes to remove that section, so this record keeps them:
+`AGENTS.md` › Status lists these shipped capabilities [S28]. Some design documents also record the shipped status [S36]. For Work Orders v2 and explore orders, the intake found the shipped status only in `AGENTS.md`: their documents give the design status. The intake proposes to remove that section, so this record keeps the list:
 
-| Capability | Upstream reference |
-| --- | --- |
-| Work Orders v2 | — |
-| Single-producer game-data pipeline: the C# extractor makes one merged `sf-game-data.json` per channel; the raw `en-US.json` is not committed | [upstream #164](https://github.com/StuartMeeks/ficsit-foreman/issues/164) |
-| Explore orders: a second work-order type for collection routes, with save re-upload reconciliation | [upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207), [upstream #209](https://github.com/StuartMeeks/ficsit-foreman/issues/209) |
-| Ingest-time verification: each plan reference is resolved or rejected, with power and recipe quantity checks | [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222), [upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223) |
-| Flow solver (`sf-flow`, `find_bottlenecks`) | [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148), [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126) |
-| The game-data graph dropped Kùzu for an in-memory adjacency projection | [upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243) |
+| Capability | Upstream reference | Shipped status also in |
+| --- | --- | --- |
+| Work Orders v2 | — | — (`docs/work-orders.md:3` calls it the canonical design) |
+| Single-producer game-data pipeline: the C# extractor makes one merged `sf-game-data.json` per channel; the raw `en-US.json` is not committed | [upstream #164](https://github.com/StuartMeeks/ficsit-foreman/issues/164) | `docs/sf-game-data-extractor.md:3` |
+| Explore orders: a second work-order type for collection routes, with save re-upload reconciliation | [upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207), [upstream #209](https://github.com/StuartMeeks/ficsit-foreman/issues/209) | — (`docs/explore-orders.md:3` calls it the agreed design) |
+| Ingest-time verification: each plan reference is resolved or rejected, with power and recipe quantity checks | [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222), [upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223) | `docs/work-order-quantity-verification.md:3-4` (for upstream #223 and upstream #228) |
+| Flow solver (`sf-flow`, `find_bottlenecks`) | [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148), [upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126) | `docs/flow-solver.md:3` |
+| The game-data graph dropped Kùzu for an in-memory adjacency projection; no `sf-*` package has a native dependency | [upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243) | `docs/component-architecture.md:201-204` |
 
 ```mermaid
 flowchart LR
@@ -133,7 +135,7 @@ flowchart LR
 | S18 | Bridge plugin needs the custom Unreal engine and a Windows toolchain | `integrations/foreman-bridge/README.md:36-39` |
 | S19 | `main protection` ruleset and merge settings | Orchestrator brief for #66, checked on 28 Oct 2026 (not in the repository) |
 | S20 | Development on WSL2 | User decision of 28 Oct 2026, in the orchestrator brief for #66 (not in the repository) |
-| S21 | The orchestrator does all GitHub writes | `agents/orchestrator.md:10`; `agents/worker.md:20` |
+| S21 | The orchestrator does all GitHub writes | `agents/orchestrator.md:10`; `agents/worker.md:22` |
 | S22 | Routing and verification configuration | `.mainspring/config.json:18-52` |
 | S23 | CI job `build-test` | `.github/workflows/ci.yml:16-48` |
 | S24 | Bridge receiver CI job | `.github/workflows/foreman-bridge.yml:24-38` |
@@ -147,6 +149,8 @@ flowchart LR
 | S32 | Work orders live in `ff-server` | `docs/architecture.md:127-132` |
 | S33 | Bridge plugin, receiver, outside workspaces | `integrations/foreman-bridge/README.md:3-14` |
 | S34 | Live query path; receiver is the only live store | `docs/live-constructor-awareness.md:3-21` |
+| S35 | Workspace libraries that `sf-mcp` and `sf-game-data` use (the diagram's library box) | `packages/sf-mcp/package.json:27-32`; `packages/sf-game-data/package.json:17` |
+| S36 | Shipped status in design documents; no native dependency | `docs/sf-game-data-extractor.md:3`; `docs/work-order-quantity-verification.md:3-4`; `docs/flow-solver.md:3`; `docs/component-architecture.md:201-204` |
 
 ## Open questions
 
