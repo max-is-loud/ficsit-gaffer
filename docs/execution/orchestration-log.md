@@ -159,3 +159,43 @@
   - The batch has four tasks: #52 (the planning step only), #33, #35, and task 1 of #65 (the save backup).
   - Mainspring blocks a substantial task until its batch names a user-approved plan. So the batch records #52 as a planning task. After the user approves the plan, the orchestrator records #52 again as substantial, with the plan digest.
   - Nothing runs on the test server for #65 until the user approves that step.
+
+## 2026-10-28 — Merge PR #71 and PR #72
+
+- Kind: merge
+- Source: message `02b993e9-12b2-4c02-9a0b-5a414d9dcbda` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged #71 (head `ba39f9e`, base `70908d3`) as `c59c10c`. #33 closed.
+  - Then it squash-merged #72 (head `966a211`) as `519527e`. #35 closed. A clean-clone verification passed at `966a211` on `70908d3`, and again with `966a211` merged onto `c59c10c`. The merge gate compared against the PR base that GitHub reported (`70908d3`).
+  - The minor review finding on #72 (a README sentence over the STE limit) is deferred to #35.
+
+## 2026-10-28 — Approve the #52 plan
+
+- Kind: plan
+- Source: message `02b993e9-12b2-4c02-9a0b-5a414d9dcbda` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:f97b31a3edb99dbbee609ffb0c1d835aba13d4afddef5826802f3b074f8a7f8b` (batch `first-work-52-impl`); plan digest `sha256:b704429874068cfd2dfa7d73678125b42d32f05a1aef72ce234753015db1146b`
+- Consequences:
+  - The plan `docs/superpowers/plans/2026-10-28-save-path-isolation.md` at `8e86df9` is approved with decision 1(a): with no save attached, ff-server drops the model's `savePath`, and sf-mcp serves its default store.
+  - Decision 2(a): #52 does not make sf-mcp serve only host-vouched paths. The orchestrator filed #74 about the unauthenticated sf-mcp port in the Compose setup.
+  - The batch `first-work-52-impl` records #52 as substantial with the plan digest, so the implementation could start.
+
+## 2026-10-28 — Repair the #73 save backup with method A
+
+- Kind: design
+- Source: message `02b993e9-12b2-4c02-9a0b-5a414d9dcbda` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - The backup validates each save with `@etothepii/satisfactory-file-parser` 4.1.2, pinned under `/opt/gaffer-testbed/`, before it accepts a copy. A save that does not parse completely makes no archive.
+  - The worker may copy one save from the test server to a temporary directory for tests. The copy is never committed.
+
+## 2026-10-28 — Give #33, #35, #52 and #65 no parent issue
+
+- Kind: drift exception
+- Source: message `02b993e9-12b2-4c02-9a0b-5a414d9dcbda` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `mainspring audit github --accept github.issue.no-parent` records the exception for #35, #52 and #65. #33 closed before the exception was necessary.

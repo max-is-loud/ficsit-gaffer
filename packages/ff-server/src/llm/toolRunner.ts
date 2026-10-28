@@ -4,6 +4,7 @@
 
 import { logger } from '../logger.js';
 import { isHostInternalTool } from '../tools/hostInternalTools.js';
+import { withoutHostManagedArguments } from '../tools/hostManagedArguments.js';
 import { handleLiveStateTool, isLiveStateTool } from '../tools/liveStateTools.js';
 import { handleWorkOrderTool, isWorkOrderTool } from '../tools/workOrderTools.js';
 import type { ChatDeps, ChatEvents } from './chat.js';
@@ -116,6 +117,8 @@ async function dispatchTool(call: NeutralToolCall, context: ToolRunContext): Pro
   if (isHostInternalTool(call.name)) {
     return { text: `Tool '${call.name}' is not available.`, isError: true };
   }
-  // savePath is injected into save-game tool calls by the aggregate gateway.
-  return deps.mcp.callTool(call.name, call.arguments, { savePath: context.savePath });
+  // Remove host-managed arguments from the model's call. The gateway adds the host's savePath.
+  return deps.mcp.callTool(call.name, withoutHostManagedArguments(call.arguments), {
+    savePath: context.savePath,
+  });
 }

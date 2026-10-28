@@ -118,7 +118,8 @@ User ──1:*── Foreman ──1:*── Playthrough ──1:1── Save (c
    takes a `.sav` (drag-drop or file dialog), stored one-per-playthrough on a shared data volume,
    parsed for metadata (seeds the playthrough name). The save-game MCP gained an optional, host-
    injected `savePath` (per-path LRU of mtime-gated parses) so it answers about the active
-   playthrough's save; the server overrides `savePath` on save-routed tool calls.
+   playthrough's save; the server removes `savePath` from the model's tool schemas and calls,
+   and injects its own path.
 3. **Save subsystem: re-upload history + load-model refactor** *(refocused [upstream #76](https://github.com/StuartMeeks/ficsit-foreman/issues/76)).* Re-upload-over-time
    with per-version history, the save-game MCP folder/newest-per-playthrough load-model refactor,
    and extracting the save parse/normalise layer into a shared lib.
