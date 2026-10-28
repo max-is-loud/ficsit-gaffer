@@ -4,37 +4,15 @@
 # Usage:  test-save-backup.sh [test_function ...]   (exit 0 = all checks passed)
 set -euo pipefail
 
-here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-work=$(mktemp -d)
-writer_pid=""
-cleanup() {
-  if [ -n "$writer_pid" ]; then kill "$writer_pid" 2>/dev/null || true; fi
-  rm -rf "$work"
-}
-trap cleanup EXIT
+source "$(dirname "${BASH_SOURCE[0]}")/test-common.sh"
 
-export GAFFER_SAVE_DIR="$work/SaveGames"
-export GAFFER_BACKUP_DIR="$work/backups"
-export GAFFER_QUIET_SECONDS=0
-export GAFFER_MIN_FREE_MB=1
-# Dev machines run helpers such as (sd-pam) that no other process may inspect.
-export GAFFER_ALLOW_UNINSPECTABLE=1
-passed=0
-
-check() {
-  local description=$1
-  shift
-  if "$@"; then
-    passed=$((passed + 1))
-    echo "ok   $description"
-  else
-    echo "FAIL $description" >&2
-    exit 1
-  fi
-}
+# Fake saves are random bytes, so the real validator is replaced by one that accepts them.
+# test-save-validation.sh tests the real validator.
+printf '#!/bin/sh\nexit 0\n' >"$work/accept-all"
+chmod +x "$work/accept-all"
+export GAFFER_VALIDATOR="$work/accept-all"
 
 modes() { (cd "$1" && find . -printf '%m %p\n' | sort); }
-count_files() { { find "$1" -maxdepth 1 -type f -name "$2" 2>/dev/null || true; } | wc -l; }
 
 make_fake_saves() {
   mkdir -p "$GAFFER_SAVE_DIR/server"
@@ -176,19 +154,61 @@ test_failure_publishes_nothing() {
   check "a failed run leaves no staging directory" test -z "$(find "$work/failed-backups" -maxdepth 1 -name '.staging.*')"
 }
 
-# If a process of the saves' owner cannot be inspected, the open-for-write scan is blind,
-# so the backup must refuse to run (fail closed) unless the opt-out is set.
+# A writer that hides itself (marks itself non-dumpable) must count as busy, not as absent.
+# It writes first-half, hides after the backup has started to wait, and writes the rest later.
+# The scan must treat "cannot inspect" as busy on every scan, not only on the first.
+hide_and_write() {
+  mkdir -p "$work/bin"
+  ln -sf "$(command -v python3)" "$work/bin/hidden-writer"
+  "$work/bin/hidden-writer" -c '
+import ctypes, sys, time
+target = sys.argv[1]
+handle = open(target, "w")
+handle.write("first-half|"); handle.flush()
+time.sleep(3)
+ctypes.CDLL(None).prctl(4, 0)  # PR_SET_DUMPABLE = 0: /proc/<pid>/fd is now unreadable
+time.sleep(4)
+handle.write("second-half"); handle.close()
+' "$GAFFER_SAVE_DIR/server/Codex_autosave_2.sav" &
+  writer_pid=$!
+  sleep 0.5
+}
+
+test_writer_hides_after_first_scan() {
+  local before
+  before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
+  hide_and_write
+  check "backup makes no archive while a writer hides after the first scan" \
+    bash -c '! GAFFER_QUIET_SECONDS=2 GAFFER_MAX_WAIT_SECONDS=3 "$0" pre-install hides-late >/dev/null 2>&1' "$here/backup-saves.sh"
+  wait "$writer_pid"
+  check "the hiding writer left no archive behind" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
+}
+
+test_writer_hides_then_finishes() {
+  local archive
+  hide_and_write
+  GAFFER_QUIET_SECONDS=2 GAFFER_MAX_WAIT_SECONDS=30 "$here/backup-saves.sh" pre-install hides-then-done >/dev/null 2>&1 || true
+  wait "$writer_pid"
+  archive=$(find "$work/backups/pre-install" -name 'saves-*-hides-then-done.tar')
+  check "an archive of a writer that hid waits for the complete file" \
+    bash -c '[ -n "$0" ] && "$1" "$0" "$2" >/dev/null && diff -r "$3" "$2/SaveGames"' \
+    "$archive" "$here/restore-saves.sh" "$work/restored-hid" "$GAFFER_SAVE_DIR"
+}
+
+# An owner process that no one may inspect and that is not on the allow list blocks the backup.
 test_blind_scan_fails_closed() {
   local before
   before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
-  python3 -c 'import ctypes, time; ctypes.CDLL(None).prctl(4, 0); time.sleep(8)' &
+  mkdir -p "$work/bin"
+  ln -sf "$(command -v python3)" "$work/bin/blind-process"
+  "$work/bin/blind-process" -c 'import ctypes, time; ctypes.CDLL(None).prctl(4, 0); time.sleep(6)' &
   writer_pid=$!
   sleep 0.5
-  check "backup refuses to run when a process of the owner cannot be inspected" \
-    bash -c '! GAFFER_ALLOW_UNINSPECTABLE=0 "$0" pre-install blind >/dev/null 2>&1' "$here/backup-saves.sh"
+  check "backup makes no archive while an owner process cannot be inspected" \
+    bash -c '! GAFFER_MAX_WAIT_SECONDS=2 "$0" pre-install blind >/dev/null 2>&1' "$here/backup-saves.sh"
   kill "$writer_pid" 2>/dev/null || true
   wait "$writer_pid" 2>/dev/null || true
-  check "the refused run made no archive" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
+  check "the blind-scan run made no archive" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
 }
 
 test_bad_arguments() {
@@ -207,6 +227,8 @@ run_all() {
   test_open_writer_never_closes
   test_failure_publishes_nothing
   test_blind_scan_fails_closed
+  test_writer_hides_after_first_scan
+  test_writer_hides_then_finishes
   test_bad_arguments
 }
 

@@ -1,0 +1,14 @@
+{
+  "name": "gaffer-testbed",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pinned dependencies of the test-bed save validator. Install on the server with npm ci.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@etothepii/satisfactory-file-parser": "4.1.2"
+  }
+}

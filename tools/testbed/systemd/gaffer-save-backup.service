@@ -11,13 +11,15 @@ User=satisfactory
 Group=satisfactory
 ExecStart=/opt/gaffer-testbed/backup-saves.sh daily
 # The script waits up to 120 s until no process writes a save, and it retries a changing copy.
-# It scans /proc/*/fd for open saves. ProtectProc=invisible below hides only other users'
-# processes, so the game (same user) stays visible.
+# It then runs Node.js (validate-saves.mjs) on the staged copy: about 250 MB for one save,
+# so MemoryMax is 1G. Node reads /opt/gaffer-testbed (read-only) and the staging copy under
+# the one read-write path. The script scans /proc/*/fd for open saves. ProtectProc=invisible
+# below hides only other users' processes, so the game (same user) stays visible.
 TimeoutStartSec=10min
 UMask=0077
 Nice=10
 IOSchedulingClass=idle
-MemoryMax=256M
+MemoryMax=1G
 TasksMax=64
 
 # Hardening, in the style of satisfactory.service. The game's own ProtectHome=true is not
