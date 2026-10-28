@@ -33,3 +33,14 @@
   - An agent may SSH to `openclaw` for read-only checks. Each change on the server still needs the user's approval for that step.
   - Tests use the real save. Back it up before each bridge install.
   - The orchestrator filed #65 in the Live world milestone, with the facts of the first read-only check.
+
+## 2026-10-28 — Settle the game-update and deployment choices of #65
+
+- Kind: design
+- Source: message `f2c18a8e-2fdd-4d2e-bf1c-6f706ee29b4c` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences:
+  - The server keeps the automatic game updates at restart. After a game update, it starts without mods until SML supports the new build.
+  - For the first bridge tests, Gaffer runs on the dev machine and connects to the bridge over Tailscale. The Foreman deployment on the VPS stays unchanged until the bridge works.
+  - Tasks 2, 5 and 6 of #65 now state these decisions.
