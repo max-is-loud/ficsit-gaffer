@@ -47,7 +47,8 @@
     "npm run build",
     "npm run lint",
     "npm run check:source",
-    "npm test"
+    "npm test",
+    "cd integrations/foreman-bridge/receiver && npm test"
   ],
   "merge": {
     "method": "squash"
