@@ -30,7 +30,7 @@ Each citation in #52, checked against `70908d3b2cf2dad492512370bd6ef4b6a64e1070`
 | Citation in #52 | Result | Note |
 | --- | --- | --- |
 | `packages/sf-mcp/src/tools/save.ts:50-53` | Correct | `savePathSchema`. 12 save tools use it (lines 93 to 286). `describe_save` (line 306) and `get_save_summary` (`tools/saveSummary.ts:124`) also take a `savePath`. ff-server hides and refuses these two host-internal tools (`ff-server/src/tools/hostInternalTools.ts:6`). |
-| `packages/ff-server/src/mcp/client.ts:143` | Moved | Line 143 is `return this.cachedTools;`. The schema pass-through is at lines 148-152 (`inputSchema` at 151). `llm/chat.ts:149-151` then filters only by tool name. |
+| `packages/ff-server/src/mcp/client.ts:143` | Moved | Line 143 is `return this.cachedTools;`. The schema pass-through is at lines 148-152 (`inputSchema` at 151). `llm/chat.ts:149-151` then filters only by tool name (lines 178-180 after #71, `c59c10c`). |
 | `packages/ff-server/src/mcp/aggregateGateway.ts:82-84` | Correct lines, but not in the live path | `ff-server/src/index.ts:46` builds one `McpHttpClient`. Only `test/mcpAggregate.test.ts` uses `McpAggregateGateway`. The live injection is `client.ts:170-171`. |
 | `packages/ff-server/src/mcp/client.ts:163` | Moved | Line 163 is the `context?: ToolCallContext` parameter. The injection is at lines 170-171. |
 | `packages/ff-server/src/context/turnContext.ts:44-46` | Correct | Without a current save, the turn context has no `savePath`. |
@@ -85,7 +85,7 @@ Task 1 tests items 1, 2, 3 and 5 as unit tests. Task 2 tests item 4 and the acce
 
 **Files:**
 - Create: `packages/ff-server/src/tools/hostManagedArguments.ts`
-- Modify: `packages/ff-server/src/llm/chat.ts:139-157` (`assembleTools`)
+- Modify: `packages/ff-server/src/llm/chat.ts:168-186` (`assembleTools`, at `c59c10c`)
 - Test: `packages/ff-server/test/hostManagedArguments.test.ts`
 
 **Interfaces:**
