@@ -14,6 +14,7 @@ import {
   type LiveStateService,
 } from '../tools/liveStateTools.js';
 import { isHostInternalTool } from '../tools/hostInternalTools.js';
+import { withoutHostManagedProperties } from '../tools/hostManagedArguments.js';
 import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
 import type { LlmProvider } from './provider.js';
 import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
@@ -169,16 +170,17 @@ async function loadHistory(deps: ChatDeps, playthroughId: string): Promise<Neutr
 /**
  * Merges the MCP game-data tools with the server-local work-order and live tools.
  * The live tool's name is reserved: an MCP tool of the same name is never offered, and
- * host-internal tools are not offered either.
+ * host-internal tools are not offered either. It removes host-managed arguments (the save path)
+ * from the MCP schemas, so the model cannot set them.
  */
 async function assembleTools(
   mcp: McpGateway,
   playthroughId: string,
   liveState: LiveStateService | undefined,
 ): Promise<ToolDefinition[]> {
-  const mcpTools = (await mcp.listTools()).filter(
-    (tool) => !isLiveStateTool(tool.name) && !isHostInternalTool(tool.name),
-  );
+  const mcpTools = (await mcp.listTools())
+    .filter((tool) => !isLiveStateTool(tool.name) && !isHostInternalTool(tool.name))
+    .map(withoutHostManagedProperties);
   return [
     ...mcpTools,
     ...workOrderToolDefinitions(),

@@ -39,6 +39,11 @@ async function runRound(calls: NeutralToolCall[]): Promise<{
     ...listed,
     { name: 'describe_save', description: 'host', inputSchema: { type: 'object' } },
     { name: 'get_save_summary', description: 'host', inputSchema: { type: 'object' } },
+    {
+      name: 'get_player_state',
+      description: 'save',
+      inputSchema: { type: 'object', properties: { savePath: { type: 'string' } } },
+    },
   ];
   const provider = new FakeLlmProvider([
     { text: '', toolCalls: calls, stopReason: 'tool_use' },
@@ -96,5 +101,14 @@ describe('host-internal tools', () => {
     expect(offered).toContain('get_recipe');
     expect(offered).not.toContain('describe_save');
     expect(offered).not.toContain('get_save_summary');
+  });
+
+  it('offers save tools without their host-managed savePath property', async () => {
+    const { provider } = await runRound([{ id: 't1', name: 'get_recipe', arguments: {} }]);
+    const playerState = provider.requests[0]?.tools.find(
+      (tool) => tool.name === 'get_player_state',
+    );
+    expect(playerState).toBeDefined();
+    expect(playerState?.inputSchema).toEqual({ type: 'object', properties: {} });
   });
 });
