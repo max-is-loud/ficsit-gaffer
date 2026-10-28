@@ -21,15 +21,28 @@ imports, points here).
   `chore/<slug>` (tooling, configuration, dependencies and other upkeep that
   is neither a feature nor a fix).
 - `<slug>`: lowercase, words joined by `-`, drop filler words.
-- **Never commit directly to `main`** — branch first (also enforced by a ruleset).
+- **Never commit directly to `main`** — branch first. The `main protection`
+  ruleset enforces this. It requires a pull request and the `build-test` status
+  check, allows squash merges only, and blocks force pushes and branch deletion.
+  It has no bypass actors. It requires no approving review, and it does not
+  require the branch to be up to date with `main`. The repository deletes the
+  head branch after a merge.
 
 ### Pull requests
+Under Mainspring, only the project orchestrator does GitHub writes: it pushes,
+opens the PR and merges it (`agents/orchestrator.md`). A worker writes the PR
+title and description in its report, and the orchestrator uses them.
+
 - One logical change per PR; keep it small (aim < ~500 changed lines).
 - **Squash-merge** so `main` stays linear; the squash message follows the commit
   convention above.
-- Update a branch from `main` with **rebase**, not a merge commit.
+- Do not update a branch from `main` only to keep it current: the ruleset does
+  not require it. Update it only to resolve a conflict, or when the orchestrator
+  asks. Then use **rebase**, not a merge commit. A rebase makes a new head, and a
+  new head needs a new review round and a new user approval.
 - Title: the Conventional Commit summary. Write the **complete** description at
-  creation time, not in a later edit.
+  creation time. Edit it when a later commit changes what the PR does, so that
+  the description always matches the change.
 - **Link the PR to the issue(s) it resolves** with a closing keyword in the body
   (`Closes #N` / `Fixes #N`), so the issue auto-closes on merge and the issue
   shows the PR cross-reference. For a PR that advances but doesn't finish an
@@ -59,10 +72,15 @@ References to the upstream FICSIT Foreman tracker are written as links labelled
 `upstream #N`; a bare `#N` always means a Gaffer issue or PR.
 
 ### Closing issues — keep the roadmap honest
-What actually ships often diverges from what an issue first proposed. When you
-close one (usually by merging its PR), reconcile the surrounding roadmap in the
-same stroke — a closed issue with a stale body, or a sibling that still claims
-work you've absorbed, misleads the next reader.
+What actually ships often diverges from what an issue first proposed. When an
+issue closes (usually when its PR merges), reconcile the surrounding roadmap in
+the same stroke — a closed issue with a stale body, or a sibling that still
+claims absorbed work, misleads the next reader.
+
+Under Mainspring, the project orchestrator does the steps below: it comments on
+and closes issues, re-scopes sibling issues and edits milestones. A worker gives
+the closing comment, and each sibling or milestone change that it proposes, in
+its report.
 
 - **Always add a closing comment** when you close an issue — summarise what
   shipped and link the PR (e.g. `Closed by #NNN`), even when the scope matched the

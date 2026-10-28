@@ -57,21 +57,11 @@ docs/                 product.md · architecture.md · work-orders.md · playthr
 
 ## Status
 
-Phases 1 (game-data MCP) and 2 (backend & foreman chat) are complete and merged;
-Work Orders v2 shipped. The web client (Phase 3) is in progress. The save-game MCP
-shipped v1. The **single-producer game-data pipeline** shipped (epic [upstream #164](https://github.com/StuartMeeks/ficsit-foreman/issues/164)): an
-offline C# extractor parses `en-US.json` and extracts the cooked assets into one
-merged `sf-game-data.json` per channel, which the runtime loads directly — the raw
-`en-US.json` is no longer committed. Since then: **explore orders** (a second
-work-order type — collection routes with save-reupload reconciliation, [upstream #207](https://github.com/StuartMeeks/ficsit-foreman/issues/207)/[upstream #209](https://github.com/StuartMeeks/ficsit-foreman/issues/209)),
-**ingest-time verification** (every plan reference resolved-or-rejected + power/
-recipe quantity checks, [upstream #222](https://github.com/StuartMeeks/ficsit-foreman/issues/222)/[upstream #223](https://github.com/StuartMeeks/ficsit-foreman/issues/223)), and a **flow solver** (`sf-flow` +
-`find_bottlenecks`, [upstream #148](https://github.com/StuartMeeks/ficsit-foreman/issues/148)/[upstream #126](https://github.com/StuartMeeks/ficsit-foreman/issues/126)) shipped, and the game-data graph **dropped Kùzu**
-for an in-memory adjacency projection ([upstream #243](https://github.com/StuartMeeks/ficsit-foreman/issues/243)) — no `sf-*` package carries a native
-dependency now. Gaffer's own work — starting with live-world awareness via the
-SML bridge (`integrations/foreman-bridge`) — is tracked in Gaffer's
-[issue tracker](https://github.com/max-is-loud/ficsit-gaffer/issues) and on the
-[Gaffer roadmap](https://github.com/users/max-is-loud/projects/4) board.
+The [Gaffer roadmap](https://github.com/users/max-is-loud/projects/4) board is the
+authority for the status of each issue. The project record,
+[`docs/workflow/project.md`](./docs/workflow/project.md), gives the outcome, the
+constraints and the architecture. The history is in
+[`docs/architecture.md` › Status / history](./docs/architecture.md#status--history).
 
 ## Conventions
 
@@ -107,14 +97,14 @@ committing.
   fetching and cherry-picking. `gh` defaults to `max-is-loud/ficsit-gaffer`
   (`gh repo set-default`); pass `-R max-is-loud/ficsit-gaffer` if unsure.
 - **Every new issue goes on the Gaffer roadmap board** (user project 4) with a
-  status. The `gh issue create --project` flag fails on this board, so add it
-  separately:
+  status. Only the project orchestrator files issues. It does these steps:
 
-  ```sh
-  url=$(gh issue create -R max-is-loud/ficsit-gaffer --title "…" --body-file body.md \
-    --label "enhancement,area:ff-server" --milestone "Live world")
-  gh project item-add 4 --owner max-is-loud --url "$url"
-  ```
+  1. File the issue with `mainspring issue-ensure` (`repository`, `operation_id`,
+     `title`, `body`).
+  2. Set the type label, the `area:` labels and the milestone with
+     `gh issue edit <number> -R max-is-loud/ficsit-gaffer --add-label "…" --milestone "…"`.
+  3. Put the card in **Backlog** with `mainspring project-sync` (stage `Backlog`,
+     `blocked: false`). The command adds the issue to the board if it is not there.
 
   New items start in **Backlog**. After that, only the project orchestrator
   changes the board. It moves each item through the Mainspring stages (Backlog,
@@ -156,13 +146,14 @@ where they disagree with the stock Unreal docs.
 
 ## Dev environment note
 
-Development happens on a Proxmox VM over SSH. The Satisfactory game files are **not**
-accessible from the VM. A copy of `en-US.json` may be placed at `game-data/en-US.json`
-(gitignored) for the **offline extractor** to parse (`--enus`); it is **not** read at
-runtime and is never committed. The VM and the running server load the bundled merged
-`sf-game-data.json` (or `SF_GAME_DATA_PATH`). The C# extractor itself only builds/runs
-on the Windows host (CUE4Parse + a game install) — do not assume a game directory is
-mounted at runtime.
+Development happens in WSL2 on the Windows host. There is no Proxmox VM. Do not
+assume that the Satisfactory game files are accessible from WSL2. A copy of
+`en-US.json` may be placed at `game-data/en-US.json` (gitignored) for the
+**offline extractor** to parse (`--enus`); it is **not** read at runtime and is
+never committed. The development environment and the running server load the
+bundled merged `sf-game-data.json` (or `SF_GAME_DATA_PATH`). The C# extractor
+itself only builds/runs on the Windows host (CUE4Parse + a game install) — do not
+assume a game directory is mounted at runtime.
 
 <!-- mainspring:begin (managed by Mainspring; the installer reports edits in this block as conflicts) -->
 # Repository instructions for agents
