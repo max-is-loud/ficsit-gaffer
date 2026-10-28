@@ -18,8 +18,8 @@ changes the server is marked **needs user approval**. Read-only checks need no a
 | `validate-saves.mjs` | Node.js. Parses every save in a directory with the pinned parser library. Fails if one is incomplete. |
 | `package.json`, `package-lock.json` | Pin the parser library (`@etothepii/satisfactory-file-parser` 4.1.2, the version of `packages/sf-save-data`). |
 | `test-save-backup.sh` | Tests the backup and restore scripts with a fake save tree. No server is involved. |
-| `test-save-validation.sh` | Tests the validation step. Some tests need one real save (see step 0). |
-| `test-common.sh`, `cut-save.mjs` | Test helpers: shared setup, and a tool that cuts a real save in two ways. |
+| `test-save-validation.sh` | Tests the validation step with synthetic saves. Optional extra tests use one real save (see step 0). |
+| `test-common.sh`, `make-synthetic-save.mjs`, `cut-save.mjs` | Test helpers: shared setup; a tool that writes a tiny valid save with the library; a tool that cuts a real save. |
 
 ## Design decisions
 
@@ -56,33 +56,17 @@ label is. The script also makes each `pre-install` file read-only.
 
 ### How the backup avoids a save that is being written
 
-A copy of a half-written file is useless. A quiet period cannot prove that a save is
-complete, because a writer can stop for any length of time. Two reviews found two gaps:
-a writer that keeps a half-written file open and pauses, and a writer that closes it and
-reopens it later to append. The script therefore uses two guards that do not depend on a
-time threshold. The second one decides.
+A copy of a half-written file is useless. No timing rule can prove that a save is complete,
+because a writer can stop for any length of time and then continue. Reviews showed this for a
+writer that keeps a half-written file open and for a writer that closes it and appends later.
+A scan of the open files of the game was also tried and removed: it depends on the timing of
+each look, so it has races that no test can close. The script now uses one gate that does not
+depend on timing, and it keeps the copy consistent with three simple checks.
 
-**Guard 1: wait while a writer may be active.** On every scan, the script treats each of
-these as "busy":
-
-- A process holds a save open for write. The script scans `/proc/*/fd` for a descriptor that
-  points into `SaveGames`, and reads the access mode from `/proc/<pid>/fdinfo/<fd>`. A
-  write or read-write mode is busy. A read-only holder (for example `foreman-save-sync`) is
-  not.
-- The script cannot look. This is any process of the saves' owner whose `fd` directory is
-  unreadable (for example a process that marks itself non-dumpable), or a descriptor whose
-  access mode is unreadable. A failed look is "busy", never "idle". The script does this on
-  **every** scan, so a writer that hides after an earlier scan still blocks the backup.
-  `GAFFER_UNINSPECTABLE_OK_COMMS` names processes that the scan may skip (empty on the
-  server). The tests use it for the helpers of a login machine.
-
-The script waits up to 120 seconds (`GAFFER_MAX_WAIT_SECONDS`), then exits with an error
-and makes **no archive**. A 15-second quiet period (`GAFFER_QUIET_SECONDS`) is a cheap extra
-check. It does not decide alone.
-
-**Guard 2: prove that every save is complete.** After the copy, the script runs
-`validate-saves.mjs` on the **staged copy**. The validator parses every `.sav` with the
-pinned parser library, with `throwErrors` on. A save fails if any of these is true:
+**The gate: prove that every save is complete.** After the copy, the script runs
+`validate-saves.mjs` on the **staged copy**. The validator parses every `.sav` with the pinned
+parser library (`@etothepii/satisfactory-file-parser` 4.1.2) and `throwErrors` on. A save
+fails if any of these is true:
 
 - the file is empty or does not parse;
 - the compressed data ends inside a chunk (the library cannot inflate it);
@@ -91,33 +75,36 @@ pinned parser library, with `throwErrors` on. A save fails if any of these is tr
 - bytes follow the end of the data;
 - the parser reports a corrupt or unreadable object.
 
-The validator checks the save itself. It does not look at timing or at open files, so it
-catches a writer that closed a half-written file. If the validator fails, the script waits
-5 seconds (`GAFFER_VALIDATE_RETRY_SECONDS`) and copies again, up to `GAFFER_MAX_WAIT_SECONDS`.
-If the save is still not complete, the script exits with an error and makes **no archive**.
-If the validator cannot run at all (exit code 2, for example the library is missing), the
-script fails at once. `ServerSettings.*.sav` is not a game save, so the validator skips it
-(`GAFFER_VALIDATE_SKIP`). Only guard 1 and the checks below protect that file. It is small
-and changes rarely.
+The validator reads the file only. It does not matter who writes the file, whether the writer
+holds it open, or whether the writer can be seen. A writer that is still at work leaves a
+partial file, and a partial file does not parse.
 
-**Checks around the copy.** The script copies the whole directory to a private staging
-directory with `cp -a`. It accepts the copy only if all three conditions are true:
+If the validator fails, the script waits 5 seconds (`GAFFER_VALIDATE_RETRY_SECONDS`) and copies
+again, up to `GAFFER_MAX_WAIT_SECONDS` (120). If a save is still not complete, the script exits
+with an error and makes **no archive**. If the validator cannot run at all (exit code 2, for
+example the library is missing), the script fails at once.
 
-- no guard-1 reason exists after the copy,
-- no file in the source changed after the copy began, and
-- `diff -r` shows that every copied file equals its source. This also catches a file that
-  the game created or renamed during the copy.
+**One file is not validated.** The validator skips exactly one path: the server settings file
+in the top folder of `SaveGames`. The rule is the path relative to the `SaveGames` root
+matching `^ServerSettings\.[0-9]+\.sav$` (on `openclaw`: `ServerSettings.7777.sav`). That file
+holds server options, not a world, and the parser cannot read it. The same name in a subfolder,
+for example `server/ServerSettings.partial.sav`, is a save and is validated. The validator
+still fails if no world save is left to check. The settings file itself gets only the checks
+below (about 5 KB, and it changes rarely); nothing proves that it is complete.
 
-If the saves change during the copy, it retries up to 5 times (`GAFFER_COPY_ATTEMPTS`).
+**Checks that keep the copy consistent.** These do not decide completeness.
+
+- The script waits until no file has changed in the last 15 seconds (`GAFFER_QUIET_SECONDS`).
+  This only saves needless retries.
+- It copies the whole directory to a private staging directory with `cp -a`.
+- It accepts the copy only if no file in the source changed after the copy began, and
+  `diff -r` shows that every copied file equals its source. This also catches a file that
+  the game created or renamed during the copy. It retries up to 5 times
+  (`GAFFER_COPY_ATTEMPTS`).
 
 **Publish last.** The script builds the `.tar` and the `.sha256` file in the staging
 directory. It moves them into `daily/` or `pre-install/` only after every step has
 succeeded. A failure at any step leaves nothing in those directories.
-
-On `openclaw` (read-only checks): the game runs as `satisfactory`, as does the backup. Run
-as that user, the scan sees the game's open files (it found the game's open log file), and
-no process of that user is hidden. `ProtectProc=invisible` in the unit hides only the
-processes of **other** users, so the sandbox does not blind the scan.
 
 **What a real save showed.** On 28 Oct 2026 the validator accepted a real `Codex_autosave`
 from `openclaw` (1.3 MB, 13.9 MB after inflate; 0.7 s and about 250 MB of memory). A copy cut
@@ -126,7 +113,7 @@ at the end were each rejected.
 
 **Residual risk.** The validator proves that a save is complete in itself. It cannot prove
 that it is the **latest** state. A backup made while the game is between two saves holds the
-older, complete save. Nothing else is open. The validator also depends on the parser. After a
+older, complete save. The settings file is not validated. The validator also depends on the parser. After a
 game update the parser may not read the new format; then every backup fails (see "After a game
 update" in the runbook). I could not confirm whether the game writes a save atomically.
 
@@ -173,10 +160,11 @@ tools/testbed/test-save-backup.sh
 tools/testbed/test-save-validation.sh
 ```
 
-Each script ends with `all N checks passed`. They use only temporary directories. The
-tests in the second group of `test-save-validation.sh` need one real save. Point
-`GAFFER_TEST_REAL_SAVE` at a copy of a `.sav` file. Without it the script prints a `skip`
-message and runs the other tests only:
+Each script ends with `all N checks passed`. They use only temporary directories. The tests
+build a tiny valid save with the library, so they need no real save. An optional group of
+tests in `test-save-validation.sh` uses one real save. Point `GAFFER_TEST_REAL_SAVE` at a
+copy of a `.sav` file. Without it the script prints a `skip` message and runs the other tests
+only:
 
 ```bash
 GAFFER_TEST_REAL_SAVE=/path/to/copy-of-a-real.sav tools/testbed/test-save-validation.sh
@@ -358,11 +346,9 @@ The scripts read these environment variables. The defaults suit the server.
 | `GAFFER_SAVE_DIR` | `/home/satisfactory/.config/Epic/FactoryGame/Saved/SaveGames` | Directory to back up |
 | `GAFFER_BACKUP_DIR` | `/home/satisfactory/save-backups` | Root of `daily/` and `pre-install/` |
 | `GAFFER_KEEP_DAILY` | `14` | Number of daily archives to keep |
-| `GAFFER_QUIET_SECONDS` | `15` | Second guard: a file changed more recently than this is "being written" |
-| `GAFFER_MAX_WAIT_SECONDS` | `120` | Longest wait for the saves to be idle |
+| `GAFFER_QUIET_SECONDS` | `15` | Wait until no file changed in this many seconds before a copy (saves retries; not a completeness test) |
+| `GAFFER_MAX_WAIT_SECONDS` | `120` | Longest wait for quiet saves, and for a save to become complete |
 | `GAFFER_COPY_ATTEMPTS` | `5` | Copy retries when the saves change during a copy |
 | `GAFFER_MIN_FREE_MB` | `1024` | The backup refuses to run with less free space |
-| `GAFFER_UNINSPECTABLE_OK_COMMS` | empty | Process names (`/proc/<pid>/comm`, joined by `\|`) that the scan may skip when it cannot inspect them |
 | `GAFFER_VALIDATOR` | empty | A program to run instead of `node validate-saves.mjs`. For tests only |
-| `GAFFER_VALIDATE_SKIP` | `ServerSettings.*.sav` | Glob of file names the validator skips |
 | `GAFFER_VALIDATE_RETRY_SECONDS` | `5` | Wait before a new copy when a save is not complete |

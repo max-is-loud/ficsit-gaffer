@@ -91,54 +91,6 @@ test_never_quiet() {
   check "no staging directory is left after the failed run" test -z "$(find "$work/backups" -maxdepth 1 -name '.staging.*')"
 }
 
-# The reviewer's probe: a writer writes half a save, keeps the file open and pauses for
-# longer than the quiet threshold. Quiet time alone would call that save complete.
-test_paused_partial_writer() {
-  local archive
-  ( exec 7>"$GAFFER_SAVE_DIR/server/Codex_autosave_2.sav"
-    printf 'first-half|' >&7
-    sleep 6
-    printf 'second-half' >&7
-    exec 7>&- ) &
-  writer_pid=$!
-  sleep 0.5
-  GAFFER_QUIET_SECONDS=2 GAFFER_MAX_WAIT_SECONDS=30 "$here/backup-saves.sh" pre-install paused-writer >/dev/null 2>&1 || true
-  wait "$writer_pid"
-  archive=$(find "$work/backups/pre-install" -name 'saves-*-paused-writer.tar')
-  check "no incomplete save is archived while a writer holds the file open" \
-    bash -c '[ -z "$0" ] || { "$1" "$0" "$2" >/dev/null && diff -r "$3" "$2/SaveGames"; }' \
-    "$archive" "$here/restore-saves.sh" "$work/restored-paused" "$GAFFER_SAVE_DIR"
-  check "the paused-writer run finished with the complete file" test "$(cat "$GAFFER_SAVE_DIR/server/Codex_autosave_2.sav")" = 'first-half|second-half'
-}
-
-# A process that only reads a save (for example foreman-save-sync) must not block a backup.
-test_reader_does_not_block() {
-  local before
-  before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
-  ( exec 7<"$GAFFER_SAVE_DIR/server/Codex_autosave_0.sav"; sleep 8 ) &
-  writer_pid=$!
-  sleep 0.3
-  check "a reader does not block the backup" \
-    env GAFFER_MAX_WAIT_SECONDS=3 "$here/backup-saves.sh" pre-install reader-open
-  kill "$writer_pid" 2>/dev/null || true
-  wait "$writer_pid" 2>/dev/null || true
-  check "the backup with a reader made one archive" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq $((before + 1))
-}
-
-# A writer that holds a save open for write and never closes it: the backup must fail.
-test_open_writer_never_closes() {
-  local before
-  before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
-  ( exec 7>>"$GAFFER_SAVE_DIR/server/Codex_autosave_1.sav"; sleep 8 ) &
-  writer_pid=$!
-  sleep 0.3
-  check "backup fails while a save stays open for write" \
-    bash -c '! GAFFER_QUIET_SECONDS=0 GAFFER_MAX_WAIT_SECONDS=2 "$0" pre-install open-forever >/dev/null 2>&1' "$here/backup-saves.sh"
-  kill "$writer_pid" 2>/dev/null || true
-  wait "$writer_pid" 2>/dev/null || true
-  check "no archive was made while a save stayed open" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
-}
-
 # Any failing step must leave nothing in the published directories.
 test_failure_publishes_nothing() {
   local mode
@@ -154,63 +106,6 @@ test_failure_publishes_nothing() {
   check "a failed run leaves no staging directory" test -z "$(find "$work/failed-backups" -maxdepth 1 -name '.staging.*')"
 }
 
-# A writer that hides itself (marks itself non-dumpable) must count as busy, not as absent.
-# It writes first-half, hides after the backup has started to wait, and writes the rest later.
-# The scan must treat "cannot inspect" as busy on every scan, not only on the first.
-hide_and_write() {
-  mkdir -p "$work/bin"
-  ln -sf "$(command -v python3)" "$work/bin/hidden-writer"
-  "$work/bin/hidden-writer" -c '
-import ctypes, sys, time
-target = sys.argv[1]
-handle = open(target, "w")
-handle.write("first-half|"); handle.flush()
-time.sleep(3)
-ctypes.CDLL(None).prctl(4, 0)  # PR_SET_DUMPABLE = 0: /proc/<pid>/fd is now unreadable
-time.sleep(4)
-handle.write("second-half"); handle.close()
-' "$GAFFER_SAVE_DIR/server/Codex_autosave_2.sav" &
-  writer_pid=$!
-  sleep 0.5
-}
-
-test_writer_hides_after_first_scan() {
-  local before
-  before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
-  hide_and_write
-  check "backup makes no archive while a writer hides after the first scan" \
-    bash -c '! GAFFER_QUIET_SECONDS=2 GAFFER_MAX_WAIT_SECONDS=3 "$0" pre-install hides-late >/dev/null 2>&1' "$here/backup-saves.sh"
-  wait "$writer_pid"
-  check "the hiding writer left no archive behind" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
-}
-
-test_writer_hides_then_finishes() {
-  local archive
-  hide_and_write
-  GAFFER_QUIET_SECONDS=2 GAFFER_MAX_WAIT_SECONDS=30 "$here/backup-saves.sh" pre-install hides-then-done >/dev/null 2>&1 || true
-  wait "$writer_pid"
-  archive=$(find "$work/backups/pre-install" -name 'saves-*-hides-then-done.tar')
-  check "an archive of a writer that hid waits for the complete file" \
-    bash -c '[ -n "$0" ] && "$1" "$0" "$2" >/dev/null && diff -r "$3" "$2/SaveGames"' \
-    "$archive" "$here/restore-saves.sh" "$work/restored-hid" "$GAFFER_SAVE_DIR"
-}
-
-# An owner process that no one may inspect and that is not on the allow list blocks the backup.
-test_blind_scan_fails_closed() {
-  local before
-  before=$(count_files "$work/backups/pre-install" 'saves-*.tar')
-  mkdir -p "$work/bin"
-  ln -sf "$(command -v python3)" "$work/bin/blind-process"
-  "$work/bin/blind-process" -c 'import ctypes, time; ctypes.CDLL(None).prctl(4, 0); time.sleep(6)' &
-  writer_pid=$!
-  sleep 0.5
-  check "backup makes no archive while an owner process cannot be inspected" \
-    bash -c '! GAFFER_MAX_WAIT_SECONDS=2 "$0" pre-install blind >/dev/null 2>&1' "$here/backup-saves.sh"
-  kill "$writer_pid" 2>/dev/null || true
-  wait "$writer_pid" 2>/dev/null || true
-  check "the blind-scan run made no archive" test "$(count_files "$work/backups/pre-install" 'saves-*.tar')" -eq "$before"
-}
-
 test_bad_arguments() {
   check "pre-install without a label is refused" bash -c '! "$0" pre-install >/dev/null 2>&1' "$here/backup-saves.sh"
   check "a label with a path separator is refused" bash -c '! "$0" pre-install ../x >/dev/null 2>&1' "$here/backup-saves.sh"
@@ -222,13 +117,7 @@ run_all() {
   test_damaged_archive
   test_busy_saves
   test_never_quiet
-  test_paused_partial_writer
-  test_reader_does_not_block
-  test_open_writer_never_closes
   test_failure_publishes_nothing
-  test_blind_scan_fails_closed
-  test_writer_hides_after_first_scan
-  test_writer_hides_then_finishes
   test_bad_arguments
 }
 

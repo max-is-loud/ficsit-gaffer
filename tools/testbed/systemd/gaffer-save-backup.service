@@ -10,11 +10,10 @@ Type=oneshot
 User=satisfactory
 Group=satisfactory
 ExecStart=/opt/gaffer-testbed/backup-saves.sh daily
-# The script waits up to 120 s until no process writes a save, and it retries a changing copy.
-# It then runs Node.js (validate-saves.mjs) on the staged copy: about 250 MB for one save,
-# so MemoryMax is 1G. Node reads /opt/gaffer-testbed (read-only) and the staging copy under
-# the one read-write path. The script scans /proc/*/fd for open saves. ProtectProc=invisible
-# below hides only other users' processes, so the game (same user) stays visible.
+# The script copies the saves, then runs Node.js (validate-saves.mjs) on the staged copy: the
+# only test that a save is complete. It waits up to 120 s for a complete save, and it retries a
+# changing copy. About 250 MB for one save, so MemoryMax is 1G. Node reads /opt/gaffer-testbed
+# (read-only) and the staging copy under the one read-write path.
 TimeoutStartSec=10min
 UMask=0077
 Nice=10

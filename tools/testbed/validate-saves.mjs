@@ -3,7 +3,10 @@
 // fails here, even when no process holds it open and its modification time is old.
 // backup-saves.sh runs this on the staged copy and makes no archive when it exits non-zero.
 //
-// Usage:  node validate-saves.mjs <directory> [--skip <glob>]...
+// Every .sav under the directory is checked, except the one server-settings file in the top
+// folder (see SETTINGS_FILE). The same name in a subfolder is a save and is checked.
+//
+// Usage:  node validate-saves.mjs <directory>
 // Exit:   0 every save parsed; 1 a save is incomplete or does not parse; 2 usage or setup error.
 
 import { readdir, readFile } from 'node:fs/promises';
@@ -17,36 +20,21 @@ const EXIT_SETUP = 2;
 // type that a newer game added) are reported but do not fail the check.
 const FATAL_NOTICE = /corrupt|checksum|could not be read|trailing data/i;
 
+// The server settings file (SaveGames/ServerSettings.7777.sav) holds server options, not a
+// world, so the parser cannot read it. Match the path relative to the SaveGames root, so only
+// the file in the top folder is skipped. "server/ServerSettings.partial.sav" is validated.
+const SETTINGS_FILE = /^ServerSettings\.[0-9]+\.sav$/;
+
 function usageError(message) {
   process.stderr.write(`validate-saves: ${message}\n`);
   process.exit(EXIT_SETUP);
 }
 
 function parseArguments(argv) {
-  const skipGlobs = [];
-  let directory = null;
-  for (let index = 0; index < argv.length; index++) {
-    if (argv[index] === '--skip') {
-      index++;
-      if (argv[index] === undefined) {
-        usageError('--skip needs a glob');
-      }
-      skipGlobs.push(argv[index]);
-    } else if (directory === null) {
-      directory = argv[index];
-    } else {
-      usageError(`unexpected argument: ${argv[index]}`);
-    }
+  if (argv.length !== 1) {
+    usageError('usage: validate-saves.mjs <directory>');
   }
-  if (directory === null) {
-    usageError('usage: validate-saves.mjs <directory> [--skip <glob>]...');
-  }
-  return { directory, skipPatterns: skipGlobs.map(globToRegExp) };
-}
-
-function globToRegExp(glob) {
-  const escaped = glob.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${escaped.replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]')}$`);
+  return { directory: argv[0] };
 }
 
 async function findSaveFiles(directory) {
@@ -110,10 +98,10 @@ async function loadParser() {
 }
 
 async function main() {
-  const { directory, skipPatterns } = parseArguments(process.argv.slice(2));
+  const { directory } = parseArguments(process.argv.slice(2));
   const Parser = await loadParser();
   const files = (await findSaveFiles(directory)).filter(
-    (file) => !skipPatterns.some((pattern) => pattern.test(path.basename(file))),
+    (file) => !SETTINGS_FILE.test(path.relative(directory, file)),
   );
   if (files.length === 0) {
     process.stderr.write(`validate-saves: no save to check in ${directory}\n`);

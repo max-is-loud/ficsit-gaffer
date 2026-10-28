@@ -2,10 +2,10 @@
 # Archives the whole Satisfactory SaveGames directory into a dated tar file with a
 # sha256 sidecar, and rotates the scheduled ("daily") archives. A "pre-install" archive
 # lives in its own directory that the rotation never reads, so it is never deleted.
-# Two guards keep it from archiving a save that a writer has not finished. First it waits
-# while any process holds a save open for writing (or cannot be inspected). Second it runs
-# validate-saves.mjs on the staged copy, so a save that is not complete never reaches an
-# archive, even if the writer closed the file and will append to it later.
+# The gate is validate-saves.mjs: it parses every save in the staged copy, so a save that
+# is not complete never reaches an archive, whoever writes it and however it pauses. A quiet
+# period, a "changed after the copy began" check and a final diff -r only keep the copy
+# consistent; they never decide that a save is complete.
 # Restoring is left to restore-saves.sh. See tools/testbed/README.md for the runbook.
 #
 # Usage:  backup-saves.sh daily
@@ -14,26 +14,18 @@ set -euo pipefail
 umask 077
 
 SAVE_DIR=${GAFFER_SAVE_DIR:-/home/satisfactory/.config/Epic/FactoryGame/Saved/SaveGames}
-# /proc shows the resolved path of an open file, so the scan needs the resolved directory.
-REAL_SAVE_DIR=$(realpath -m -- "$SAVE_DIR")
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 BACKUP_DIR=${GAFFER_BACKUP_DIR:-/home/satisfactory/save-backups}
 KEEP_DAILY=${GAFFER_KEEP_DAILY:-14}
-# A save also counts as "being written" while it changed less than this many seconds ago.
-# This is only a cheap extra guard. The scan and the validator decide.
+# Copy only when no file changed in the last QUIET_SECONDS. This saves needless retries. It
+# is not a completeness test: a writer can stop for longer than any threshold.
 QUIET_SECONDS=${GAFFER_QUIET_SECONDS:-15}
 MAX_WAIT_SECONDS=${GAFFER_MAX_WAIT_SECONDS:-120}
 COPY_ATTEMPTS=${GAFFER_COPY_ATTEMPTS:-5}
 MIN_FREE_MB=${GAFFER_MIN_FREE_MB:-1024}
-# Names (/proc/<pid>/comm, joined with "|") of processes that the scan may skip when it
-# cannot inspect them, for example "(sd-pam)" on a login machine. Empty on the server.
-UNINSPECTABLE_OK_COMMS=${GAFFER_UNINSPECTABLE_OK_COMMS:-}
 # The validator is "node validate-saves.mjs" unless GAFFER_VALIDATOR names another program.
-# Files that are not game saves are skipped by name (the server settings file).
 VALIDATOR=${GAFFER_VALIDATOR:-}
-VALIDATE_SKIP=${GAFFER_VALIDATE_SKIP:-ServerSettings.*.sav}
 VALIDATE_RETRY_SECONDS=${GAFFER_VALIDATE_RETRY_SECONDS:-5}
-OWNER_UID=""
 
 staging=""
 
@@ -65,57 +57,17 @@ validate_settings() {
   [ "$free_mb" -ge "$MIN_FREE_MB" ] || fail "only ${free_mb} MB free in $BACKUP_DIR (need $MIN_FREE_MB)"
 }
 
-# True if the process is allowed to be skipped when it cannot be inspected.
-comm_is_skippable() {
-  local comm
-  comm=$(cat "/proc/$1/comm" 2>/dev/null) || return 0
-  case "|$UNINSPECTABLE_OK_COMMS|" in *"|$comm|"*) return 0 ;; esac
-  return 1
-}
-
-# Prints one line for each reason the saves may not be complete. Any failure to look counts
-# as a reason ("fail closed"), on every scan, because a writer can become uninspectable
-# after an earlier scan (for example by marking itself non-dumpable).
-#   1. A process of the saves' owner (the game) whose descriptors cannot be listed.
-#   2. A descriptor that points into the saves with a write or read-write access mode, or
-#      whose access mode cannot be read. The low two bits of the octal "flags" line in
-#      fdinfo are the access mode, so a process that only reads a save
-#      (foreman-save-sync) is not reported.
-busy_reasons() {
-  local proc pid link info flags
-  for proc in /proc/[0-9]*; do
-    [ "$(stat -c %u "$proc" 2>/dev/null)" = "$OWNER_UID" ] || continue
-    ls "$proc/fd" >/dev/null 2>&1 && continue
-    pid=${proc#/proc/}
-    # A process that exited, or a zombie, has nothing to inspect.
-    [ -d "$proc" ] && ! grep -q '^State:[[:space:]]*Z' "$proc/status" 2>/dev/null || continue
-    comm_is_skippable "$pid" || echo "process $pid ($(cat "$proc/comm" 2>/dev/null)) cannot be inspected"
-  done
-  while IFS= read -r -d '' link; do
-    info="${link/\/fd\//\/fdinfo\/}"
-    flags=$(awk '/^flags:/ { print $2 }' "$info" 2>/dev/null) || flags=""
-    if [[ ! "$flags" =~ ^[0-7]+$ ]]; then
-      if [ -L "$link" ]; then echo "$link: access mode cannot be read"; fi
-    elif [ $((8#$flags & 3)) -ne 0 ]; then
-      echo "$link -> $(readlink "$link") is open for write"
-    fi
-  done < <(find /proc/[0-9]*/fd -maxdepth 1 -lname "$REAL_SAVE_DIR/*" -print0 2>/dev/null)
-}
-
-# A save is "busy" while busy_reasons says so, or if it changed in the last QUIET_SECONDS.
-# Wait for neither, but give up after MAX_WAIT_SECONDS so a stuck writer cannot hang the
-# timer. The quiet period only covers a writer that closes and reopens a file between writes.
+# "Busy" means a file changed in the last QUIET_SECONDS. Wait for quiet, but give up after
+# MAX_WAIT_SECONDS so a stuck writer cannot hang the timer.
 is_busy() {
-  if [ -n "$(busy_reasons)" ]; then return 0; fi
   [ "$QUIET_SECONDS" -gt 0 ] &&
     [ -n "$(find "$SAVE_DIR" -type f -newermt "$QUIET_SECONDS seconds ago" -print -quit)" ]
 }
 
-wait_for_idle() {
+wait_for_quiet() {
   local waited=0
   while is_busy; do
-    [ "$waited" -lt "$MAX_WAIT_SECONDS" ] ||
-      fail "saves still being written after ${MAX_WAIT_SECONDS}s; no archive made. $(busy_reasons | head -n 3 | tr '\n' ';')"
+    [ "$waited" -lt "$MAX_WAIT_SECONDS" ] || fail "saves still changing after ${MAX_WAIT_SECONDS}s; no archive made"
     sleep 1
     waited=$((waited + 1))
   done
@@ -128,21 +80,19 @@ run_validator() {
     "$VALIDATOR" "$1" >&2
   else
     # The heap limit makes a garbage file fail fast instead of eating the host's memory.
-    node --max-old-space-size=768 "$HERE/validate-saves.mjs" "$1" --skip "$VALIDATE_SKIP" >&2
+    node --max-old-space-size=768 "$HERE/validate-saves.mjs" "$1" >&2
   fi
 }
 
-# One copy attempt. True only if nothing wrote a save during the copy and the copy equals
-# the source: no process holds a save open for write, no file changed after the copy began
-# (marker file), and diff -r finds no difference.
+# One copy attempt. True only if the copy equals the source and nothing changed during it:
+# no file changed after the copy began (marker file), and diff -r finds no difference.
 copy_is_stable() {
   local marker="$staging/.copy-started"
   rm -rf "${staging:?}/SaveGames"
   mkdir "$staging/SaveGames"
   touch "$marker"
   cp -a "$SAVE_DIR/." "$staging/SaveGames/"
-  [ -z "$(busy_reasons)" ] &&
-    [ -z "$(find "$SAVE_DIR" -type f -newer "$marker" -print -quit)" ] &&
+  [ -z "$(find "$SAVE_DIR" -type f -newer "$marker" -print -quit)" ] &&
     diff -r "$SAVE_DIR" "$staging/SaveGames" >/dev/null
 }
 
@@ -152,7 +102,7 @@ copy_is_stable() {
 snapshot_saves() {
   local copies=0 invalid_waited=0 status
   while true; do
-    wait_for_idle
+    wait_for_quiet
     if copy_is_stable; then
       status=0
       run_validator "$staging/SaveGames" || status=$?
@@ -215,7 +165,6 @@ main() {
   exec 9>"$BACKUP_DIR/.lock"
   flock -w 600 9 || fail "another backup holds the lock"
   validate_settings
-  OWNER_UID=$(stat -c %u "$SAVE_DIR")
   staging=$(mktemp -d "$BACKUP_DIR/.staging.XXXXXX")
   trap cleanup EXIT
   snapshot_saves
