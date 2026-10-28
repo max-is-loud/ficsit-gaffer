@@ -67,3 +67,14 @@
   - The ruleset `main protection` (ID 26058057) is active on the default branch. It requires a pull request and the status check `build-test`, allows squash merges only, and blocks force pushes and branch deletion.
   - It has no bypass actors, so Mainspring can prove that no merge bypasses the rules. It requires no approving review, because the user approves merges in T3. "Require branches to be up to date" is off, because each rebase needs a new review.
   - The repository allows squash merges only, and deletes head branches after a merge.
+
+## 2026-10-28 — Fix the `measureChatTurn` timeout before #68 merges
+
+- Kind: batch
+- Source: message `8dbc29f7-ac84-430a-b4f7-c866ae91289b` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:b69d0730ef21fa64e12c7da0c67ac915d6c2b42204334cc3a1582b774d961a5f`
+- Consequences:
+  - The batch `fix-measure-test` has one task: #69. The user did not approve the optional addition of #52.
+  - A worker (`claude-sonnet-5-5`, effort high) moved the scratch database of `measureChatTurn.test.ts` into `beforeAll`. A Codex reviewer checks the change.
+  - #68 waits for this fix. After the merge, the orchestrator verifies #68 against the new base. The head of #68 stays the same, so it needs no new review.
