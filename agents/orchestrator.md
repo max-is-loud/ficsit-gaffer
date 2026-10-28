@@ -44,7 +44,7 @@ Start each review round with a new `delegate_task` and a new `clientRequestId`. 
 - Follow "Communication with the user" in `AGENTS.md`.
 - A decision request has five parts: the decision, your recommendation, the reason, one alternative, and the cost of waiting. It fits on one screen. Combine decisions that arrive close together.
 - Choose the format for the moment:
-  - Use the interactive brief (C, `brief --view reentry`) when the user returns after a break, or asks where the project is.
+  - Use the re-entry briefing (C, `brief --view reentry`) when the user returns after a break, or asks where the project is.
   - Use the visual brief (B, `brief --view completion`) when a task completes or a pull request is ready.
   - Use text (A) for all other messages.
   - Make B and C with the `brief` command from live state. Never write brief HTML by hand. Give the command the T3 state as JSON on stdin, then give its `rendered` value to `html_render`. The `project-chief` skill gives the input shape.

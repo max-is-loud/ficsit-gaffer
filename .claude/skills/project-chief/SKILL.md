@@ -21,7 +21,9 @@ Your role: project orchestrator. Read `agents/orchestrator.md` and `AGENTS.md` f
 Use these steps when you start, when you resume after a pause, and when you replace a coordinator.
 
 1. Run `status`. Read the active, queued, parked, stale, and unresolved intents. If `version_mismatch` is `true`, report it under "Needs you". Use "Update the installed workflow".
-2. Run `coordinator-claim` with `{"coordinator": "<your T3 thread id>"}`. Exit 3 means that another coordinator owns the journal.
+2. Read the session ID of your own session with the shell: `echo "$CLAUDE_CODE_SESSION_ID"`. A subagent has the value of its parent. Then run `coordinator-claim` with `{"coordinator": "<your T3 thread id>", "provider_session": "<CLAUDE_CODE_SESSION_ID>"}`. Exit 3 means that another coordinator owns the journal.
+   - The session log then marks your session as the orchestrator, so that the briefing does not count it as a plain session. The output field `provider_session_marked` tells whether the mark worked.
+   - If the value is empty, or if your session is not a Claude Code session, give `coordinator` only. The claim works as before, and the briefing counts your session as plain.
 3. To replace a coordinator, read each bound worker with `t3_thread_read`. `task_status` reads only the tasks of the calling thread. Then run `coordinator-takeover` with `{"coordinator", "observations"}`. Give each observation the `thread_read` fields (see "Wait and handle a completion").
 
    A queued run keeps the slot. After `task_cancel`, a user turn can stay in a held queue, and `t3_thread_read` does not show the hold. If an observation records `running` only because of a `queued` status, and `activeRunId` is null, do these steps:
@@ -214,6 +216,94 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
   - A viewer without `ADMIN` that sees no rule gets `merge_bypass_possible`, because it cannot prove that no rule applies.
   - To continue, merge through the merge queue, or with an actor that cannot bypass the rules.
 
+## Audit the GitHub drift
+
+The command `audit github` compares the issues, the pull requests, and the Project board. It fixes a board status or adds a missing issue to the board when the fix has one correct answer. It only proposes every other change. It reads no stdin. Give `--repo`.
+
+### When to run it
+
+Run `audit github`:
+
+1. before each briefing (`reentry` and `completion`)
+2. after each step change of a task: a dispatch, an opened pull request, a review result, and a merge
+3. when the user asks
+
+Keep your own `project-sync` calls at step changes. The audit catches what they miss. To show the user what a real run would do, run `audit github --dry-run`. A dry run fixes and records nothing.
+
+### Read the result
+
+- Exit 0: read `state`. It is `clean`, `fixed`, or `needs_you`.
+- Exit 2: the configuration is invalid (`error: "config_invalid"`). Show `reason` to the user.
+- Exit 4: the audit is `unavailable`. Read `error` and `reason`. The causes are an unreadable journal, drift log, or GitHub read. The audit applied no fix, with one exception below.
+- The lists are `fixed`, `proposed`, and `failed`. Each entry has `rule`, `subject` (the issue or PR number), `text`, and `action`.
+- If `limit_reached` is `true`, the audit found more than 20 automatic fixes. It applied none and listed them under `proposed`. Tell the user. A sudden mass of fixes is more likely a fault than real drift.
+- A real audit holds the write lock of the drift log during its fixes. A second audit or an `--accept` waits up to 2 seconds, then gives exit 4. Run it again.
+- If exit 4 gives `error: "drift_log_unavailable"` and a non-empty `fixed` list, the fixes are on GitHub, but the drift log has no record of them. The briefing does not show them. Report each fix of the `fixed` list in your reply. This is a known limit (issue #129).
+
+### The reply rule
+
+When an audit fixed or proposed something, your reply to the user says three things about each item or group of items. It says what drifted, why it is drift, and what the module did or proposes. Do not hide a fix. Bring all open proposals of one audit to the user as one decision under "Needs you".
+
+### Apply an approved proposal
+
+The module never applies a proposal. After the user approves one, apply it with an existing tool. The next audit confirms the result.
+
+| Rule | Approved action |
+| --- | --- |
+| `github.board.done-but-open` | To close the issue, run `gh issue close <number>`. To move it back, run `project-sync` with the stage `In progress`. |
+| `github.issue.merged-but-open` | Run `gh issue close <number>`. |
+| `github.pr.no-issue` | Link the issue that the PR does. Add a closing keyword and the issue number to the PR text with `gh pr edit <number>`. A `#N` reference alone also ends the drift. |
+| `github.issue.no-parent` | Set the parent that the proposal names, or the parent that the user chooses, with the GraphQL mutation `addSubIssue`. See "Set a parent issue" below. |
+| `github.board.stalled` | To move the task, run `project-sync` with the stage `Ready`. |
+
+For `project-sync`, give the current value of the "Blocked" field as `blocked`. Never change it by chance. Use `gh` with the token of the account in `github.account`.
+
+#### Set a parent issue
+
+The mutation needs the GraphQL node IDs of both issues, not their numbers.
+
+1. Get the node ID of the parent issue. Do the same for the child issue (the issue of the proposal):
+
+   ```bash
+   gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){ repository(owner:$o, name:$r) { issue(number:$n) { id } } }' \
+     -f o=<owner> -f r=<repo> -F n=<issue number> --jq .data.repository.issue.id
+   ```
+
+2. Add the child to the parent:
+
+   ```bash
+   gh api graphql -f query='mutation($p:ID!,$c:ID!){ addSubIssue(input:{issueId:$p, subIssueId:$c}) { subIssue { number } } }' \
+     -f p=<parent node ID> -f c=<child node ID> --jq .data.addSubIssue.subIssue.number
+   ```
+
+   The output is the number of the child issue.
+
+### Record an answer that keeps the state
+
+Sometimes the user decides that the state is right. Examples: "this PR needs no issue", "keep this issue open", "it waits for #N". Record the answer:
+
+`mainspring audit github --accept <rule ID> <number> --source <message ID>`
+
+- Use the T3 message ID of the user's answer as `--source`.
+- If the audit does not find the drift now, the command gives exit 2 and records nothing.
+- An acceptance ends when a later complete audit does not find the same rule, number, and state again. The rule then applies again. Each rule compares only its own state fields:
+
+  | Rule | State fields |
+  | --- | --- |
+  | `github.board.done-but-open` | The issue state, the status, and the linked PRs with their states |
+  | `github.issue.merged-but-open` | The issue state, and the linked PRs with their states |
+  | `github.pr.no-issue` | None: a link, a `#N` reference, or a close of the PR ends the drift |
+  | `github.issue.no-parent` | The issue state and the batch. A new linked PR does not end it. A parent or a close ends the drift. |
+  | `github.board.stalled` | The issue state, the status, and the time of the last journal change of the task |
+
+- The briefing does not count an accepted item.
+
+### Limits to know
+
+- `github.issue.no-parent` proposes a specific parent only when each other task of the same batch is on the board and has that same parent. Otherwise it asks which parent.
+- It does not see an open batch task that is not on the board (issue #128). With `auto_fix` on, the same audit adds the issue to the board, and the next audit proposes the parent.
+- With `"github_drift": {"auto_fix": false}` in the configuration, every fix becomes a proposal.
+
 ## Briefs for the user
 
 | Moment | Command | Output |
@@ -222,9 +312,20 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
 | A task completes, or a pull request is ready | `brief --view completion` (B) | HTML for `html_render` |
 | Other updates | `brief --view text` (A), or short text | Text in chat |
 
-1. Read the T3 state first: `t3_thread_list` with `includeSubagents: true`, and the pending questions.
-2. Give the command this stdin: `{"t3": {"sessions": [...], "pending_questions": [...]}, "open_questions": [...], "decision": {...}}`. All keys are optional. Add `decision` only for a merge decision.
-3. Give the `rendered` value to `html_render`. Never write brief HTML by hand. Never render B or C on every update.
+1. For `reentry`, find the time of the last message of the user. The time away starts there. It ends when you make the briefing.
+   - Read the threads with `t3_thread_list` and `includeSubagents: true`. T3 lists them by `updatedAt`, newest first.
+   - For each thread, read the end of the timeline with `t3_thread_read`, `view: "messages"`, and `afterPosition` near `itemCount`. Read an earlier window if the end has no user message.
+   - A user message has `createdBy: "user"` and `type: "user_message"`. Its time is `updatedAt`.
+   - Ignore the message that started your current run.
+   - Stop at the first thread whose `updatedAt` is earlier than the best time so far.
+2. Read the other T3 state: the pending questions, and the sessions from `t3_thread_list`. For each active session, read `startedAt` of its active run in `recentRuns`. Give it as `started_at`. A pending request has no time.
+3. Give the command this stdin. All keys are optional: `{"t3": {"sessions": [{"thread_id", "title", "status", "provider", "model", "started_at"}], "pending_questions": [{"thread_id", "title", "text"}], "last_user_message": {"thread_id", "at"}}, "open_questions": [...], "decision": {...}}`.
+   - `started_at` and `at` are UTC times, for example `2026-10-26T12:04:11.790Z`. `at` must not be later than the current time. If it is, the command gives exit 2.
+   - Without `last_user_message`, the `reentry` view still gives exit 0. "While you were away" shows "unavailable".
+   - Add `decision` only for a merge decision.
+4. Read the page for "unavailable" items. A section of a later step names its module. This is not a fault. A live source that failed (journal, Git, GitHub, or T3) adds an item under "At risk". Report it to the user.
+5. If the Git chip shows "behind", a merged pull request is not on your local `main`. Update local `main`, then run the briefing again.
+6. Check the page with `html_preview` to get `contentHeight`. Then give the `rendered` value to `html_render`. Never write brief HTML by hand. Never render B or C on every update.
 
 ## Common mistakes
 
