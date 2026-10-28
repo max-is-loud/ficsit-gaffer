@@ -1,0 +1,41 @@
+# Archives the Satisfactory SaveGames directory and rotates the daily archives.
+# Runs as the game's own user, so it reads the saves without extra group rights and
+# writes only under /home/satisfactory/save-backups. Install steps: tools/testbed/README.md.
+[Unit]
+Description=Back up the Satisfactory save games
+ConditionPathExists=/home/satisfactory/.config/Epic/FactoryGame/Saved/SaveGames
+
+[Service]
+Type=oneshot
+User=satisfactory
+Group=satisfactory
+ExecStart=/opt/gaffer-testbed/backup-saves.sh daily
+# The script waits up to 120 s for a quiet moment, and it retries a changing copy.
+TimeoutStartSec=10min
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=256M
+TasksMax=64
+
+# Hardening, in the style of satisfactory.service. The game's own ProtectHome=true is not
+# used there, and here the home stays visible but read-only except the backup directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/satisfactory/save-backups
+PrivateTmp=true
+PrivateDevices=true
+ProtectProc=invisible
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=

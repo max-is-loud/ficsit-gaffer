@@ -1,0 +1,15 @@
+# Runs the save backup once a day at 04:30 server time (America/Toronto). The other
+# daily timers on the host run at 00:00, so this slot is free.
+[Unit]
+Description=Back up the Satisfactory save games every day
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+# Catch up after a reboot or an outage that skipped the run.
+Persistent=true
+RandomizedDelaySec=5min
+AccuracySec=1min
+Unit=gaffer-save-backup.service
+
+[Install]
+WantedBy=timers.target
