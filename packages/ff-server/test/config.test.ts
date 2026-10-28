@@ -11,6 +11,14 @@ describe('resolveServerConfig', () => {
     expect(config.clientKeyHeader).toBe('x-anthropic-api-key');
   });
 
+  it('defaults the output cap to 16000 tokens, so a full work-order plan is not truncated', () => {
+    expect(resolveServerConfig({}).maxTokens).toBe(16000);
+  });
+
+  it('lets LLM_MAX_TOKENS override the default output cap', () => {
+    expect(resolveServerConfig({ LLM_MAX_TOKENS: '8000' }).maxTokens).toBe(8000);
+  });
+
   it('honours the legacy ANTHROPIC_* env (back-compat)', () => {
     const config = resolveServerConfig({
       ANTHROPIC_API_KEY: 'sk-ant-test',

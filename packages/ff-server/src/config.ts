@@ -61,7 +61,7 @@ export interface ServerConfig {
 
 const DEFAULT_HOST = '0.0.0.0';
 const DEFAULT_PORT = 8724;
-const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_MAX_TOKENS = 16000;
 const DEFAULT_SUMMARY_MAX_TOKENS = 512;
 const DEFAULT_CLIENT_KEY_HEADER = 'x-anthropic-api-key';
 const DEFAULT_MCP_URL = 'http://127.0.0.1:8723/mcp';
