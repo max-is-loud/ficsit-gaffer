@@ -44,3 +44,26 @@
   - The server keeps the automatic game updates at restart. After a game update, it starts without mods until SML supports the new build.
   - For the first bridge tests, Gaffer runs on the dev machine and connects to the bridge over Tailscale. The Foreman deployment on the VPS stays unchanged until the bridge works.
   - Tasks 2, 5 and 6 of #65 now state these decisions.
+
+## 2026-10-28 — Run the Mainspring intake as the batch `adopt-mainspring`
+
+- Kind: batch
+- Source: message `ec24ff76-2699-4ed7-868a-f5362768e259` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:ef4310d43fc6c708e76d1788fd256e4be07948aadb061c313cdb52cfb3d318a3`
+- Consequences:
+  - The batch has one task: #66, the brownfield intake. The `repo-intake` skill is its plan.
+  - An intake worker (`claude-opus-5-5`, effort high) writes `docs/workflow/project.md` and `docs/workflow/intake-report.md`. A Codex reviewer checks each claim against its source.
+  - The intake report proposes diffs for seven conflicts and out-of-date statements in `AGENTS.md` and `CONTRIBUTING.md`. A worker applies them after the user approves them.
+  - The user confirmed that development happens on WSL2, not on a Proxmox VM. Item 7 of #66 corrects `AGENTS.md`.
+
+## 2026-10-28 — Protect `main` with a ruleset
+
+- Kind: repository settings
+- Source: message `ec24ff76-2699-4ed7-868a-f5362768e259` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences:
+  - The ruleset `main protection` (ID 26058057) is active on the default branch. It requires a pull request and the status check `build-test`, allows squash merges only, and blocks force pushes and branch deletion.
+  - It has no bypass actors, so Mainspring can prove that no merge bypasses the rules. It requires no approving review, because the user approves merges in T3. "Require branches to be up to date" is off, because each rebase needs a new review.
+  - The repository allows squash merges only, and deletes head branches after a merge.
