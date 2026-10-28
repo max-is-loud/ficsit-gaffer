@@ -78,3 +78,47 @@
   - The batch `fix-measure-test` has one task: #69. The user did not approve the optional addition of #52.
   - A worker (`claude-sonnet-5-5`, effort high) moved the scratch database of `measureChatTurn.test.ts` into `beforeAll`. A Codex reviewer checks the change.
   - #68 waits for this fix. After the merge, the orchestrator verifies #68 against the new base. The head of #68 stays the same, so it needs no new review.
+
+## 2026-10-28 — Record the board setup as the batch `board-setup`
+
+- Kind: batch
+- Source: message `c1f48cfa-8c1a-4b1d-8678-7184c8a05a3d` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:127053f3b51f57433df6dd3ea87410144a30d71856bc7e8947c59b09cb382e44`
+- Consequences:
+  - The batch has one task: #63. The user approved this scope in the cited message. The orchestrator recorded the batch after the work, because Mainspring dispatches a review only for a task in a recorded batch.
+  - A Codex review approved PR #64 at `650502b` with no findings.
+
+## 2026-10-28 — Approve the seven instruction changes as they are
+
+- Kind: scope
+- Source: message `3d2784bd-a167-42e8-8a5c-d5927a802d42` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:ef4310d43fc6c708e76d1788fd256e4be07948aadb061c313cdb52cfb3d318a3` (batch `adopt-mainspring`)
+- Consequences:
+  - A worker applied the proposed diffs of `docs/workflow/intake-report.md` to `AGENTS.md` and `CONTRIBUTING.md` without a change. All 81 changed lines match the approved block.
+  - The managed block of `AGENTS.md` and `CLAUDE.md` did not change.
+
+## 2026-10-28 — Give #66 no parent issue
+
+- Kind: drift exception
+- Source: message `3d2784bd-a167-42e8-8a5c-d5927a802d42` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: the batch `adopt-mainspring` has only one task. `mainspring audit github --accept github.issue.no-parent 66` records the exception.
+
+## 2026-10-28 — Keep the bridge receiver test in `verification`
+
+- Kind: configuration
+- Source: message `3d2784bd-a167-42e8-8a5c-d5927a802d42` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `cd integrations/foreman-bridge/receiver && npm test` stays in the `verification` list of `.mainspring/config.json`. It adds about 61 s to each verification run. CI already runs it.
+
+## 2026-10-28 — Merge PR #64
+
+- Kind: merge
+- Source: message `3d2784bd-a167-42e8-8a5c-d5927a802d42` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:127053f3b51f57433df6dd3ea87410144a30d71856bc7e8947c59b09cb382e44` (batch `board-setup`)
+- Consequences: `mainspring merge-execute` squash-merged head `650502b` onto base `e8a76b7` as `8a6b9a5`. #63 closed.
