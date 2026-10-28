@@ -22,3 +22,14 @@
   - A new single-select field, Blocked, has the options No and Yes.
   - `project-sync` added the 12 issues that were not on the board: #33, #35, #48 and #52 in Backlog, and the eight closed issues in Done.
   - `.mainspring/config.json` names the Project node ID, so `audit github` can read the board.
+
+## 2026-10-28 — Use the live dedicated server as the bridge test bed
+
+- Kind: access and scope
+- Source: message `8c936ce7-e659-4ffb-9271-93e3a464d580` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences:
+  - An agent may SSH to `openclaw` for read-only checks. Each change on the server still needs the user's approval for that step.
+  - Tests use the real save. Back it up before each bridge install.
+  - The orchestrator filed #65 in the Live world milestone, with the facts of the first read-only check.
