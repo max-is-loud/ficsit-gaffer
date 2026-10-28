@@ -155,6 +155,7 @@ All optional — by default the server serves the bundled **stable** game data.
 | `LLM_PROVIDER` | `anthropic` (native Claude, default) or `openai` (OpenAI-compatible). |
 | `LLM_API_KEY` | Hosted-tier key for the chosen provider. If unset, clients pass their own via the `x-anthropic-api-key` header. |
 | `LLM_MODEL` | Model (default `claude-sonnet-4-6` / `gpt-4.1`). |
+| `LLM_MAX_TOKENS` | Maximum output tokens for each model call, tool-call arguments included (default `16000`). Lower it for a model that accepts fewer. |
 | `LLM_BASE_URL` | OpenAI-compatible base URL (OpenAI, OpenRouter, Gemini-compat, Azure). |
 | `MCP_URL` | Where the backend reaches the unified sf-mcp server, game-data + save tools (Compose: `http://sf-mcp:8723/mcp`; bare metal default `http://127.0.0.1:8723/mcp`). |
 | `SAVE_DATA_DIR` | Directory where uploaded playthrough saves are stored; shared with sf-mcp so it can read each save by the path the backend injects. |

@@ -104,7 +104,9 @@ or otherwise changes one), `done` (`{ ok }`), and `error` (`{ message }`).
 See the root [`.env.example`](../../.env.example) for the full, commented list.
 Key variables: `LLM_PROVIDER` (`anthropic` default, or `openai`), `LLM_API_KEY`
 (optional hosted key; `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` honoured too),
-`LLM_MODEL` (default `claude-sonnet-4-6`), `LLM_BASE_URL` (OpenAI-compatible
+`LLM_MODEL` (default `claude-sonnet-4-6`), `LLM_MAX_TOKENS` (default `16000`) — the
+maximum output tokens for each model call, tool-call arguments included; lower it
+for a model that accepts fewer, `LLM_BASE_URL` (OpenAI-compatible
 endpoint), `MCP_URL` (default `http://127.0.0.1:8723/mcp` — the unified sf-mcp
 server, whose save-game tools let the foreman read player location and remaining
 collectibles), `SAVE_DATA_DIR` (where uploaded playthrough saves are stored,
