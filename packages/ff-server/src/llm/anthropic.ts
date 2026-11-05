@@ -4,6 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 import { logger } from '../logger.js';
+import { anthropicEffortParam, effortRejection } from './effort.js';
 import type { LlmProvider } from './provider.js';
 import type {
   LlmCompletionRequest,
@@ -42,25 +43,32 @@ export class AnthropicProvider implements LlmProvider {
     req: LlmRequest,
     onEvent: (event: LlmStreamEvent) => void,
   ): Promise<LlmTurnResult> {
-    const stream = this.client.messages.stream({
-      model: req.model,
-      max_tokens: req.maxTokens,
-      // Cache the stable prefix (render order: tools → system → messages) so it
-      // is reused across requests and across tool rounds within a turn. Two
-      // breakpoints — one on the tool list, one on system — mean a system-prompt
-      // change still reuses the tools cache.
-      system: systemBlocks(req.system, req.contextBlocks ?? []),
-      messages: markLastMessageCacheable(toAnthropicMessages(req.messages)),
-      tools: cacheableTools(req.tools),
-    });
-
+    // Built first, so a level the model cannot take fails before any request is made.
+    const effort = anthropicEffortParam(req.model, req.effort);
     let text = '';
-    stream.on('text', (delta: string) => {
-      text += delta;
-      onEvent({ type: 'text', delta });
-    });
-
-    const final = await stream.finalMessage();
+    let final: Anthropic.Message;
+    try {
+      const stream = this.client.messages.stream({
+        model: req.model,
+        max_tokens: req.maxTokens,
+        ...effort,
+        // Cache the stable prefix (render order: tools → system → messages) so it
+        // is reused across requests and across tool rounds within a turn. Two
+        // breakpoints — one on the tool list, one on system — mean a system-prompt
+        // change still reuses the tools cache.
+        system: systemBlocks(req.system, req.contextBlocks ?? []),
+        messages: markLastMessageCacheable(toAnthropicMessages(req.messages)),
+        tools: cacheableTools(req.tools),
+      });
+      stream.on('text', (delta: string) => {
+        text += delta;
+        onEvent({ type: 'text', delta });
+      });
+      final = await stream.finalMessage();
+    } catch (error) {
+      // A model outside the support table can still refuse the level: say which model and level.
+      throw effortRejection(error, req.model, req.effort) ?? error;
+    }
     const usage: TurnUsage = {
       inputTokens: final.usage.input_tokens,
       outputTokens: final.usage.output_tokens,

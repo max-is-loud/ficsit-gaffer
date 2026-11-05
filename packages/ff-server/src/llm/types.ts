@@ -4,6 +4,7 @@
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages';
 
 import type { ToolDefinition } from '../mcp/client.js';
+import type { EffortLevel } from './effort.js';
 
 /**
  * Provider-neutral LLM types. The chat loop speaks only these shapes; each
@@ -97,6 +98,12 @@ export interface LlmRequest {
   tools: ToolDefinition[];
   model: string;
   maxTokens: number;
+  /**
+   * How hard the model works on the turn. Unset sends nothing, so the provider's own default
+   * applies. The chat loop keeps it the same for every round of a turn, because a change mid-turn
+   * would invalidate the cached message prefix.
+   */
+  effort?: EffortLevel;
 }
 
 /** A one-shot non-streaming completion (used for session summaries). */
@@ -118,6 +125,8 @@ export interface LlmRuntimeConfig {
   summaryModel: string;
   maxTokens: number;
   summaryMaxTokens: number;
+  /** Effort for chat turns (not for the one-shot summary). Unset sends nothing. */
+  effort?: EffortLevel;
   apiKey: string;
   /** Base URL override — only meaningful for the OpenAI-compatible provider. */
   baseUrl?: string;

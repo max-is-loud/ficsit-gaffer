@@ -5,6 +5,7 @@
 import OpenAI from 'openai';
 
 import { logger } from '../logger.js';
+import { effortRejection, isReasoningModel, openAiEffortParam } from './effort.js';
 import type { LlmProvider } from './provider.js';
 import type {
   LlmCompletionRequest,
@@ -170,12 +171,11 @@ function parseArgs(raw: string): Record<string, unknown> {
  * require `max_completion_tokens`; everything else (gpt-4.1/4o, Azure,
  * OpenRouter, local Ollama, …) still takes `max_tokens`. The `(^|/)` guard
  * tolerates an OpenRouter-style `openai/gpt-5-mini` prefix; the `[-.]` boundary
- * tolerates a dotted minor version such as `gpt-5.4-mini`. Exported for testing.
+ * tolerates a dotted minor version such as `gpt-5.4-mini` (both in `isReasoningModel`, which
+ * `reasoning_effort` follows too). Exported for testing.
  */
 export function tokenLimitParam(model: string, maxTokens: number): Record<string, number> {
-  return /(^|\/)(gpt-5|o[1-4])([-.]|$)/.test(model)
-    ? { max_completion_tokens: maxTokens }
-    : { max_tokens: maxTokens };
+  return isReasoningModel(model) ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens };
 }
 
 /**
@@ -194,19 +194,29 @@ export class OpenAiCompatibleProvider implements LlmProvider {
     req: LlmRequest,
     onEvent: (event: LlmStreamEvent) => void,
   ): Promise<LlmTurnResult> {
-    const stream = await this.client.chat.completions.create({
-      model: req.model,
-      ...tokenLimitParam(req.model, req.maxTokens),
-      messages: toOpenAiMessages([req.system, ...(req.contextBlocks ?? [])], req.messages),
-      tools: req.tools.map((tool) => ({
-        type: 'function' as const,
-        function: { name: tool.name, description: tool.description, parameters: tool.inputSchema },
-      })),
-      stream: true,
-      // Usage arrives on a final chunk; providers that ignore the option simply omit it.
-      stream_options: { include_usage: true },
-    });
-    return consumeOpenAiStream(stream as AsyncIterable<OpenAiStreamChunk>, onEvent);
+    try {
+      const stream = await this.client.chat.completions.create({
+        model: req.model,
+        ...tokenLimitParam(req.model, req.maxTokens),
+        ...openAiEffortParam(req.model, req.effort),
+        messages: toOpenAiMessages([req.system, ...(req.contextBlocks ?? [])], req.messages),
+        tools: req.tools.map((tool) => ({
+          type: 'function' as const,
+          function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.inputSchema,
+          },
+        })),
+        stream: true,
+        // Usage arrives on a final chunk; providers that ignore the option simply omit it.
+        stream_options: { include_usage: true },
+      });
+      return await consumeOpenAiStream(stream as AsyncIterable<OpenAiStreamChunk>, onEvent);
+    } catch (error) {
+      // The API has no per-model list of levels, so a refusal is the only signal: name model and level.
+      throw effortRejection(error, req.model, req.effort) ?? error;
+    }
   }
 
   public async complete(req: LlmCompletionRequest): Promise<string> {
