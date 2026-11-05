@@ -110,7 +110,10 @@ for a model that accepts fewer, `LLM_EFFORT` (`low`, `medium`, `high`, `xhigh` o
 unset by default, which sends no effort so the provider default applies) — how hard the
 model works on each chat turn, fixed for the whole turn. Anthropic receives it as
 `output_config.effort`; an OpenAI-compatible provider receives `reasoning_effort`, for GPT-5
-and o-series models only. A level the model cannot take (for example `xhigh` on
+and o-series models only. At `xhigh` or `max`, Anthropic advises an output limit
+(`LLM_MAX_TOKENS`) of at least `64000`; the default is `16000`, and with it the model can run
+out of output tokens and the reply is cut off. Raise `LLM_MAX_TOKENS` with the level, if the
+model accepts that many output tokens. A level the model cannot take (for example `xhigh` on
 `claude-sonnet-4-6`) stops start-up, or for a request gets a 400 that names the model and
 the level. A **BYOK** request may override it with an `effort` field in the chat body. The
 server default follows a BYOK request only while it keeps the server's provider and model.
