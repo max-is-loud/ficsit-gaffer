@@ -16,11 +16,12 @@ import {
 import { isHostInternalTool } from '../tools/hostInternalTools.js';
 import { withoutHostManagedProperties } from '../tools/hostManagedArguments.js';
 import { workOrderToolDefinitions } from '../tools/workOrderTools.js';
+import type { EffortLevel } from './effort.js';
 import type { LlmProvider } from './provider.js';
 import { formatTurnMetrics, TurnMetricsRecorder, type TurnMetrics } from './turnMetrics.js';
 import { runToolCalls, type ToolOutcome } from './toolRunner.js';
 import { describeTruncation, type TruncatedTurn } from './truncation.js';
-import type { LlmTurnResult, NeutralMessage, NeutralToolCall } from './types.js';
+import type { LlmRequest, LlmTurnResult, NeutralMessage, NeutralToolCall } from './types.js';
 
 /** Backing services and settings the chat loop needs (provider-agnostic). */
 export interface ChatDeps {
@@ -46,6 +47,8 @@ export interface ChatRequest {
   provider: LlmProvider;
   model: string;
   maxTokens: number;
+  /** Sent unchanged with every round of the turn: a mid-turn change would break the prompt cache. */
+  effort?: EffortLevel;
 }
 
 /** Sink for streaming events as the turn unfolds. */
@@ -81,7 +84,6 @@ export async function runChat(
 ): Promise<string> {
   const system = buildSystemPrompt(deps.systemPromptTemplate, req.promptContext);
   const tools = await assembleTools(deps.mcp, req.playthroughId, deps.liveState);
-
   const messages = await loadHistory(deps, req.playthroughId);
 
   let streamedText = '';
@@ -95,14 +97,7 @@ export async function runChat(
 
   for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
     const result = await req.provider.runTurn(
-      {
-        system,
-        contextBlocks: req.contextBlocks,
-        messages,
-        tools,
-        model: req.model,
-        maxTokens: req.maxTokens,
-      },
+      { ...turnSettings(req, system, tools), messages },
       (event) => {
         if (event.type === 'text') {
           streamedText += event.delta;
@@ -140,6 +135,26 @@ export async function runChat(
     `Tool loop hit the ${MAX_TOOL_ITERATIONS}-iteration cap; returning partial response.`,
   );
   return finish(true);
+}
+
+/**
+ * Everything of a provider request except the messages. It is built once per round from the same
+ * inputs, so the model, token limit and effort do not change within a turn (a change of effort
+ * mid-turn would invalidate the cached message prefix).
+ */
+function turnSettings(
+  req: ChatRequest,
+  system: string,
+  tools: ToolDefinition[],
+): Omit<LlmRequest, 'messages'> {
+  return {
+    system,
+    contextBlocks: req.contextBlocks,
+    tools,
+    model: req.model,
+    maxTokens: req.maxTokens,
+    effort: req.effort,
+  };
 }
 
 /**

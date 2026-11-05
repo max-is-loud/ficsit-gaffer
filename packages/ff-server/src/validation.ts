@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import { EFFORT_LEVELS } from './llm/effort.js';
+
 /**
  * Shared zod schemas for request bodies and tool inputs. Centralised so the
  * REST routes and the foreman's work-order tools validate against identical
@@ -376,6 +378,9 @@ export const chatSchema = z.object({
   provider: z.enum(['anthropic', 'openai']).optional(),
   model: z.string().optional(),
   baseUrl: z.string().optional(),
+  // How hard the model works on the turn. Whether the chosen model accepts the level is checked in
+  // the route, which knows the model.
+  effort: z.enum(EFFORT_LEVELS).optional(),
   // Conversation history window (message count). Honoured only for a BYOK request;
   // subscription/hosted requests always use the server default. Bounded to keep
   // token cost sane.

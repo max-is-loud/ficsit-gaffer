@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clientLlmConfig, resolveServerConfig } from '../src/config.js';
+import { clientLlmConfig, resolveServerConfig, serverLlmConfig } from '../src/config.js';
 
 describe('resolveServerConfig', () => {
   it('defaults to anthropic with the legacy key header', () => {
@@ -88,5 +88,71 @@ describe('server config bridge binding', () => {
     expect(() =>
       resolveServerConfig({ FOREMAN_BRIDGE_URL: BRIDGE_ENV.FOREMAN_BRIDGE_URL }),
     ).toThrow(/incomplete/i);
+  });
+});
+
+describe('LLM_EFFORT', () => {
+  it('is unset by default, so no effort is sent', () => {
+    const config = resolveServerConfig({});
+    expect(config.effort).toBeUndefined();
+    expect(serverLlmConfig(config, 'k').effort).toBeUndefined();
+  });
+
+  it('reads each level, ignoring case', () => {
+    expect(resolveServerConfig({ LLM_EFFORT: 'high' }).effort).toBe('high');
+    expect(resolveServerConfig({ LLM_EFFORT: 'MAX', LLM_MODEL: 'claude-opus-5-5' }).effort).toBe(
+      'max',
+    );
+  });
+
+  it('treats a blank value as unset', () => {
+    expect(resolveServerConfig({ LLM_EFFORT: '  ' }).effort).toBeUndefined();
+  });
+
+  it('fails start-up for a value that is not a level', () => {
+    expect(() => resolveServerConfig({ LLM_EFFORT: 'extreme' })).toThrow(
+      "LLM_EFFORT must be one of low, medium, high, xhigh, max; got 'extreme'.",
+    );
+  });
+
+  it('fails start-up when the default model cannot take the level', () => {
+    expect(() => resolveServerConfig({ LLM_EFFORT: 'xhigh' })).toThrow(/claude-sonnet-4-6.*xhigh/);
+    expect(resolveServerConfig({ LLM_EFFORT: 'xhigh', LLM_MODEL: 'claude-opus-5-5' }).effort).toBe(
+      'xhigh',
+    );
+  });
+
+  it('carries the server level into the runtime config', () => {
+    const config = resolveServerConfig({ LLM_EFFORT: 'medium' });
+    expect(serverLlmConfig(config, 'k').effort).toBe('medium');
+  });
+});
+
+describe('clientLlmConfig effort override', () => {
+  const server = resolveServerConfig({
+    LLM_EFFORT: 'medium',
+    LLM_MODEL: 'claude-opus-5-5',
+  });
+
+  it('lets the request set its own level', () => {
+    expect(clientLlmConfig(server, { effort: 'max' }, 'k').effort).toBe('max');
+  });
+
+  it('keeps the server level when the request does not override it', () => {
+    expect(clientLlmConfig(server, {}, 'k').effort).toBe('medium');
+  });
+
+  it('drops the server level when the request chooses another model or provider', () => {
+    expect(clientLlmConfig(server, { model: 'claude-haiku-4-5' }, 'k').effort).toBeUndefined();
+    expect(clientLlmConfig(server, { provider: 'openai' }, 'k').effort).toBeUndefined();
+  });
+
+  it('keeps the request level with another model, so the model check can speak for it', () => {
+    const resolved = clientLlmConfig(server, { model: 'claude-haiku-4-5', effort: 'low' }, 'k');
+    expect(resolved.effort).toBe('low');
+  });
+
+  it('sends nothing when neither side sets a level', () => {
+    expect(clientLlmConfig(resolveServerConfig({}), {}, 'k').effort).toBeUndefined();
   });
 });

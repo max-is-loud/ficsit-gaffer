@@ -11,6 +11,7 @@ import {
   supportedAnthropicEfforts,
   UnsupportedEffortError,
 } from '../src/llm/effort.js';
+import { chatSchema } from '../src/validation.js';
 
 describe('parseEffortLevel', () => {
   it('accepts each level, ignoring case and surrounding space', () => {
@@ -184,5 +185,19 @@ describe('effortRejection', () => {
     expect(
       effortRejection(Object.assign(new Error('effort'), { status: 400 }), 'm', undefined),
     ).toBeUndefined();
+  });
+});
+
+describe('chatSchema effort', () => {
+  it('accepts each level and the absence of one', () => {
+    for (const level of EFFORT_LEVELS) {
+      expect(chatSchema.safeParse({ message: 'hi', effort: level }).success).toBe(true);
+    }
+    expect(chatSchema.safeParse({ message: 'hi' }).success).toBe(true);
+  });
+
+  it('rejects a value that is not a level', () => {
+    expect(chatSchema.safeParse({ message: 'hi', effort: 'extreme' }).success).toBe(false);
+    expect(chatSchema.safeParse({ message: 'hi', effort: 3 }).success).toBe(false);
   });
 });

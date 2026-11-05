@@ -102,6 +102,7 @@ async function main(): Promise<void> {
     logger.info(`Listening on http://${config.host}:${config.port} (health: /health)`);
     logger.info(
       `LLM: ${config.providerKind} (${config.model})${config.baseUrl !== undefined ? ` @ ${config.baseUrl}` : ''} | ` +
+        `effort: ${config.effort ?? 'provider default'} | ` +
         `MCP: ${config.mcpUrl} | history window: ${config.historyWindow}`,
     );
     if (config.hostedApiKey === undefined) {

@@ -7,10 +7,24 @@ import type { AppDeps } from '../deps.js';
 import { clientLlmConfig, serverLlmConfig } from '../config.js';
 import { buildTurnContext } from '../context/turnContext.js';
 import { runChat, type ChatDeps } from '../llm/chat.js';
+import { assertEffortSupported, UnsupportedEffortError } from '../llm/effort.js';
 import type { LlmRuntimeConfig } from '../llm/types.js';
 import { logger } from '../logger.js';
 import { openSse } from '../sse.js';
 import { chatSchema } from '../validation.js';
+
+/** Why the model cannot take the effort of the request, or `undefined` when it can. */
+function effortProblem(llm: LlmRuntimeConfig): string | undefined {
+  try {
+    assertEffortSupported(llm.providerKind, llm.model, llm.effort);
+    return undefined;
+  } catch (error) {
+    if (error instanceof UnsupportedEffortError) {
+      return error.message;
+    }
+    throw error;
+  }
+}
 
 /**
  * Chat route, mounted under /api/playthroughs/:playthroughId/chat. Streams the
@@ -62,7 +76,12 @@ export function chatRouter(deps: AppDeps): Router {
     if (headerKey !== undefined && headerKey.length > 0) {
       llm = clientLlmConfig(
         deps.config,
-        { provider: parsed.data.provider, model: parsed.data.model, baseUrl: parsed.data.baseUrl },
+        {
+          provider: parsed.data.provider,
+          model: parsed.data.model,
+          baseUrl: parsed.data.baseUrl,
+          effort: parsed.data.effort,
+        },
         headerKey,
       );
       historyWindow = parsed.data.historyWindow ?? deps.config.historyWindow;
@@ -72,6 +91,13 @@ export function chatRouter(deps: AppDeps): Router {
       res.status(400).json({
         error: `No LLM API key. Supply one via the '${deps.config.clientKeyHeader}' header, or configure a server key (LLM_API_KEY).`,
       });
+      return;
+    }
+
+    // Refuse a level the model cannot take now, with a plain message, before saving the user turn.
+    const unsupportedEffort = effortProblem(llm);
+    if (unsupportedEffort !== undefined) {
+      res.status(400).json({ error: unsupportedEffort });
       return;
     }
 
@@ -99,6 +125,7 @@ export function chatRouter(deps: AppDeps): Router {
           provider,
           model: llm.model,
           maxTokens: llm.maxTokens,
+          effort: llm.effort,
         },
         // Per-request window: a BYOK caller may widen/narrow their own history.
         { ...chatDeps, historyWindow },
