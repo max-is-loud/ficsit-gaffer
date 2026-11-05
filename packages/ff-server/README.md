@@ -117,6 +117,8 @@ model accepts that many output tokens. A level the model cannot take (for exampl
 `claude-sonnet-4-6`) stops start-up, or for a request gets a 400 that names the model and
 the level. A **BYOK** request may override it with an `effort` field in the chat body. The
 server default follows a BYOK request only while it keeps the server's provider and model.
+The measured `high` against `medium` comparison is in
+[`docs/measurements/effort-level.md`](../../docs/measurements/effort-level.md).
 `LLM_BASE_URL` (OpenAI-compatible
 endpoint), `MCP_URL` (default `http://127.0.0.1:8723/mcp` — the unified sf-mcp
 server, whose save-game tools let the foreman read player location and remaining
