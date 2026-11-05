@@ -179,21 +179,30 @@ From the highest:
 
 If a skill tells you to do something that your role file does not permit, do not do it. Request that action from the orchestrator.
 
-## Writing standard: ASD-STE100 Simplified Technical English
+## Writing standard: STE for instructions, plain English for the rest
 
-Write all prose in ASD-STE100 Simplified Technical English (STE). Go approximately 80% of the way toward strict compliance.
+Write instructions in ASD-STE100 Simplified Technical English (STE). An instruction is text that tells an agent what to do. Go approximately 80% of the way toward strict compliance. Instructions include:
 
-This standard applies to:
+- this file, the role files, the skills, and the templates
+- dispatch briefs
+- the steps of a runbook
+- the task steps and the acceptance criteria of a plan, which include the plans that `superpowers:writing-plans` writes
 
-- specs and plans, including the specs and plans that Superpowers skills write (for example, `superpowers:brainstorming` and `superpowers:writing-plans`)
-- other documents, templates, and skills
-- issue text, pull request text, and review findings
-- commit message bodies
-- reports to the project orchestrator and to the user
+Write all other text in plain, clear English. This includes:
+
+- messages and reports to the user and to the project orchestrator
+- issue text, pull request text, commit message bodies, and review findings
+- specs, design rationale, and other documents
+
+For plain English:
+
+1. Put the main point first.
+2. Use the same term for the same thing.
+3. If a shorter statement is less precise, keep the precise statement.
 
 This instruction has priority over the default writing style of a skill.
 
-### Rules
+### STE rules
 
 1. Write short sentences. A procedural sentence has a maximum of 20 words. A descriptive sentence has a maximum of 25 words.
 2. Write one instruction in each sentence. Use the imperative for instructions.
@@ -210,7 +219,15 @@ These items are exempt: code, commands, identifiers, file paths, quotations, pro
 
 ### Checks
 
-Run `mainspring ste-check <file>...` for advisory warnings. The check does not fail a build.
+Run `mainspring ste-check <file>...` on instruction files for advisory warnings. The check does not fail a build.
+
+## Plan header
+
+When `superpowers:writing-plans` writes a plan, it starts the plan with the header "REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended)". A worker must not use that skill. Replace the header with this text:
+
+> **For agentic workers:** The project orchestrator dispatches each task as its own issue and PR. A worker executes one task directly with `superpowers:executing-plans`. A worker does not use `superpowers:subagent-driven-development` (see `agents/worker.md`). Steps use checkbox (`- [ ]`) syntax for tracking.
+
+This rule ends when a framework-aware copy of the Superpowers skills exists (issue #39).
 
 ## Agent principles
 
@@ -224,10 +241,21 @@ These principles apply to every role. Andrej Karpathy's agentic engineering reco
 6. Collaborate through the project orchestrator. Only the orchestrator dispatches agents.
 7. Keep people informed. Report significant changes, decisions, assumptions, verification results, and remaining risks.
 
+## Search order
+
+For each question about the code, find the kind of the question, and start with its tool:
+
+- Architecture, modules, or dependencies: if you have the graphify tools, start with them (`god_nodes`, `get_community`, `query_graph`, `shortest_path`).
+- A named function, class, method, or constant: if you have the Serena tools, use them (`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`), not Grep.
+- A code shape, for example duplicate logic or each call of a pattern: you can use `ast-grep run -p '<pattern>' -l <language>`, with the pattern in single quotes. A pattern with zero matches can be a false negative. Confirm it with Grep.
+- Text, for example a message, a comment, or a key: use Grep.
+
+Then read the source to confirm. At the start of a session, a hook can add a summary of the code graph to your context. A hook can refuse one Grep call for a symbol: then use the Serena tool that the reason names.
+
 ## Communication with the user
 
-These rules apply to every message to the user, from any role.
+These rules apply to every message to the user.
 
-- Start each update with "Needs you" and "At risk". If nothing is necessary, write one line.
+- The project orchestrator is the voice to the user. A worker or a reviewer sends each request for a user decision to the orchestrator. The orchestrator asks the user. The orchestrator file gives the update format.
 - Choose the format for the information: text for decisions, tables for comparisons, Mermaid diagrams for structure and flow, and interactive HTML for systems that the user must explore.
 <!-- mainspring:end -->

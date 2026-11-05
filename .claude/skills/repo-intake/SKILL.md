@@ -83,15 +83,14 @@ Write only these files, and nothing else:
    - Exit 0: the files are clean.
    - Exit 3: the output gives the file, the line, and the kind of each finding. Remove the value, and run the scan again.
    - Never commit a file that fails the scan.
-2. Run `mainspring ste-check <file>...` on the absolute paths of the two Markdown outputs. Correct each warning if the correction keeps the statement precise.
-3. Run `git status`. Confirm that only the output files changed.
-4. Commit the outputs on the branch of the worktree.
+2. Run `git status`. Confirm that only the output files changed.
+3. Commit the outputs on the branch of the worktree.
 
 ## Report
 
 Give the five report parts that `agents/worker.md` names. Add these items:
 
-- Evidence: the table of command results (command, exit code, duration, and result), the `secret-scan` exit code, and the `ste-check` warning count.
+- Evidence: the table of command results (command, exit code, duration, and result), and the `secret-scan` exit code.
 - Assumptions: each default that you kept, and the reason.
 - Risks: each part of the repository that you did not examine.
 - Requests: `REQUEST: independent review of <sha>`. The reviewer checks each claim against its source.

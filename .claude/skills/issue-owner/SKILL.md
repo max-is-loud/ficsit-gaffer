@@ -18,12 +18,13 @@ Your role: worker. Read `agents/worker.md` and `AGENTS.md` first. They hold your
 - Do the work yourself in the T3 worktree. Use the Superpowers skills that `agents/worker.md` names.
 - Run the checks that the brief names, and the `verification` commands in `.mainspring/config.json`.
 - Commit at each green step.
+- After the last commit, run `mainspring docs check --head HEAD`. Fix each listed document that your change makes wrong, in the same PR. Do not fix it if the brief names a later task that owns the documents. Report the other listed documents.
 - Decide routine details yourself. List them in your report as assumptions.
 
 ## Repair
 
 1. Use `superpowers:receiving-code-review`. Evaluate each finding by its `id`. Do not accept a finding without checking it.
-2. Fix each valid finding. Add a regression test for each fixed defect.
+2. Fix each valid finding. Add a regression test for each fixed defect. If the `evidence` of the finding holds a probe of the reviewer, base the regression test on that probe.
 3. For each finding, give the disposition (`fixed` or `rejected`) and the evidence. Give the reason for each rejection.
 
 ## Ask for help
@@ -47,4 +48,4 @@ Follow `agents/worker.md`. Your checkpoint gives the head SHA, the uncommitted f
 
 ## Report
 
-Write the report from the template that `mainspring template report` gives: result, evidence, assumptions, risks, and requests. Write it in STE (`AGENTS.md`).
+Write the report from the template that `mainspring template report` gives: result, evidence, assumptions, risks, and requests. Write it in plain, clear English (`AGENTS.md`).

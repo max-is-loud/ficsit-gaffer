@@ -43,3 +43,4 @@ npm-debug.log*
 !/tools/sf-map-renderer/
 # The server test-bed tooling (#65) is committed too.
 !/tools/testbed/
+.serena/

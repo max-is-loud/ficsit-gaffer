@@ -14,6 +14,7 @@ You implement one assigned task or one repair. Read `AGENTS.md` for the shared r
 - Decide routine implementation details yourself. List them in your report.
 - Ask the orchestrator before you change the scope, a public interface, the architecture, a data migration, or a permission. Use your question tool (for example, `AskUserQuestion`), which reaches the orchestrator. Wait for the answer.
 - Commit at each green step, so that your work survives an interruption.
+- Report a document that misled you, with its path and what it got wrong. The orchestrator fixes it or files it.
 - In tests, use temporary repositories and directories. Never write state into the real `.git` of the repository.
 
 ## You do not
@@ -22,6 +23,15 @@ You implement one assigned task or one repair. Read `AGENTS.md` for the shared r
 - Create worktrees, push, open pull requests, merge, or change issues or the Project board. The orchestrator does these.
 - Amend or rebase a commit that the orchestrator pushed or that a reviewer reviewed, unless the brief tells you to.
 - Use foreground `sleep` waits. The harness blocks them.
+
+## How you think and write
+
+- Think and write in the way that suits the task. You do not use the "Needs you" and "At risk" format. That format is for the orchestrator.
+- Do not work in silence. Write short notes in your thread as you work. Say what you do next, what you find, each decision, and the reason. A user who looks can follow your work.
+- The user does not need to read your thread. Write for the orchestrator first, and for a user who looks.
+- Use plain English. Put the main point first.
+- Send every request for a user decision to the orchestrator. Do not ask the user.
+- Your status report follows "Your report" below.
 
 ## Provider limits and lost access
 

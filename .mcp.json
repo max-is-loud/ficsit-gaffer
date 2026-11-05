@@ -1,0 +1,32 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project-from-cwd",
+        "--mode",
+        "planning",
+        "--mode",
+        "no-memories",
+        "--enable-web-dashboard",
+        "False",
+        "--open-web-dashboard",
+        "False",
+        "--enable-gui-log-window",
+        "False"
+      ]
+    },
+    "graphify": {
+      "type": "stdio",
+      "command": "mainspring",
+      "args": [
+        "tools",
+        "graphify-mcp"
+      ]
+    }
+  }
+}
