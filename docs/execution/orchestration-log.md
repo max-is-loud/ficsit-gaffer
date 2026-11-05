@@ -327,3 +327,43 @@
   - The T3 interface linked "#43" in the message to upstream PR #43. The orchestrator read it as Gaffer issue #43, the issue that it recommended.
   - #74 uses option 1 of the issue: the default Compose setup publishes no `sf-mcp` port, and an opt-in file publishes it on `127.0.0.1` only. Options 2 and 3 are out of scope.
   - The paid comparison of `high` and `medium` in #43 needs the user's API key and a spend approval. The worker does not run it. The PR of #43 refers to the issue but does not close it. The orchestrator brings the measurement to the user after the PR.
+
+## 2026-11-05 — Merge PR #80 and PR #81
+
+- Kind: merge
+- Source: message `bad6a8f9-0107-4e5b-8f25-784c4a7f4ff1` in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd` ("I approve of the merge of both. 43 and 74 remain no parent. I approve of the #43 measurement - lets benchmark it.")
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:2582884c2695321c9f909d233956c7d7207599af09347ddb3345c4750d560f6a` (batch `next-74-43`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged PR #80 (head `fead2a7`) onto `ff511b0` as `88a5d46`, with verification `ver-9440d637241a4c888badd527489e0a7f`. Review round 1 found R1-01 (important: the README's `gameVersion` check failed when `sf-mcp` was still starting). The orchestrator corrected the text in `fead2a7`, and round 2 approved. #74 is closed and in Done.
+  - The base then moved, so the orchestrator ran `verify` again for PR #81 (head `180b0ad`) on `88a5d46`: `ver-298c51467f09424d98701bb4300a8e0d`, all six commands verified. `merge-execute` squash-merged it as `3101974`. Review round 1 found R1-01 (important: no `max_tokens` warning for `xhigh` and `max`) and R1-02 (important: the model-ID patterns matched unlisted newer versions). The worker repaired both, and round 2 approved.
+
+## 2026-11-05 — Give #43 and #74 no parent issue
+
+- Kind: drift exception
+- Source: message `bad6a8f9-0107-4e5b-8f25-784c4a7f4ff1` in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:2582884c2695321c9f909d233956c7d7207599af09347ddb3345c4750d560f6a` (batch `next-74-43`)
+- Consequences: `mainspring audit github --accept github.issue.no-parent 43` records the exception. #74 was already closed when the orchestrator recorded the answer, so the audit found no drift to accept for it.
+
+## 2026-11-05 — Keep #43 open after the merge of PR #81
+
+- Kind: drift exception
+- Source: message `bad6a8f9-0107-4e5b-8f25-784c4a7f4ff1` in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd`. The user approved the measurement after the orchestrator said that #43 stays open until it runs.
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:2582884c2695321c9f909d233956c7d7207599af09347ddb3345c4750d560f6a` (batch `next-74-43`)
+- Consequences:
+  - GitHub closed #43 at the merge of PR #81. The PR text said that the PR does not close the issue, in words that put "close" directly before `#43`, and GitHub's closing-keyword parser ignores the negation.
+  - The orchestrator reopened #43 with a comment, kept it in In progress, and ran `mainspring audit github --accept github.issue.merged-but-open 43`.
+  - Briefs for a partial PR now tell the worker to keep closing verbs away from `#N`, also in a negative sentence.
+
+## 2026-11-05 — Run the paid effort measurement of #43
+
+- Kind: spend
+- Source: message `bad6a8f9-0107-4e5b-8f25-784c4a7f4ff1` (the approval) and message `566914f8-69dd-416e-bf48-29232d36882c` ("The .env should hold the key, which is still valid."), both in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:2582884c2695321c9f909d233956c7d7207599af09347ddb3345c4750d560f6a` (batch `next-74-43`)
+- Consequences:
+  - The orchestrator had quoted about $1–2. To stay inside it, it ran three `iron-near-me` turns at `medium` and three at `high` on `3101974`, and left out the `follow-up` scenario. The run cost about $0.92.
+  - A secure key prompt timed out with no entry. The key then came from `~/foreman-measure/.env`, as the user directed. The orchestrator passed it into the environment of the measurement command only, and did not read it out.
+  - The results and the recommended default (keep `LLM_EFFORT` unset) are in `docs/measurements/effort-level.md`. The default takes effect with the user's merge approval of the PR that carries this entry.
