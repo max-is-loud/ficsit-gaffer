@@ -67,10 +67,43 @@ describe('supportedAnthropicEfforts', () => {
     ]);
   });
 
-  it('gives no level to the models without an effort parameter', () => {
-    for (const model of ['claude-haiku-4-5', 'claude-haiku-4-5-20251001', 'claude-sonnet-4-5']) {
+  it('gives no level to each model without an effort parameter, by dated ID and alias', () => {
+    for (const model of [
+      'claude-haiku-4-5',
+      'claude-haiku-4-5-20251001',
+      'claude-haiku-4-5-latest',
+      'claude-sonnet-4-5',
+      'claude-sonnet-4-5-20250929',
+      'claude-sonnet-4-20250514',
+      'claude-opus-4-20250514',
+      'claude-opus-4-1-20250805',
+      'claude-3-5-sonnet-20241022',
+      'claude-3-7-sonnet-latest',
+      'claude-3-5-haiku-20241022',
+      'claude-3-opus-20240229',
+      'claude-3-sonnet-20240229',
+      'claude-3-haiku-20240307',
+    ]) {
       expect(supportedAnthropicEfforts(model), model).toEqual([]);
     }
+  });
+
+  it('matches a dated ID, an alias and a cloud-provider ID to the row of the family', () => {
+    for (const model of [
+      'claude-opus-4-6-latest',
+      'claude-sonnet-4-6-20260101',
+      'anthropic.claude-sonnet-4-6',
+    ]) {
+      expect(supportedAnthropicEfforts(model), model).toEqual(['low', 'medium', 'high', 'max']);
+    }
+    for (const model of [
+      'anthropic.claude-opus-4-5-20251101-v1:0',
+      'claude-opus-4-5@20251101',
+      'us.anthropic.claude-opus-4-5-20251101-v1:0',
+    ]) {
+      expect(supportedAnthropicEfforts(model), model).toEqual(['low', 'medium', 'high']);
+    }
+    expect(supportedAnthropicEfforts('claude-opus-5-5-latest')).toEqual(EFFORT_LEVELS);
   });
 
   it('tolerates a cloud-provider prefix on the model id', () => {
@@ -79,6 +112,25 @@ describe('supportedAnthropicEfforts', () => {
 
   it('returns undefined for a model it does not know', () => {
     expect(supportedAnthropicEfforts('my-proxy-model')).toBeUndefined();
+  });
+
+  it('returns undefined for a version that is not listed, so the level passes through', () => {
+    for (const model of [
+      'claude-sonnet-4-7',
+      'claude-opus-4-9',
+      'claude-sonnet-4-60',
+      'claude-haiku-50',
+      'claude-opus-4-10',
+      'claude-haiku-5',
+      'claude-sonnet-3-8',
+      'claude-3-5-turbo-20250101',
+      'claude-opus-5-9',
+    ]) {
+      expect(supportedAnthropicEfforts(model), model).toBeUndefined();
+      expect(anthropicEffortParam(model, 'max'), model).toEqual({
+        output_config: { effort: 'max' },
+      });
+    }
   });
 });
 
@@ -104,7 +156,7 @@ describe('anthropicEffortParam', () => {
 
   it('names a model with no effort parameter at all', () => {
     expect(() => anthropicEffortParam('claude-haiku-4-5', 'low')).toThrow(
-      "Model 'claude-haiku-4-5' does not support an effort setting.",
+      "Model 'claude-haiku-4-5' does not support effort 'low'; it has no effort setting.",
     );
   });
 

@@ -49,21 +49,36 @@ const NO_XHIGH: readonly EffortLevel[] = ['low', 'medium', 'high', 'max'];
 const LOW_TO_HIGH: readonly EffortLevel[] = ['low', 'medium', 'high'];
 
 /**
- * Effort levels per Anthropic model family, first match wins (so the specific rows come before the
- * catch-all rows for older models). Source: the Claude API reference (models and effort), checked
- * 2026-11-05. The Models API lists the same facts at `capabilities.effort`; a model that matches no
- * row is not blocked here, because a new model should not wait for a code change.
+ * A pattern for exactly the named Claude versions, so that a version the table does not list
+ * (`claude-sonnet-4-7`, `claude-haiku-50`) matches no row. `versions` is a regex fragment such as
+ * `opus-4-[78]`. The ID may end with a date (`-20251101`) or `-latest`, and may carry a cloud
+ * prefix (`anthropic.`, `us.anthropic.`) or suffix (`-v1:0` on Bedrock, `@20251101` on Vertex).
+ */
+function claudeModelId(versions: string): RegExp {
+  return new RegExp(
+    `(?:^|[./])claude-(?:${versions})(?:-\\d{8}|-latest)?(?:-v\\d+:\\d+|@\\d{8})?$`,
+  );
+}
+
+/**
+ * Effort levels per Anthropic model version. Each row names its versions, so a model that matches
+ * no row is not blocked: a new model should not wait for a code change, and the provider decides.
+ * Source: the Claude API reference (models and effort), checked 2026-11-05. The Models API lists
+ * the same facts at `capabilities.effort`.
  */
 const ANTHROPIC_EFFORT_SUPPORT: readonly AnthropicEffortSupport[] = [
-  { pattern: /claude-(fable|mythos)-5/, levels: EFFORT_LEVELS },
-  { pattern: /claude-opus-5/, levels: EFFORT_LEVELS },
-  { pattern: /claude-opus-4-[78]/, levels: EFFORT_LEVELS },
-  { pattern: /claude-sonnet-5/, levels: EFFORT_LEVELS },
-  { pattern: /claude-haiku-5/, levels: EFFORT_LEVELS },
-  { pattern: /claude-(opus|sonnet)-4-6/, levels: NO_XHIGH },
-  { pattern: /claude-opus-4-5/, levels: LOW_TO_HIGH },
-  // No effort parameter: Sonnet 4.5, Haiku 4.5 and the older generations.
-  { pattern: /claude-(sonnet-4|haiku-4|opus-4|sonnet-3|haiku-3|opus-3|3-)/, levels: [] },
+  { pattern: claudeModelId('(?:fable|mythos)-5(?:-1)?'), levels: EFFORT_LEVELS },
+  { pattern: claudeModelId('opus-5(?:-5)?|opus-4-[78]'), levels: EFFORT_LEVELS },
+  { pattern: claudeModelId('sonnet-5(?:-5)?|haiku-5-5'), levels: EFFORT_LEVELS },
+  { pattern: claudeModelId('(?:opus|sonnet)-4-6'), levels: NO_XHIGH },
+  { pattern: claudeModelId('opus-4-5'), levels: LOW_TO_HIGH },
+  // No effort parameter: Sonnet 4 and 4.5, Opus 4 and 4.1, Haiku 4.5, and the Claude 3 family.
+  {
+    pattern: claudeModelId(
+      'sonnet-4(?:-5)?|opus-4(?:-1)?|haiku-4-5|3(?:-[57])?-(?:opus|sonnet|haiku)',
+    ),
+    levels: [],
+  },
 ];
 
 /** The levels the Anthropic model accepts, or `undefined` when the model is not in the table. */
@@ -80,7 +95,7 @@ function assertAnthropicEffort(model: string, effort: EffortLevel): void {
   }
   throw new UnsupportedEffortError(
     levels.length === 0
-      ? `Model '${model}' does not support an effort setting.`
+      ? `Model '${model}' does not support effort '${effort}'; it has no effort setting.`
       : `Model '${model}' does not support effort '${effort}'; it accepts ${levels.join(', ')}.`,
   );
 }
