@@ -294,3 +294,36 @@
 - Message author (T3 `createdBy`): user
 - Scope digest: none. No batch applies.
 - Consequences: `mainspring audit github --accept github.issue.no-parent 78` records the exception.
+
+## 2026-11-05 — Merge PR #79
+
+- Kind: merge
+- Source: message `dafb5e90-3911-4123-8bd1-cc92657e1a29` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5` ("Approved.")
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635` (batch `update-mainspring-0-4-43`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `e8decb6` onto `7418f94` as `ff511b0`, with verification `ver-ae3ab959c8d944aeb944f9ae413fd0d8`.
+  - Review round 1 found R1-01 (critical, Serena's `serena_repl`). Round 2 approved the deny fix.
+  - #78 is closed and in Done. This PR carries the entry, because the log cannot record the merge of the PR that changes it.
+
+## 2026-11-05 — Install scc on the development machine
+
+- Kind: tool install
+- Source: message `9c3453c9-f563-457b-9cb7-6cb3855c9927` in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd` ("Install scc first, then proceed as recommended with #74 and #43")
+- Message author (T3 `createdBy`): user
+- Scope digest: none. The install changes the machine, not the repository, so no batch applies.
+- Consequences:
+  - `mainspring doctor` gives no install command for `scc`, and the machine has no Go, Homebrew or Cargo. The orchestrator installed `scc` 4.1.0 from the `boyter/scc` GitHub release (`scc_Linux_x86_64.tar.gz`) into `~/.local/bin`, after a match against the release `checksums.txt`.
+  - `mainspring metrics snapshot --backfill 30` then recorded 37 snapshots with size data, so the briefings show the lines of code and the hotspots.
+
+## 2026-11-05 — Approve batch `next-74-43`
+
+- Kind: batch
+- Source: message `9c3453c9-f563-457b-9cb7-6cb3855c9927` in T3 thread `6df0fc14-7702-48cf-a7cf-8d96d9ec5dbd` ("Install scc first, then proceed as recommended with #74 and #43")
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:2582884c2695321c9f909d233956c7d7207599af09347ddb3345c4750d560f6a`
+- Consequences:
+  - The batch has two bounded tasks, #74 and #43, as the orchestrator recommended in the status briefing of 5 Nov. Each has a `claude-sonnet-5-5` worker (effort high) and a Codex review (`gpt-6.1-sol`, high).
+  - The T3 interface linked "#43" in the message to upstream PR #43. The orchestrator read it as Gaffer issue #43, the issue that it recommended.
+  - #74 uses option 1 of the issue: the default Compose setup publishes no `sf-mcp` port, and an opt-in file publishes it on `127.0.0.1` only. Options 2 and 3 are out of scope.
+  - The paid comparison of `high` and `medium` in #43 needs the user's API key and a spend approval. The worker does not run it. The PR of #43 refers to the issue but does not close it. The orchestrator brings the measurement to the user after the PR.
