@@ -11,9 +11,6 @@
     }
   },
   "src/api/client.ts": {
-    "complexity": {
-      "count": 1
-    },
     "max-params": {
       "count": 3
     }

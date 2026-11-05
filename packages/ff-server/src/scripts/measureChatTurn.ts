@@ -6,7 +6,7 @@
 //          [--runs 5] [--model <id>] [--max-tokens 16000] [--out results.jsonl]
 //          [--trace trace.jsonl] [--trace-result-chars 4000]
 // --trace appends every scenario turn's tool arguments, capped results, answer and work orders.
-// Environment: LLM_API_KEY (and LLM_PROVIDER), MCP_URL — as for the server. Run sf-mcp locally
+// Environment: LLM_API_KEY (and LLM_PROVIDER, LLM_EFFORT), MCP_URL — as for the server. Run sf-mcp locally
 // with MCP_TRANSPORT=http and SAVE_DATA_DIR set to the OS temp directory (e.g. /tmp), where the
 // scratch saves are written.
 
@@ -108,6 +108,7 @@ async function runTurn(
       provider,
       model: options.llm.model,
       maxTokens: options.llm.maxTokens,
+      effort: options.llm.effort,
     },
     deps,
     {
@@ -229,7 +230,8 @@ function printReport(options: MeasureOptions, turns: MeasuredTurn[]): void {
   const commit = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
   process.stdout.write(
     [
-      `Model: ${options.llm.providerKind}/${options.llm.model}, max tokens ${options.llm.maxTokens}, commit ${commit}`,
+      `Model: ${options.llm.providerKind}/${options.llm.model}, effort ${options.llm.effort ?? 'unset'}, ` +
+        `max tokens ${options.llm.maxTokens}, commit ${commit}`,
       `Save: ${path.basename(options.savePath)} (sha256 ${saveHash.slice(0, 16)})`,
       '',
       renderReportTable(turns),

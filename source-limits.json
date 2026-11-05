@@ -40,7 +40,7 @@
     },
     {
       "path": "packages/ff-client/src/useForeman.ts",
-      "lines": 870,
+      "lines": 859,
       "issue": 21
     },
     {
@@ -65,7 +65,7 @@
     },
     {
       "path": "packages/ff-client/src/api/client.ts",
-      "lines": 560,
+      "lines": 542,
       "issue": 26
     },
     {

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { resolveBridgeBinding } from './bridge/config.js';
 import type { BridgeBinding } from './bridge/types.js';
+import { assertEffortSupported, parseEffortLevel, type EffortLevel } from './llm/effort.js';
 import type { LlmRuntimeConfig, ProviderKind } from './llm/types.js';
 
 /**
@@ -26,6 +27,8 @@ export interface ServerConfig {
   model: string;
   /** Upper bound on tokens per chat response. */
   maxTokens: number;
+  /** Default effort level for chat turns. Unset sends no effort, so the provider's default applies. */
+  effort: EffortLevel | undefined;
   /** Cheaper model used for background session summarisation. */
   summaryModel: string;
   /** Upper bound on tokens for a summary response. */
@@ -146,6 +149,11 @@ export function resolveSaveDataDir(env: NodeJS.ProcessEnv = process.env): string
 /** Resolves all backend configuration from the environment. */
 export function resolveServerConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const providerKind = parseProvider(env['LLM_PROVIDER']) ?? 'anthropic';
+  const model =
+    firstNonEmpty(env['LLM_MODEL'], env['ANTHROPIC_MODEL']) ?? defaultModelFor(providerKind);
+  const effort = parseEffortLevel(env['LLM_EFFORT'], 'LLM_EFFORT');
+  // Fail at start-up, not on the first chat, when the default model cannot take the default level.
+  assertEffortSupported(providerKind, model, effort);
   const hostedApiKey = firstNonEmpty(
     env['LLM_API_KEY'],
     providerKind === 'anthropic' ? env['ANTHROPIC_API_KEY'] : env['OPENAI_API_KEY'],
@@ -154,11 +162,12 @@ export function resolveServerConfig(env: NodeJS.ProcessEnv = process.env): Serve
     host: env['HOST']?.trim() || DEFAULT_HOST,
     port: parsePositiveInt(env['PORT'], DEFAULT_PORT),
     providerKind,
-    model: firstNonEmpty(env['LLM_MODEL'], env['ANTHROPIC_MODEL']) ?? defaultModelFor(providerKind),
+    model,
     maxTokens: parsePositiveInt(
       env['LLM_MAX_TOKENS'],
       parsePositiveInt(env['ANTHROPIC_MAX_TOKENS'], DEFAULT_MAX_TOKENS),
     ),
+    effort,
     summaryModel:
       firstNonEmpty(env['LLM_SUMMARY_MODEL'], env['ANTHROPIC_SUMMARY_MODEL']) ??
       defaultSummaryModelFor(providerKind),
@@ -177,11 +186,12 @@ export function resolveServerConfig(env: NodeJS.ProcessEnv = process.env): Serve
   };
 }
 
-/** A per-request client override of the provider/model/base URL. */
+/** A per-request client override of the provider/model/base URL/effort. */
 export interface LlmOverride {
   provider?: string;
   model?: string;
   baseUrl?: string;
+  effort?: EffortLevel;
 }
 
 /** The runtime config using the server's own defaults + a resolved key. */
@@ -192,6 +202,7 @@ export function serverLlmConfig(config: ServerConfig, apiKey: string): LlmRuntim
     summaryModel: config.summaryModel,
     maxTokens: config.maxTokens,
     summaryMaxTokens: config.summaryMaxTokens,
+    effort: config.effort,
     apiKey,
     baseUrl: config.baseUrl,
   };
@@ -201,7 +212,9 @@ export function serverLlmConfig(config: ServerConfig, apiKey: string): LlmRuntim
  * The runtime config for a request that supplied its own key, applying the
  * client's provider/model/base-URL override on top of the server defaults. When
  * the client switches provider, models fall back to that provider's defaults so
- * a mismatched server model is never used.
+ * a mismatched server model is never used. The server's default effort follows the same rule: it
+ * was chosen for the server's model, so it applies only while the client keeps that model. An
+ * effort the client sets itself always applies, and the caller checks it against the model.
  */
 export function clientLlmConfig(
   config: ServerConfig,
@@ -214,12 +227,15 @@ export function clientLlmConfig(
     firstNonEmpty(override.model) ?? (sameAsServer ? config.model : defaultModelFor(providerKind));
   const summaryModel = sameAsServer ? config.summaryModel : defaultSummaryModelFor(providerKind);
   const baseUrl = firstNonEmpty(override.baseUrl) ?? (sameAsServer ? config.baseUrl : undefined);
+  const effort =
+    override.effort ?? (model === config.model && sameAsServer ? config.effort : undefined);
   return {
     providerKind,
     model,
     summaryModel,
     maxTokens: config.maxTokens,
     summaryMaxTokens: config.summaryMaxTokens,
+    effort,
     apiKey,
     baseUrl,
   };
