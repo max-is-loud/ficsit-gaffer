@@ -274,3 +274,23 @@
   - The sentence "This rule ends when a framework-aware copy of the Superpowers skills exists (issue #39)." is removed from the "Plan header" section. In Mainspring it means Mainspring #39. In this repo a bare `#39` means a Gaffer issue, an unrelated closed perf issue.
   - The user will change Mainspring so that its additions to `AGENTS.md` never quote an issue number.
   - The orchestrator did not change `.mainspring/manifest.json`, so the manifest still records the block that the installer wrote. Until the next update, `mainspring install --dry-run` reports a conflict for `AGENTS.md`. Before the next update, restore the sentence (the block of commit `1b7f8cd`), then run the install.
+
+## 2026-11-05 — Deny Serena's REPL tool in this repository
+
+- Kind: design
+- Source: message `594db261-d184-4f2c-b486-6487623f91fb` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635` (batch `update-mainspring-0-4-43`)
+- Consequences:
+  - The review of PR #79 found R1-01 (critical). The allow rule `mcp__serena` also approves `serena_repl`, which runs any Python code. Serena 2.1.0 offers that tool in its REPL interface, which is the default of a new install. The global `agent_interface: tools` setting does not close the gap, and neither does the `--agent-interface` flag, which sets the same global value: a project's `.serena/project.yml` takes precedence over both.
+  - `.claude/settings.json` now also denies `mcp__serena__serena_repl`. Claude Code applies the deny whatever interface Serena uses. The installer does not manage that item, so a later install leaves it in place.
+  - With the `tools` interface, Serena does not offer `serena_repl`, so the deny removes nothing from this machine. In the REPL interface, Serena then offers no code tools, which is safe.
+  - The user will add the deny item and `--agent-interface tools` to Mainspring's managed members.
+
+## 2026-11-05 — Give #78 no parent issue
+
+- Kind: drift exception
+- Source: message `594db261-d184-4f2c-b486-6487623f91fb` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `mainspring audit github --accept github.issue.no-parent 78` records the exception.

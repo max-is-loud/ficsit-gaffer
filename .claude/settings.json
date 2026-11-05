@@ -62,7 +62,8 @@
     "deny": [
       "mcp__serena__rename_symbol",
       "mcp__serena__replace_in_files",
-      "mcp__serena__safe_delete_symbol"
+      "mcp__serena__safe_delete_symbol",
+      "mcp__serena__serena_repl"
     ]
   }
 }
