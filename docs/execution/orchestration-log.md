@@ -250,3 +250,16 @@
   - The user's message asked for this update directly. The orchestrator recorded it as the batch approval and did not propose the batch again.
   - The update brings the agent tools module (Serena and graphify). The install of those tools on the development machine is out of scope and needs its own approval.
   - The PR also carries the three decisions of 2026-10-28 above. They waited for the next PR, so that two open PRs did not conflict on this file.
+
+## 2026-11-05 — Install Serena and graphify on the development machine
+
+- Kind: tool install
+- Source: message `b8740e45-38e6-435f-a1d6-0db3b8fd0af9` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5` ("Install serena and graphify.")
+- Message author (T3 `createdBy`): user
+- Scope digest: none. The install changes the machine, not the repository, so no batch applies.
+- Consequences:
+  - Serena 2.1.0 is installed with `uv tool install serena-agent --python 3.13`. The plain command picked Python 3.15, for which `tiktoken` 0.12.0 has no wheel, and the build needs a Rust compiler.
+  - graphify 0.9.102 is installed with `uv tool install 'graphifyy[mcp]'`. The command that `mainspring doctor` gives leaves out the `mcp` extra, so the server stopped with `No module named 'mcp'`.
+  - `~/.serena/serena_config.yml` sets `agent_interface: tools`. Serena 2.1.0 writes `REPL` there on its first start. In that interface Serena offers only `serena_repl`, which runs Python code and ignores `--mode planning`. The `mcp__serena` allow rule would then approve edits with no prompt.
+  - `mainspring metrics snapshot` published the code graph of `7418f94`. The size part is unavailable because `scc` is not installed; the user did not ask for it.
+  - `mainspring doctor` gives `ok: true`.
