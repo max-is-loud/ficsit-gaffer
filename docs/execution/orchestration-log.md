@@ -199,3 +199,98 @@
 - Message author (T3 `createdBy`): user
 - Scope digest: none. No batch applies.
 - Consequences: `mainspring audit github --accept github.issue.no-parent` records the exception for #35, #52 and #65. #33 closed before the exception was necessary.
+
+## 2026-10-28 — Repair the #73 save backup with option B
+
+- Kind: design
+- Source: message `ad991100-8e45-4964-b639-98b0a39ec519` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - Two repair rounds failed, so the orchestrator escalated to the user. The user chose option B.
+  - The save validator is the only completeness gate. The `/proc` open-file scan is removed. The backup skips only the exact top-level `ServerSettings.<port>.sav`.
+  - Repair round 3 ran as the intent `first-work-65-repair-3`.
+
+## 2026-10-28 — Merge PR #75
+
+- Kind: merge
+- Source: message `caaee001-ed78-4969-a86c-5fc0eb7d5c9f` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:f97b31a3edb99dbbee609ffb0c1d835aba13d4afddef5826802f3b074f8a7f8b` (batch `first-work-52-impl`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `ca8a085` onto `519527e` as `0f4c2ae`. #52 closed.
+  - The T3 reference chip in the message ("merge #75") resolved to upstream's PR #75 by mistake. The orchestrator did not touch upstream.
+
+## 2026-10-28 — Merge PR #73
+
+- Kind: merge
+- Source: message `6868d1b9-27ab-4827-b60f-efa2b72c1051` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `a2e0f2e` as `7418f94`. The GitHub base was `70908d3`. The verification ran on that base and again with the head merged onto `0f4c2ae`.
+  - PR #73 does task 1 of #65 (the save backup). #65 stays open in Ready for its other tasks.
+
+## 2026-11-05 — Make thread `d5741194` the orchestrator
+
+- Kind: coordinator
+- Source: message `eeb4a4a1-29bc-4e16-a5d6-dfba1e46cc55` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `mainspring coordinator-takeover` moved the journal from thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02` to thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`. The journal had no bound intent, so the takeover observed no worker.
+
+## 2026-11-05 — Run the batch `update-mainspring-0-4-43`
+
+- Kind: batch
+- Source: message `305a3cc1-2701-4ccd-81db-e9492b09711b` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5` ("Update mainspring in this project to the latest version")
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635`
+- Consequences:
+  - The batch has one task, #78: update the installed files from Mainspring 0.4.22 to 0.4.43. The orchestrator runs the installer, and a Codex review (`gpt-6.1-sol`, high) checks the change.
+  - The user's message asked for this update directly. The orchestrator recorded it as the batch approval and did not propose the batch again.
+  - The update brings the agent tools module (Serena and graphify). The install of those tools on the development machine is out of scope and needs its own approval.
+  - The PR also carries the three decisions of 2026-10-28 above. They waited for the next PR, so that two open PRs did not conflict on this file.
+
+## 2026-11-05 — Install Serena and graphify on the development machine
+
+- Kind: tool install
+- Source: message `b8740e45-38e6-435f-a1d6-0db3b8fd0af9` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5` ("Install serena and graphify.")
+- Message author (T3 `createdBy`): user
+- Scope digest: none. The install changes the machine, not the repository, so no batch applies.
+- Consequences:
+  - Serena 2.1.0 is installed with `uv tool install serena-agent --python 3.13`. The plain command picked Python 3.15, for which `tiktoken` 0.12.0 has no wheel, and the build needs a Rust compiler.
+  - graphify 0.9.102 is installed with `uv tool install 'graphifyy[mcp]'`. The command that `mainspring doctor` gives leaves out the `mcp` extra, so the server stopped with `No module named 'mcp'`.
+  - `~/.serena/serena_config.yml` sets `agent_interface: tools`. Serena 2.1.0 writes `REPL` there on its first start. In that interface Serena offers only `serena_repl`, which runs Python code and ignores `--mode planning`. The `mcp__serena` allow rule would then approve edits with no prompt.
+  - `mainspring metrics snapshot` published the code graph of `7418f94`. The size part is unavailable because `scc` is not installed; the user did not ask for it.
+  - `mainspring doctor` gives `ok: true`.
+
+## 2026-11-05 — Remove the issue reference from the managed block of `AGENTS.md`
+
+- Kind: instruction change
+- Source: message `d48a096d-7cbe-47e5-a5ba-366f9e7d5ba3` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635` (batch `update-mainspring-0-4-43`)
+- Consequences:
+  - The sentence "This rule ends when a framework-aware copy of the Superpowers skills exists (issue #39)." is removed from the "Plan header" section. In Mainspring it means Mainspring #39. In this repo a bare `#39` means a Gaffer issue, an unrelated closed perf issue.
+  - The user will change Mainspring so that its additions to `AGENTS.md` never quote an issue number.
+  - The orchestrator did not change `.mainspring/manifest.json`, so the manifest still records the block that the installer wrote. Until the next update, `mainspring install --dry-run` reports a conflict for `AGENTS.md`. Before the next update, restore the sentence (the block of commit `1b7f8cd`), then run the install.
+
+## 2026-11-05 — Deny Serena's REPL tool in this repository
+
+- Kind: design
+- Source: message `594db261-d184-4f2c-b486-6487623f91fb` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635` (batch `update-mainspring-0-4-43`)
+- Consequences:
+  - The review of PR #79 found R1-01 (critical). The allow rule `mcp__serena` also approves `serena_repl`, which runs any Python code. Serena 2.1.0 offers that tool in its REPL interface, which is the default of a new install. The global `agent_interface: tools` setting does not close the gap, and neither does the `--agent-interface` flag, which sets the same global value: a project's `.serena/project.yml` takes precedence over both.
+  - `.claude/settings.json` now also denies `mcp__serena__serena_repl`. Claude Code applies the deny whatever interface Serena uses. The installer does not manage that item, so a later install leaves it in place.
+  - With the `tools` interface, Serena does not offer `serena_repl`, so the deny removes nothing from this machine. In the REPL interface, Serena then offers no code tools, which is safe.
+  - The user will add the deny item and `--agent-interface tools` to Mainspring's managed members.
+
+## 2026-11-05 — Give #78 no parent issue
+
+- Kind: drift exception
+- Source: message `594db261-d184-4f2c-b486-6487623f91fb` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `mainspring audit github --accept github.issue.no-parent 78` records the exception.

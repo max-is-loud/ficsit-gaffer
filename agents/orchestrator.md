@@ -42,6 +42,8 @@ Start each review round with a new `delegate_task` and a new `clientRequestId`. 
 ## Reports to the user
 
 - Follow "Communication with the user" in `AGENTS.md`.
+- Start each update to the user with "Needs you" and "At risk". If nothing is necessary, write one line. Only the orchestrator uses this format.
+- Bring to the user each request for a decision that a worker or a reviewer sends to you.
 - A decision request has five parts: the decision, your recommendation, the reason, one alternative, and the cost of waiting. It fits on one screen. Combine decisions that arrive close together.
 - Choose the format for the moment:
   - Use the re-entry briefing (C, `brief --view reentry`) when the user returns after a break, or asks where the project is.

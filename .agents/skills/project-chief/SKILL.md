@@ -79,7 +79,7 @@ Use this recipe when `status` gives `version_mismatch: true`. The repository the
 3. Run `issue-ensure` for the update issue. Then run `batch-record` with the batch and the user approval.
 4. Run `install --dry-run` with `{}`. The installer keeps the existing configuration file. Show the change list to the user. Resolve each `conflict` first.
 5. Run `install --apply` with `{}` on a new branch in an isolated worktree. Commit the changed files.
-6. Run `verify` with `{"commit": "<new commit sha>"}`. It runs the `verification` list of the configuration.
+6. Fetch the base branch. Run `verify` with `{"head": "<new commit sha>", "base": "<live tip of the base branch>", "record": true}`. It runs the `verification` list of the configuration in the merged tree. Keep the `verification_id` for the review brief and the merge.
 7. Open the PR. Dispatch a review (see "Dispatch a worker or a reviewer").
 8. Ask the user to approve the merge. Follow "Merge".
 
@@ -107,11 +107,21 @@ A journal command can give exit 4 with the reason "the old journal needs a recov
 1. Propose the batch: the issues, the dependencies, the model routing, the risks, and your recommendation. Use the decision shape in `agents/orchestrator.md`.
 2. Wait for the user's own message. A message that an agent wrote is not an approval.
 3. Run `batch-record` with `{"batch", "approval"}`. The approval cites the user's T3 message ID, with `createdBy: user`.
+   - A batch entry can have `verification`: a list of commands. The merge gate requires these commands for the task, in addition to the `verification` list of the configuration. The batch digest covers the list, so the user approves it with the batch.
 4. Remember: an issue in Ready has no authorization. Propose new scope to the user as a new batch.
+
+## Upkeep change
+
+Use this recipe for a small change that you own, such as a one-line configuration change. It needs a recorded batch for its review dispatch, and a review for its merge.
+
+1. Propose a one-task upkeep batch together with the change. Name the files that the change touches.
+2. Wait for the user's own message. Then run `issue-ensure` for the upkeep issue, and `batch-record` with the batch and the user approval.
+3. Use the normal recipes: "Dispatch a worker or a reviewer", "Review results", and "Merge".
+4. Never record a batch against a message that did not approve that scope.
 
 ## Dispatch a worker or a reviewer
 
-1. Write the brief from the template that `mainspring template brief` gives. It holds the role line, the no-delegation instruction, the STE instruction, and the four parts. Keep all three fixed lines word for word in every brief.
+1. Write the brief from the template that `mainspring template brief` gives. It holds the role line, the search-order line ("Follow the search order in `AGENTS.md`."), the no-delegation instruction, the writing-standard instruction, and the four parts. Keep all four fixed lines word for word in every brief.
 2. Run `dispatch-prepare` with `{"coordinator", "intent"}`.
    - For a substantial task, pass the user plan approval as `plan_approval` in `dispatch-prepare`.
    - An identifier or a worktree path must not hold a token-shaped value, such as `sk-` and 20 characters. The command gives exit 2. The intent ID is also the `clientRequestId`, so the thread ID stays free of a token too.
@@ -124,6 +134,15 @@ A journal command can give exit 4 with the reason "the old journal needs a recov
 6. If `delegate_task` failed and T3 shows no thread for that `clientRequestId`, run `dispatch-abort` with `{"coordinator", "intent_id"}`.
 
 A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round with a new `delegate_task` and a new `clientRequestId`.
+
+The reviewer has no network. Before you dispatch a review, run the full verification yourself:
+
+1. Fetch the PR head and the base branch.
+2. Run `verify` with `{"head": "<PR head SHA>", "base": "<live tip of the base branch>", "record": true}`.
+3. Put the `verification_id` and its results in the review brief. Give the head, the base, each command, its exit code, and its result.
+4. Run `docs check --head <PR head SHA>`. Put the `docs.coverage-link` findings in the review brief: each document and its changed paths.
+
+The reviewer then runs targeted probes only. At the merge, use the same `verification_id` if the base did not move. If the base moved, run `verify` again, and use the new ID.
 
 ## Wait and handle a completion
 
@@ -144,9 +163,18 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
 - Stop at the first approval. Defer a non-blocking finding to the issue of the task that owns the code.
 - After two failed repair rounds, escalate to the user with the evidence and a recommendation.
 
+## Dispatch a repair to the worker thread
+
+Use this recipe to send a repair to the thread of the worker that did the task. The repair needs no new thread.
+
+1. Run `dispatch-prepare` with `{"coordinator", "intent"}` for the repair. Handle the exit codes as in "Dispatch a worker or a reviewer".
+2. Send the repair brief with `t3_thread_send` to the thread of the worker.
+3. Run `dispatch-bind` with `{"intent_id", "session_id": "<the thread ID of the worker>", "worktree", "commit_sha"}`. Give the existing thread, its worktree, and its head.
+4. If the send fails on a provider limit, record `limited`, then `parked`, with `reconcile` and the thread ID of the worker. A bind is not necessary. Then follow "Park and resume at a provider limit".
+
 ## Park and resume at a provider limit
 
-1. Record `limited`, then `parked`, with `reconcile` and the bound session. The slot becomes free.
+1. Record `limited`, then `parked`, with `reconcile`. Give the thread ID of the dispatch that hit the limit: the worker or the reviewer. If the intent has no bound session, the first observation records the session, so a bind is not necessary. The slot becomes free.
 2. When the limit resets, run `dispatch-resume` with `{"coordinator", "intent_id"}`. Exit 3 means that the intent stays parked: the capacity is full or the batch changed.
 3. On exit 0, read `attempt` from the output. Send the follow-up with `t3_thread_send` to the same thread.
 4. Record `running` with `"attempt": <n>` from the resume output.
@@ -169,10 +197,14 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
 
 ### Check readiness
 
-1. Run the integration checks on the pull request head with the current base.
-2. Run `merge-check` with `{"task", "pr", "approval", "verification"}`:
-   - `verification` is `{"head_sha", "base_sha", "passed", "required_checks"}` from your own check run.
+1. Get a `verification_id` for the pull request head on the live tip of the base branch:
+   - Use the ID of the review brief if the head and the base did not move.
+   - Otherwise, fetch, and run `verify` with `{"head": "<PR head SHA>", "base": "<live tip of the base branch>", "record": true}`.
+2. Run `merge-check` with `{"task", "pr", "approval", "verification_id", "required_checks"}`:
+   - `verification_id` is the ID that `verify` gave. The gate reads the record from the journal.
+   - `required_checks` is optional. It holds the GitHub check names that must pass, in addition to the checks that GitHub marks required.
    - `approval` is the user's merge approval, or `null` before the user approves.
+   - An unknown `verification_id` gives exit 2. The `verification` object of 0.4.36 and earlier also gives exit 2.
 3. Read the result. Exit 3 with `state: "blocked"` lists every blocker in `reason`. Exit 0 with `state: "approved"` means ready, and it needs a user approval for this head. Exit 0 with `queued` or `merged` reports an earlier merge.
    - `merge-check` evaluates the same gates as `merge-execute`, and it sends nothing. If a gate refuses, `error` names it: `merge_bypass_possible`, `merge_policy_blocked`, or `merge_not_open`. Its reason follows the other blockers.
    - Exit 4 with `reconciliation_required` means that user guidance changed the scope of the task. Record the user-approved scope before the merge, as for `dispatch-prepare`.
@@ -191,7 +223,7 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
    ```
 
    Copy `source_author` from the `createdBy` value of that message. Never write `"user"` for a message that an agent wrote.
-3. Run `merge-execute` with the `merge-check` input plus `"method"`: `merge`, `squash`, or `rebase`. Use `merge.method` from `.mainspring/config.json`.
+3. Run `merge-execute` with `{"task", "pr", "approval", "verification_id", "required_checks", "method"}`. This is the `merge-check` input plus `"method"`: `merge`, `squash`, or `rebase`. Use `merge.method` from `.mainspring/config.json`. The final decision reads the verification record from the journal again.
 4. Act on the result:
 
 | Exit | Result | Next action |
@@ -208,7 +240,12 @@ A reviewer is a Codex model in `runtimeMode: "auto"`. Start each review round wi
 
 ### Merge rules
 
-- A base change needs a new integration check run and a new `verification`. The approval stays valid while the head stays the same.
+- The gate compares the `base` of the verification record with the live tip of the base branch (`baseRef.target.oid`). It does not use `baseRefOid`, because GitHub does not update it when the base branch moves. `snapshot.base_sha` in the output is that tip.
+- A base change needs a new `verify` run with `"record": true`, and a new `verification_id`. The approval stays valid while the head stays the same.
+- Only a record of `verify` in integration mode (`head` and `base`) can pass. A commit-mode record has no base, and it blocks.
+- The required commands are the `configured` list of the record and the `verification` list of the batch entry of the task. The `configured` list is the `verification` list of `.mainspring/config.json` in the merged tree. Each required command must have the result `verified` in the record. The match is exact, also for spaces.
+- If the required set is empty, the gate blocks. A new install has an empty `verification` list. Set the list in `.mainspring/config.json` before the first merge.
+- Known limit: `mergePullRequest` has no expected base OID. If the base branch moves after the final read, GitHub merges onto the new tip, and no verification covers it.
 - A new commit always needs a new review round and a new user approval.
 - The code never uses an administrative bypass. With a merge queue, it enqueues the pull request.
 - A direct merge needs proof that the actor cannot bypass the rules of the base branch. Without that proof, the result is `merge_bypass_possible`.
@@ -304,6 +341,114 @@ Sometimes the user decides that the state is right. Examples: "this PR needs no 
 - It does not see an open batch task that is not on the board (issue #128). With `auto_fix` on, the same audit adds the issue to the board, and the next audit proposes the parent.
 - With `"github_drift": {"auto_fix": false}` in the configuration, every fix becomes a proposal.
 
+## Take the metric snapshots
+
+The command `metrics snapshot [--backfill DAYS]` records the size, the complexity, the hotspots, and the code graph of a commit of `main`. The briefings read these records for the health section, the architecture section, and the Graph row. The command reads no stdin. Give `--repo`. It never changes the repository, the journal, or GitHub.
+
+### When to run it
+
+Run `metrics snapshot`:
+
+1. after each merge to `main`
+2. before each briefing (`reentry` and `completion`), when the tip of `main` has no snapshot
+3. once with `--backfill 30`, after an upgrade of the command
+
+With `--backfill DAYS` (1 to 90), the command also takes the snapshot of each first-parent commit of `main` in the last DAYS days. A commit that has a complete snapshot runs no tool again. One exception: when `graph/` is absent or holds the graph output of another commit, the tip runs both tools again to publish it. One snapshot takes about 3 seconds on this repository, and `--backfill 2` (25 snapshots) took 56 seconds. A snapshot hook does not exist. A hook is too slow for the 10-second limit of the `SessionStart` hook.
+
+### Read the result
+
+- Exit 0: read `snapshots`, one entry for each commit, oldest first. The tip of `main` is the last entry.
+  - `result` is `recorded`, `completed`, `already recorded`, or `not recorded`.
+  - `size` and `graph` are `ok`, or the reason that the part is unavailable.
+  - Only the entry of the tip has `graph_output`: `published`, `unchanged`, `not the tip of main`, `the graph part is unavailable`, or `the graph output cannot be saved`.
+- Exit 2: an argument is invalid, for example `--backfill` is not a number from 1 to 90.
+- Exit 4: read `error` and `reason`. `metrics_unavailable` means that Git cannot read the commits, or that both parts of the snapshot of the tip are unavailable. Then the command records nothing for the tip. `metrics_log_unavailable` means that the metrics log is busy or has an unknown version. Run the command again. If the log has an unknown version, upgrade the command.
+
+### Know the limits
+
+- The tools `scc` and `graphify` are optional (`doctor` reports them). Without a tool, its part is unavailable with a reason, and the command records the other part. A later run completes the part after the install. The tested versions are `scc` 4.1.0 and graphify 0.9.94.
+- Only the tip of `main` keeps the graph output in `<git common dir>/mainspring/graph/`. An older run that is no longer the tip does not replace the graph output of the new tip.
+- If the command cannot save the graph output, the snapshot keeps both parts. The entry of the tip says `the graph output cannot be saved`, and the exit code stays 0.
+- A process kill during the publication of the graph output can leave `graph/` absent, or newer than the latest snapshot. This is a known limit (issue #145). The next snapshot with the tools repairs it. The metrics log stays correct.
+- The briefing uses only the snapshots of commits in the first-parent history of `main`. After `main` moves back to an older commit, it uses the latest snapshot in that history. With no snapshot in that history, each part says "No metric snapshot is in the history of main. Run mainspring metrics snapshot."
+- If the Graph row is "Stale", run `metrics snapshot`, then make the briefing again.
+
+## Check the agent tools
+
+The agent tools module gives each Claude Code session the setup of the benchmark arm H. It has the Serena and graphify servers, a graph summary at the start, and a redirect of a symbol search. The benchmark had 60 runs: 15 runs for each arm, with 150 possible points for each arm. It scored H 141.75, G (instructions and servers, no hooks) 135.75, S (instructions only) 127.25, and C (control) 128.0. H costs about 2.1 times the input tokens of C. The round 2 report of the code-graph benchmark is in the Mainspring repository.
+
+### The parts
+
+| Part | Where | What it does |
+| --- | --- | --- |
+| The search order | The shared rules in `AGENTS.md`, and the brief line | Tells the agent which tool to use for each kind of question |
+| The servers | `.mcp.json` (`serena`, `graphify`) and `.claude/settings.json` (`enabledMcpjsonServers`, `permissions.allow`, and `permissions.deny` for the three Serena edit tools) | Connect the tools with no prompt in a folder that the user trusts. Serena stays read-only. |
+| The graph summary | `SessionStart` of `mainspring hook` | Adds at most 8 KB of the graph report to the context. It adds nothing when no graph exists. |
+| The symbol redirect | `PreToolUse` with the matcher `Grep` (a session hooks entry) | Refuses the first Grep call of a session for each symbol-like pattern. The reason names the Serena tools. The hook never reads Bash commands. |
+| `mainspring tools graphify-mcp` | The `graphify` server command | Starts graphify on the published graph. With no graph, it ends with exit 1 and `no_graph`. |
+| The tool Serena | `doctor` | Reports `serena` as optional. Install: `uv tool install serena-agent`. |
+
+The graph comes from `metrics snapshot`, in `<git common dir>/mainspring/graph/`. Each worktree shares it. After each merge, `metrics snapshot` keeps it current.
+
+### Check a session
+
+1. In a new Claude Code session, run `/mcp`. Expected: `serena` and `graphify` show the state connected, with no approval prompt.
+2. Read the start of the context. Expected: a heading with the short commit and the time of the graph, then the graph sections.
+3. Search for a symbol with Grep. Expected: one refusal with the reason "For a symbol, use mcp__serena__find_symbol or mcp__serena__find_referencing_symbols. Use Grep for text." A second Grep for the same pattern passes. On macOS, Linux, and WSL, Claude Code 2.1.311 gives the session no Grep tool. There, the check expects no refusal (issue #186).
+4. If the servers do not connect in a new worktree, the folder can be untrusted. Ask the user to open the folder once in Claude Code and accept the trust prompt.
+5. If `graphify` fails and no summary appears, the repository has no graph. Run `metrics snapshot`.
+
+### Turn a part off
+
+Set the section in `.mainspring/config.json`, then run `config-apply` and `install --apply`:
+
+```json
+"agent_tools": {"enabled": true, "session_summary": true, "symbol_redirect": true}
+```
+
+- `enabled: false` makes the installer remove the members of `.mcp.json` and `.claude/settings.json`. The hook then gives no summary and no refusal. The search order stays in `AGENTS.md`. `init --no-agent-tools` writes this value.
+- `session_summary: false` or `symbol_redirect: false` makes the hook skip that part.
+- The `PreToolUse` entry belongs to `session_hooks`. `session_hooks.enabled: false` removes it.
+- Do not edit the managed members by hand. The installer restores a member that a user deleted. A changed member is a conflict, and the installer writes nothing in that file.
+
+### Know the limits
+
+- Codex gets the search order only. It gets no servers and no hooks (issue #154).
+- A member that a later version of the module drops stays in the file (issue #166).
+- A `uv` launcher of the `#!/bin/sh` form gives `no_python` for `tools graphify-mcp`.
+- `mainspring hook` gives exit 1 for stdin that is not JSON. Claude Code treats this as non-blocking.
+- A new worktree can be untrusted until the user opens it in Claude Code.
+
+## Close a batch or a step
+
+Use this recipe at the end of each batch and each step. The docs freshness module raises a flag when a document may be out of date. A flag only warns. You clear it.
+
+1. Run `docs check --repo <path>`. Read each finding. Start with the `docs.coverage-link` findings, and with the `minor` findings of reviews that reported a wrong document.
+2. Decide who clears the flags:
+   - If the plan has a documents task, give its worker the list. In a stack, get the list with `docs check --head <top of the stack>`.
+   - Otherwise, clear the flags in a PR of the documents. The PR can be the records PR of the batch.
+3. Read each flagged document against the code. Then do one of these:
+   - Fix the document. A fix in the same PR as the document clears the flag.
+   - If the document is still right, record a re-check. Set `checked_at` of the document in `.mainspring/docs.json` to the full SHA of the commit that you read. Give a one-line reason in the PR text.
+4. A fix to a document under `toolkit/` changes an installed file. Send it through an upkeep batch and the full gate.
+5. Run `docs check` again. Expected: no `docs.coverage-link` finding.
+6. Record in the decision record how many flags were fixes and how many were re-checks.
+
+## Set up the document map
+
+Use this recipe for a repository with no `.mainspring/docs.json`. Without the map, `docs check` gives `not_set_up`. This is not a fault.
+
+1. List the Markdown files of the repository with `git ls-files '*.md'`.
+2. Write `.mainspring/docs.json`. Read each document that agents follow. Give it the paths of the code that it describes, as `covers`.
+   - Use file paths. Use a directory, with a final `/`, only when the document describes the whole directory.
+   - Give a dated evidence record an empty `covers`.
+   - Put historical records in `ignore`.
+   - Put the paths that exist only in an adopting repository in `external_paths`.
+   - Do not write a `checked_at` value.
+3. For each document, count how many of the last 60 first-parent commits of `main` changed a path of its `covers`. If the count is above 15, narrow `covers`, or write why the document keeps its paths.
+4. Run `docs check`. Fix each `docs.map.*` finding. Read the other findings.
+5. Put the map in a PR. The rules of that repository say how to review the PR.
+
 ## Briefs for the user
 
 | Moment | Command | Output |
@@ -319,11 +464,12 @@ Sometimes the user decides that the state is right. Examples: "this PR needs no 
    - Ignore the message that started your current run.
    - Stop at the first thread whose `updatedAt` is earlier than the best time so far.
 2. Read the other T3 state: the pending questions, and the sessions from `t3_thread_list`. For each active session, read `startedAt` of its active run in `recentRuns`. Give it as `started_at`. A pending request has no time.
-3. Give the command this stdin. All keys are optional: `{"t3": {"sessions": [{"thread_id", "title", "status", "provider", "model", "started_at"}], "pending_questions": [{"thread_id", "title", "text"}], "last_user_message": {"thread_id", "at"}}, "open_questions": [...], "decision": {...}}`.
+3. If the tip of `main` has no snapshot, run `metrics snapshot` first (see "Take the metric snapshots"). Then give the command this stdin. All keys are optional: `{"t3": {"sessions": [{"thread_id", "title", "status", "provider", "model", "started_at"}], "pending_questions": [{"thread_id", "title", "text"}], "last_user_message": {"thread_id", "at"}}, "open_questions": [...], "decision": {...}}`.
    - `started_at` and `at` are UTC times, for example `2026-10-26T12:04:11.790Z`. `at` must not be later than the current time. If it is, the command gives exit 2.
    - Without `last_user_message`, the `reentry` view still gives exit 0. "While you were away" shows "unavailable".
    - Add `decision` only for a merge decision.
 4. Read the page for "unavailable" items. A section of a later step names its module. This is not a fault. A live source that failed (journal, Git, GitHub, or T3) adds an item under "At risk". Report it to the user.
+   - If the "Docs" row shows new flags, say so in your reply. Say what you will do about them: see "Close a batch or a step".
 5. If the Git chip shows "behind", a merged pull request is not on your local `main`. Update local `main`, then run the briefing again.
 6. Check the page with `html_preview` to get `contentHeight`. Then give the `rendered` value to `html_render`. Never write brief HTML by hand. Never render B or C on every update.
 

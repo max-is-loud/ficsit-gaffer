@@ -36,6 +36,34 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mainspring hook --provider claude-code",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "serena",
+    "graphify"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__serena",
+      "mcp__graphify"
+    ],
+    "deny": [
+      "mcp__serena__rename_symbol",
+      "mcp__serena__replace_in_files",
+      "mcp__serena__safe_delete_symbol",
+      "mcp__serena__serena_repl"
     ]
   }
 }
