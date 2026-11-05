@@ -134,7 +134,10 @@ From the repo root, the `server` service builds and runs alongside `mcp`:
 docker compose up -d --build
 ```
 
-The backend listens on `http://localhost:8724`; the MCP server on `:8723`.
+The backend listens on `http://localhost:8724`. The MCP server listens on `:8723` inside
+the Compose network only; Compose does not publish it, because it has no authentication.
+For host access, add [`compose.debug-mcp.yaml`](../../compose.debug-mcp.yaml), which
+binds `127.0.0.1:8723` only.
 
 ### Bare metal
 

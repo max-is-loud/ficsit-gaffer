@@ -1,0 +1,19 @@
+# Opt-in: reach the sf-mcp server from the host, on the loopback interface only.
+#
+# The default compose.yaml publishes no sf-mcp port, because the MCP endpoint has
+# no authentication: anything that reaches it can call the save tools. ff-server
+# reaches sf-mcp on the internal Compose network, so the app does not need a
+# published port. Use this file only to debug sf-mcp, or to wire a local MCP
+# client (for example Claude Desktop) to it.
+#
+# Compose does NOT load this file by itself. Add it with a second -f flag:
+#
+#   docker compose -f compose.yaml -f compose.debug-mcp.yaml up -d --build
+#
+# Then http://127.0.0.1:8723/health answers on this machine only. Other machines
+# on the LAN cannot reach the port. To go back to the default, run
+# `docker compose up -d` without the second -f flag.
+services:
+  sf-mcp:
+    ports:
+      - "127.0.0.1:8723:8723"
