@@ -67,8 +67,11 @@ Most Satisfactory players are on Windows, so here's the full path:
    foreman in your browser, set `ANTHROPIC_API_KEY` (or enter a key in the UI's settings),
    then open **<http://localhost:8725>**.
 4. Confirm it's running: open **<http://localhost:8724/health>** — you should see
-   `"status":"ok"` and a `gameVersion` that is not `"unknown"`. That version comes from
-   `sf-mcp`, so it shows that the backend reached it.
+   `"status":"ok"`. Its `gameVersion` comes from `sf-mcp`, so a real version (for example
+   `"1.2.3.1"`) shows that the backend reached it. If it says `"unknown"`, `sf-mcp` was
+   still starting when the backend first tried to connect. The backend tries again on your
+   first chat message; to check before that, run `docker compose restart ff-server` and
+   reload the page.
 
    To reach `sf-mcp` itself from your machine (to debug it, or to use it from an MCP
    client), add the opt-in file `compose.debug-mcp.yaml`. It publishes the port on the
