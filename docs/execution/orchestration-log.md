@@ -263,3 +263,14 @@
   - `~/.serena/serena_config.yml` sets `agent_interface: tools`. Serena 2.1.0 writes `REPL` there on its first start. In that interface Serena offers only `serena_repl`, which runs Python code and ignores `--mode planning`. The `mcp__serena` allow rule would then approve edits with no prompt.
   - `mainspring metrics snapshot` published the code graph of `7418f94`. The size part is unavailable because `scc` is not installed; the user did not ask for it.
   - `mainspring doctor` gives `ok: true`.
+
+## 2026-11-05 — Remove the issue reference from the managed block of `AGENTS.md`
+
+- Kind: instruction change
+- Source: message `d48a096d-7cbe-47e5-a5ba-366f9e7d5ba3` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635` (batch `update-mainspring-0-4-43`)
+- Consequences:
+  - The sentence "This rule ends when a framework-aware copy of the Superpowers skills exists (issue #39)." is removed from the "Plan header" section. In Mainspring it means Mainspring #39. In this repo a bare `#39` means a Gaffer issue, an unrelated closed perf issue.
+  - The user will change Mainspring so that its additions to `AGENTS.md` never quote an issue number.
+  - The orchestrator did not change `.mainspring/manifest.json`, so the manifest still records the block that the installer wrote. Until the next update, `mainspring install --dry-run` reports a conflict for `AGENTS.md`. Before the next update, restore the sentence (the block of commit `1b7f8cd`), then run the install.

@@ -227,8 +227,6 @@ When `superpowers:writing-plans` writes a plan, it starts the plan with the head
 
 > **For agentic workers:** The project orchestrator dispatches each task as its own issue and PR. A worker executes one task directly with `superpowers:executing-plans`. A worker does not use `superpowers:subagent-driven-development` (see `agents/worker.md`). Steps use checkbox (`- [ ]`) syntax for tracking.
 
-This rule ends when a framework-aware copy of the Superpowers skills exists (issue #39).
-
 ## Agent principles
 
 These principles apply to every role. Andrej Karpathy's agentic engineering recommendations inspired them.
