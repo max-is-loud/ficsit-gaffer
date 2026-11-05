@@ -52,7 +52,7 @@ From the repo root, the whole stack builds and runs together:
 docker compose up -d --build
 ```
 
-Then open **http://localhost:8725**. (Backend on `:8724`, MCP on `:8723`.)
+Then open **http://localhost:8725**. (Backend on `:8724`. The MCP server stays on the internal Compose network; for host access see [`compose.debug-mcp.yaml`](../../compose.debug-mcp.yaml).)
 
 ### Bare metal (dev)
 

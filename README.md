@@ -61,12 +61,26 @@ Most Satisfactory players are on Windows, so here's the full path:
    docker compose up -d --build
    ```
 
-   This starts the `sf-mcp` server (`:8723`), the backend (`:8724`) and the web UI
-   (`:8725`). To chat with the foreman in your browser, set `ANTHROPIC_API_KEY` (or enter
-   a key in the UI's settings), then open **<http://localhost:8725>**. To use the foreman
-   from Claude Desktop only, start just the MCP server: `docker compose up -d --build sf-mcp`.
-4. Confirm it's running: open **<http://localhost:8723/health>** — you should see
-   `{"status":"ok","version":"1.2.3.1"}`.
+   This starts the `sf-mcp` server, the backend (`:8724`) and the web UI (`:8725`). The
+   `sf-mcp` server has no authentication, so Compose does not publish its port to your
+   machine; the backend reaches it on the internal Compose network. To chat with the
+   foreman in your browser, set `ANTHROPIC_API_KEY` (or enter a key in the UI's settings),
+   then open **<http://localhost:8725>**.
+4. Confirm it's running: open **<http://localhost:8724/health>** — you should see
+   `"status":"ok"` and a `gameVersion` that is not `"unknown"`. That version comes from
+   `sf-mcp`, so it shows that the backend reached it.
+
+   To reach `sf-mcp` itself from your machine (to debug it, or to use it from an MCP
+   client), add the opt-in file `compose.debug-mcp.yaml`. It publishes the port on the
+   loopback interface (`127.0.0.1`) only, so other machines cannot reach it:
+
+   ```powershell
+   docker compose -f compose.yaml -f compose.debug-mcp.yaml up -d --build
+   ```
+
+   Then open **<http://127.0.0.1:8723/health>** — you should see
+   `{"status":"ok","version":"1.2.3.1"}`. Run `docker compose up -d` without the second
+   `-f` to unpublish the port.
 
 **Start and stop it** any time from Docker Desktop's **Containers** tab (the `foreman`
 project), or with `docker compose stop` and `docker compose start` — this keeps the
@@ -84,13 +98,17 @@ it. To build and run only the MCP server, without Compose:
 
 ```bash
 docker build -f packages/sf-mcp/Dockerfile -t foreman-sf-mcp .
-docker run -d --name foreman-sf-mcp -p 8723:8723 foreman-sf-mcp
+docker run -d --name foreman-sf-mcp -p 127.0.0.1:8723:8723 foreman-sf-mcp
 ```
+
+The `127.0.0.1:` prefix publishes the port on your machine only. The endpoint has no
+authentication: do not publish it on `0.0.0.0` or on a LAN address.
 
 > **Note:** the server speaks the MCP **Streamable-HTTP** protocol at
 > `http://localhost:8723/mcp` — that endpoint is for MCP clients, not a web browser (a
 > browser GET returns `405`). Use `/health` to check it's alive. It has **no
-> authentication**, so keep it on your own machine or LAN, never the public internet.
+> authentication**: anyone who can reach the port can call the save tools. Publish it on
+> `127.0.0.1` only, never on the LAN or the public internet.
 
 ---
 

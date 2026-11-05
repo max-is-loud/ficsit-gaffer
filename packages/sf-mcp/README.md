@@ -105,8 +105,9 @@ MCP_TRANSPORT=http MCP_HTTP_HOST=0.0.0.0 MCP_HTTP_PORT=8723 \
 | `SAVE_FILE_PATH` | — | Optional default save (legacy/dev). |
 | `SAVE_DATA_DIR` | — | Directory host-injected `savePath` arguments must live under. |
 
-> **Security:** the HTTP transport has **no authentication**. Only run it on a
-> trusted localhost/LAN, or put an authenticating proxy in front of it.
+> **Security:** the HTTP transport has **no authentication**. Anyone who can reach the
+> port can call the save tools. Bind it to loopback (`MCP_HTTP_HOST=127.0.0.1`), or put
+> an authenticating proxy in front of it.
 
 ### Docker
 
@@ -115,6 +116,16 @@ defaults to HTTP on `:8723`. Gaffer publishes no images yet, so build the image 
 the repository root. The `sf-mcp` service is part of the project
 [`compose.yaml`](../../compose.yaml): run `docker compose up -d --build sf-mcp`. See
 [Quick start (Docker)](../../README.md#quick-start-docker--recommended).
+
+`compose.yaml` does not publish the `sf-mcp` port, because the endpoint has no
+authentication. `ff-server` reaches it on the Compose network. To reach it from the
+host, add the opt-in file [`compose.debug-mcp.yaml`](../../compose.debug-mcp.yaml),
+which publishes `127.0.0.1:8723` only:
+
+```bash
+docker compose -f compose.yaml -f compose.debug-mcp.yaml up -d --build sf-mcp
+curl http://127.0.0.1:8723/health
+```
 
 ## Inspecting without an MCP client
 

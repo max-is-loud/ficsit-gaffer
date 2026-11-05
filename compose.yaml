@@ -22,7 +22,8 @@ name: foreman
 
 services:
   # Unified MCP server: serves BOTH the game-data graph tools and the live
-  # save-game tools from one endpoint on :8723. Ships the bundled stable game
+  # save-game tools from one endpoint on :8723 (internal to the Compose network;
+  # not published to the host). Ships the bundled stable game
   # data, so it works out of the box; it reads each playthrough's uploaded .sav
   # from the shared saves volume (SAVE_DATA_DIR).
   sf-mcp:
@@ -33,8 +34,10 @@ services:
       context: .
       dockerfile: packages/sf-mcp/Dockerfile
     container_name: foreman-sf-mcp
-    ports:
-      - "8723:8723"
+    # No `ports:` on purpose. The MCP endpoint has no authentication, so a
+    # published port would let any client that reaches it call the save tools.
+    # ff-server reaches this service on the Compose network (MCP_URL below). To
+    # debug it from the host, add compose.debug-mcp.yaml (loopback only).
     environment:
       # Playthrough saves uploaded by the app live here (shared with the server).
       # Host-injected savePath arguments must resolve inside this directory.

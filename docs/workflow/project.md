@@ -63,7 +63,7 @@ The CI job `build-test` runs commands 1 to 5 on Node.js 22 [S23]. The workflow `
 
 Gaffer is a monorepo of npm workspaces under `packages/` [S14]. Three services run in one Docker Compose project named `foreman` [S12]:
 
-- `sf-mcp` is the unified MCP server on port 8723. It serves the game-data tools and the save-game tools from one endpoint [S26] [S12].
+- `sf-mcp` is the unified MCP server on port 8723. It serves the game-data tools and the save-game tools from one endpoint [S26] [S12]. Compose does not publish the port to the host, because the endpoint has no authentication. The opt-in file `compose.debug-mcp.yaml` publishes it on `127.0.0.1` only.
 - `ff-server` is the Express backend on port 8724. It is the LLM proxy (Anthropic or OpenAI-compatible) with SSE streaming. It keeps the playthroughs and the work orders in Prisma (SQLite, Postgres later), and it is the MCP gateway to `sf-mcp` [S26] [S27].
 - `ff-client` is the React and Vite web UI on port 8725 [S26] [S12].
 
