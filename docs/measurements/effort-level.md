@@ -14,9 +14,10 @@ half as much. Across three runs of `iron-near-me` for each level:
 - `medium` took a median of **$0.103** and **40.5 s** for a turn. `high` took
   **$0.209** and **93.0 s**. `medium` used about half of the cost, 44% of the
   time, 54% of the tool calls and 49% of the output tokens.
-- `high` gave the more complete work orders. All three `high` runs issued an
+- `high` gave the better-prepared work orders. All three `high` runs issued an
   order on the first attempt, each with a bootstrap step for the build cost,
-  and two used the pioneer's inventory. One `medium` run issued no order. The
+  and two used the pioneer's inventory. The orders of both levels are similar
+  in scope (see [Work-order quality](#work-order-quality)). One `medium` run issued no order. The
   other two were rejected once and issued on a retry, and neither has a
   bootstrap step.
 - `high` is not error-free. One `high` run said that the pioneer holds no
@@ -73,9 +74,12 @@ scenario is `iron-near-me`, and every turn ended with `end_turn`.
 The measurement cost **$0.9214** in total (about $0.92).
 
 Caution about the `medium` row: run 1 is not comparable to the others. It
-issued no work order, so it did less work (4 calls, 2 rounds, 17.4 s). Its cost
-matches the others only because the prompt cache was cold at the start of the
-series, so that run wrote 31,999 tokens to the cache. The median `medium` cost
+issued no work order, so it did less work (4 calls, 2 rounds, 17.4 s), but it
+cost about the same as runs 2 and 3. Cache writes make up $0.080 of its $0.103,
+against $0.026 in run 2 and $0.024 in run 3. The per-call usage
+([usage.jsonl](effort-level/usage.jsonl)) shows that its first call read
+nothing from the prompt cache and wrote 27,236 tokens to it, so run 1 paid for
+the cold start of the series. The median `medium` cost
 of $0.103 is therefore the cost of turns that issued an order less reliably
 than the `high` turns did.
 
@@ -146,6 +150,14 @@ headroom), so they were not ungrounded. They just found less.
 
 Other differences seen in the traces:
 
+- The orders are similar in scope, so the `high` orders are not better because
+  they build more. `high` run 1 is the only order that builds its own Iron Rod
+  and Screw production, and the only one without Smart Plating: its notes leave
+  Smart Plating to the "Next order after this one". The other four orders
+  (`medium` runs 2 and 3, `high` runs 2 and 3) include Smart Plating and take
+  screws from the stock of about 12,000 or from the existing screw line. The
+  difference that this report counts is the bootstrap step and the use of the
+  inventory.
 - `high` runs made more detail calls: `get_milestones`, `get_power`,
   `get_building`, `get_storage`, `describe_location` and `get_nearby` appear
   only in `high` runs. The `medium` runs stayed with the first-round batch
@@ -169,17 +181,21 @@ Other differences seen in the traces:
   The `follow-up` scenario was left out so that the spend stayed inside the
   agreed approval (about $1–2). Follow-up turns are cheaper and may not
   show the same gap.
-- **Prompt caches were not cleared between runs.** Cache warmth varies. The
-  first `medium` run started cold (it wrote 31,999 tokens to the cache).
-  Every `high` run began with 25,513 cache-read tokens. The `medium` runs came
-  first, so the order of the two levels is a confound.
+- **Prompt caches were not cleared between runs.** The per-call usage in
+  [usage.jsonl](effort-level/usage.jsonl) shows the cache state at the start
+  of each turn. Only `medium` run 1 started cold: its first call read 0 tokens
+  from the cache and wrote 27,236. The first call of every other run read
+  25,513 or 27,236 cached tokens. The `medium` runs came first, so the first
+  level paid for the cold start, and the order of the two levels is a
+  confound.
 - **Explicit levels only.** The run set `medium` and `high` explicitly. It did
   not measure the unset path. That `high` is the provider default for unset is
   Anthropic's documented behaviour, not something these runs show.
 - **Model.** Sonnet 5.5 was measured. The shipped default model is
   `claude-sonnet-4-6`, which was not measured.
 - **Quality was read by hand** from the traces, not scored. The judgement that
-  `high` gives the better orders rests on three orders for each level.
+  `high` gives the better orders rests on three `high` orders and two `medium`
+  orders (`medium` run 1 issued none).
 
 ## Method and provenance
 
@@ -241,3 +257,4 @@ LLM_EFFORT=high MCP_URL=http://127.0.0.1:18723/mcp npm run measure:turn -w @fore
 - [medium, full trace](effort-level/medium-trace.jsonl) — tool calls with arguments and capped results, answers and work orders
 - [high](effort-level/high.jsonl) — one metrics record for each measured turn
 - [high, full trace](effort-level/high-trace.jsonl) — tool calls with arguments and capped results, answers and work orders
+- [per-call usage](effort-level/usage.jsonl) — the token usage of each model call, taken from the `Anthropic usage` lines of the CLI output (the logs are not committed, because they hold local paths). For each run, the calls add up to the totals in the metrics records.
