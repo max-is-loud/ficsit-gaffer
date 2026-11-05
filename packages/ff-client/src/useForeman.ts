@@ -41,7 +41,6 @@ import {
   streamChat,
   transitionWorkOrder,
   uploadSave,
-  type ClientLlmConfig,
   type TransitionOptions,
 } from './api/client.js';
 import {
@@ -56,6 +55,9 @@ import {
   type WorkOrder,
   type WorkOrderAction,
 } from './api/types.js';
+import { parseEffortSetting, toClientLlmConfig, type LlmSettings } from './llmSettings.js';
+
+export type { LlmSettings };
 
 const PLAYTHROUGH_KEY = 'foreman.playthroughId';
 // Pre-#86 builds stored the working id under this key; read it once as a
@@ -71,6 +73,7 @@ const API_KEY = 'foreman.apiKey';
 const PROVIDER_KEY = 'foreman.provider';
 const MODEL_KEY = 'foreman.model';
 const BASE_URL_KEY = 'foreman.baseUrl';
+const EFFORT_KEY = 'foreman.effort';
 // Conversation history window (message count). Like the other LLM settings it is
 // client-held and sent per request; it is BYOK-only (the server applies it only
 // when a client key is supplied). 0 / empty = use the server default.
@@ -86,16 +89,6 @@ export interface ChatMsg {
   tools: string[];
   error?: string;
   streaming: boolean;
-}
-
-/** LLM settings the user can configure (empty = use the server default). */
-export interface LlmSettings {
-  apiKey: string;
-  provider: string;
-  model: string;
-  baseUrl: string;
-  /** Conversation history window (message count); 0 = use the server default. BYOK-only. */
-  historyWindow: number;
 }
 
 /** Whether the auth check is still running, finished signed-out, or signed-in. */
@@ -321,6 +314,7 @@ export function useForeman(): ForemanState {
     provider: readStorage(PROVIDER_KEY),
     model: readStorage(MODEL_KEY),
     baseUrl: readStorage(BASE_URL_KEY),
+    effort: parseEffortSetting(readStorage(EFFORT_KEY)),
     historyWindow: Number.parseInt(readStorage(HISTORY_WINDOW_KEY), 10) || 0,
   }));
   const [keyNeeded, setKeyNeeded] = useState(false);
@@ -520,13 +514,7 @@ export function useForeman(): ForemanState {
       setSending(true);
       setKeyNeeded(false);
 
-      const override: ClientLlmConfig = {
-        provider:
-          llm.provider === 'anthropic' || llm.provider === 'openai' ? llm.provider : undefined,
-        model: llm.model || undefined,
-        baseUrl: llm.baseUrl || undefined,
-        historyWindow: llm.historyWindow > 0 ? llm.historyWindow : undefined,
-      };
+      const override = toClientLlmConfig(llm);
 
       void streamChat(playthroughId, trimmed, llm.apiKey || undefined, override, {
         onText: (delta) =>
@@ -647,6 +635,7 @@ export function useForeman(): ForemanState {
     writeStorage(PROVIDER_KEY, next.provider);
     writeStorage(MODEL_KEY, next.model);
     writeStorage(BASE_URL_KEY, next.baseUrl);
+    writeStorage(EFFORT_KEY, next.effort);
     writeStorage(HISTORY_WINDOW_KEY, next.historyWindow > 0 ? String(next.historyWindow) : '');
     setLlm(next);
   }, []);

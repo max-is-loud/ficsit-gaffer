@@ -2,6 +2,7 @@
 // (/api/...); the dev server and the production nginx image both proxy /api to
 // the backend, so there is no CORS and no base URL to configure.
 
+import { chatRequestBody, type ClientLlmConfig } from '../llmSettings.js';
 import { parseSseStream } from './sse.js';
 import type {
   Foreman,
@@ -473,14 +474,7 @@ export async function getRevisionDiff(
   );
 }
 
-/** Per-request LLM override (effective only when an API key is supplied). */
-export interface ClientLlmConfig {
-  provider?: 'anthropic' | 'openai';
-  model?: string;
-  baseUrl?: string;
-  /** Conversation history window (message count); BYOK-only, server-clamped. */
-  historyWindow?: number;
-}
+export type { ClientLlmConfig };
 
 /** Callbacks invoked as the foreman's streamed turn unfolds. */
 export interface ChatHandlers {
@@ -502,19 +496,7 @@ export async function streamChat(
   llm: ClientLlmConfig,
   handlers: ChatHandlers,
 ): Promise<void> {
-  const body: Record<string, unknown> = { message };
-  if (llm.provider !== undefined) {
-    body['provider'] = llm.provider;
-  }
-  if (llm.model !== undefined && llm.model.length > 0) {
-    body['model'] = llm.model;
-  }
-  if (llm.baseUrl !== undefined && llm.baseUrl.length > 0) {
-    body['baseUrl'] = llm.baseUrl;
-  }
-  if (llm.historyWindow !== undefined && llm.historyWindow > 0) {
-    body['historyWindow'] = llm.historyWindow;
-  }
+  const body = chatRequestBody(message, llm);
 
   let response: Response;
   try {

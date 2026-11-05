@@ -13,6 +13,7 @@ import {
   MIN_HISTORY_WINDOW,
   parseHistoryWindow,
 } from '../llmSettings.js';
+import { EffortField } from './EffortField.js';
 import { ForemanLibrary } from './ForemanLibrary.js';
 import { ProfileSettings } from './ProfileSettings.js';
 import { SecurityDialog } from './SecurityDialog.js';
@@ -77,6 +78,7 @@ export function AccountSettingsDialog({
   const [provider, setProvider] = useState(llm.provider);
   const [model, setModel] = useState(llm.model);
   const [baseUrl, setBaseUrl] = useState(llm.baseUrl);
+  const [effort, setEffort] = useState(llm.effort);
   const [apiKey, setApiKey] = useState(llm.apiKey);
   // Empty string = use the server default (stored as 0). Kept as text so the field
   // can be cleared back to "default" rather than forced to a number.
@@ -106,6 +108,7 @@ export function AccountSettingsDialog({
         provider,
         model,
         baseUrl,
+        effort,
         historyWindow: parseHistoryWindow(historyWindow),
       });
       const trimmedName = displayName.trim();
@@ -189,6 +192,7 @@ export function AccountSettingsDialog({
                 autoComplete="off"
               />
             </div>
+            <EffortField value={effort} onChange={setEffort} />
             {provider === 'openai' ? (
               <div className="field">
                 <label htmlFor="baseurl">Base URL (optional)</label>
