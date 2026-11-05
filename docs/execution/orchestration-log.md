@@ -199,3 +199,54 @@
 - Message author (T3 `createdBy`): user
 - Scope digest: none. No batch applies.
 - Consequences: `mainspring audit github --accept github.issue.no-parent` records the exception for #35, #52 and #65. #33 closed before the exception was necessary.
+
+## 2026-10-28 — Repair the #73 save backup with option B
+
+- Kind: design
+- Source: message `ad991100-8e45-4964-b639-98b0a39ec519` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - Two repair rounds failed, so the orchestrator escalated to the user. The user chose option B.
+  - The save validator is the only completeness gate. The `/proc` open-file scan is removed. The backup skips only the exact top-level `ServerSettings.<port>.sav`.
+  - Repair round 3 ran as the intent `first-work-65-repair-3`.
+
+## 2026-10-28 — Merge PR #75
+
+- Kind: merge
+- Source: message `caaee001-ed78-4969-a86c-5fc0eb7d5c9f` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:f97b31a3edb99dbbee609ffb0c1d835aba13d4afddef5826802f3b074f8a7f8b` (batch `first-work-52-impl`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `ca8a085` onto `519527e` as `0f4c2ae`. #52 closed.
+  - The T3 reference chip in the message ("merge #75") resolved to upstream's PR #75 by mistake. The orchestrator did not touch upstream.
+
+## 2026-10-28 — Merge PR #73
+
+- Kind: merge
+- Source: message `6868d1b9-27ab-4827-b60f-efa2b72c1051` in T3 thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02`
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:aecda1615e5e0b3bc48472cd1777279e2856498ef4f707caafb13d2db7144ef6` (batch `first-work`)
+- Consequences:
+  - `mainspring merge-execute` squash-merged head `a2e0f2e` as `7418f94`. The GitHub base was `70908d3`. The verification ran on that base and again with the head merged onto `0f4c2ae`.
+  - PR #73 does task 1 of #65 (the save backup). #65 stays open in Ready for its other tasks.
+
+## 2026-11-05 — Make thread `d5741194` the orchestrator
+
+- Kind: coordinator
+- Source: message `eeb4a4a1-29bc-4e16-a5d6-dfba1e46cc55` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`
+- Message author (T3 `createdBy`): user
+- Scope digest: none. No batch applies.
+- Consequences: `mainspring coordinator-takeover` moved the journal from thread `a5abedc2-2239-4eb7-8304-2dbe3aed5f02` to thread `d5741194-a5f5-4d17-a9dd-c77813d054b5`. The journal had no bound intent, so the takeover observed no worker.
+
+## 2026-11-05 — Run the batch `update-mainspring-0-4-43`
+
+- Kind: batch
+- Source: message `305a3cc1-2701-4ccd-81db-e9492b09711b` in T3 thread `d5741194-a5f5-4d17-a9dd-c77813d054b5` ("Update mainspring in this project to the latest version")
+- Message author (T3 `createdBy`): user
+- Scope digest: `sha256:7eff5e3fac5172bf8819d900607c261eb6aab3a5b1fca581dc2b9db5b92db635`
+- Consequences:
+  - The batch has one task, #78: update the installed files from Mainspring 0.4.22 to 0.4.43. The orchestrator runs the installer, and a Codex review (`gpt-6.1-sol`, high) checks the change.
+  - The user's message asked for this update directly. The orchestrator recorded it as the batch approval and did not propose the batch again.
+  - The update brings the agent tools module (Serena and graphify). The install of those tools on the development machine is out of scope and needs its own approval.
+  - The PR also carries the three decisions of 2026-10-28 above. They waited for the next PR, so that two open PRs did not conflict on this file.
