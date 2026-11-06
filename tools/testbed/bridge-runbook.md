@@ -56,10 +56,10 @@ a spike build (`7027e965…`), not this one.
 for t in tools/testbed/test-save-backup.sh tools/testbed/test-save-validation.sh \
          tools/testbed/bridge/test-bridge-install.sh tools/testbed/bridge/test-bridge-config.sh \
          tools/testbed/bridge/test-bridge-cert.sh tools/testbed/bridge/test-bridge-mods.sh \
-         tools/testbed/bridge/test-bridge-units.sh; do "$t" | tail -1; done
+         tools/testbed/bridge/test-bridge-units.sh tools/testbed/bridge/test-bridge-runbook.sh; do "$t" | tail -1; done
 ```
 
-The seven last lines must all start with `all`. The config test starts the real receiver, so it needs
+The eight last lines must all start with `all`. The config test starts the real receiver, so it needs
 Node 24 or later. Without it, the test prints `skip` and tests the rest.
 
 **0.2 Get the two packages.** The SML download is public. It does not touch the server.
@@ -344,7 +344,7 @@ Two outcomes are possible.
 starts WITHOUT mods.` There is no `ForemanBridge` line. This is the user's rule of 28 Oct. Go to
   step U. The server is healthy and plain.
 
-If the game does not come up (repeated restarts, `failed`), go to R1 at once, and report the log.
+If the journal shows `REFUSING TO START THE GAME`, go to "If the guard refuses the start". If the game does not come up in any other way (repeated restarts, `failed`), go to R1 at once, and report the log.
 
 If you see `Bridge receiver failure`, read the TLS section ("If the game rejects the certificate") and
 the line `category=`. A connection failure (`http=0`) while the receiver does not run is normal. The plugin retries. A TLS rejection stops delivery until the next restart.
@@ -395,9 +395,14 @@ the query token. The producer token never leaves the server.
 **e4. Ask the receiver directly (no model call, no approval needed).** This needs the file from e3.
 
 ```bash
-set -a; . ~/.config/gaffer/bridge.env; set +a
-curl -fsS -X POST "$FOREMAN_BRIDGE_URL/query/v1/constructors" -H "Authorization: Bearer $FOREMAN_BRIDGE_QUERY_TOKEN" -H 'Content-Type: application/json' -d '{"includeLocations":true,"limit":2}' | python3 -m json.tool
+( . ~/.config/gaffer/bridge.env
+  printf 'header = "Authorization: Bearer %s"\n' "$FOREMAN_BRIDGE_QUERY_TOKEN" |
+    curl -fsS --config - -X POST "$FOREMAN_BRIDGE_URL/query/v1/constructors" -H 'Content-Type: application/json' -d '{"includeLocations":true,"limit":2}' ) | python3 -m json.tool
 ```
+
+The token goes to `curl` on standard input, through `printf` (a shell built-in). It is not in the
+command line, so `ps` and the shell history never show it. The subshell keeps the values out of the
+environment of the next command. Never put the token in a `-H` option.
 
 Expected: `"status": "fresh"`, `"reason": "recent_sync"`, `"totalCount"` equal to `N`, and two
 `locations` in centimetres. A `last_known` status with reason `stale` means that the game has not
@@ -508,14 +513,9 @@ runs the new build.
 ssh openclaw 'sudo -n -u satisfactory /opt/gaffer-bridge/bin/mods-control.sh status; sudo -n journalctl -u satisfactory.service --since "-1day" --no-pager -o cat | grep mods-control | tail -3'
 ```
 
-**To start without mods on purpose** (for example, to test whether a problem comes from the mods)
-**needs user approval**. Save in the game first.
-
-```bash
-ssh openclaw 'sudo -n systemctl stop satisfactory.service && sudo -n -u satisfactory /opt/gaffer-bridge/bin/mods-control.sh off && sudo -n systemctl start satisfactory.service'
-```
-
-Expected: `mods are OFF; the next start is a plain server`. There is no `ForemanBridge` line in the log.
+**To start without mods on purpose** (for example, to test whether a problem comes from the mods),
+**needs user approval**. Save in the game first. Run the command of R1. It works in every state of the
+mods.
 
 **To switch mods on again after an update** **needs user approval and a test first**:
 
@@ -530,7 +530,7 @@ Expected: `mods are OFF; the next start is a plain server`. There is no `Foreman
 
 2. Check that the bridge works on the new build. The library links against game code. The user built it for changelist 513885. Test it on the disposable server (`satisfactory-bridge-test`). If the test fails, the user must make a new Windows build. A new build is the user's decision.
 3. Install the packages that passed. Change `bridge/packages.sha256` in a pull request if they are new.
-   Remove the old mod folders first, because `install-mod.sh` never replaces one (see R2). Then install the new ones as in step b7.
+   Move the old mod folders away first, because `install-mod.sh` never replaces one. With the game stopped, run `mods-control.sh off`. Then delete the `Mods.off*` folder that it makes. Then install the new ones as in step b7.
 4. Add the build id to `/etc/gaffer-bridge-game/supported-builds` (one number per line; `#` starts a
    comment). Then, with the game stopped:
 
@@ -544,37 +544,97 @@ Expected: `mods are OFF; the next start is a plain server`. There is no `Foreman
 
 ## R1: start without mods (rollback, level 1)
 
-Use it when the modded server does not start or memory hits the limit. Use it also when the mods might cause a problem. The receiver, the files and the drop-in stay. **Needs user approval.** If the server
+Use it when the modded server does not start or memory hits the limit. Use it also when the mods might
+cause a problem. The receiver, the files and the drop-in stay. **Needs user approval.** If the server
 is healthy, save in the game first.
 
 ```bash
 ssh openclaw 'sudo -n systemctl stop satisfactory.service && sudo -n -u satisfactory /opt/gaffer-bridge/bin/mods-control.sh off && sudo -n systemctl start satisfactory.service'
 ```
 
-Expected: `mods are OFF`, and the server starts as a plain server (read the journal as in step c4: no
-`ForemanBridge` line). The player starts the game without SML (see step U). If the world does not load,
-go to R2 and R3.
+The command works in every state of the mods. `mods-control.sh off` succeeds when the mods are already off. It also succeeds when there never were mods. When `Mods` and `Mods.off` both exist, it moves `Mods` to `Mods.off-<stamp>`. The game starts again each time.
+
+If `off` itself fails because it cannot move the folder, the game stays stopped and the error is on the screen. Then see "If the guard refuses the start".
+
+Expected: `mods are OFF` or `mods are already off`, and the server starts as a plain server (read the
+journal as in step c4: no `ForemanBridge` line). The player starts the game without SML (see step U).
+If the world does not load, go to R2 and R3.
+
+## If the guard refuses the start
+
+The guard (`mods-control.sh guard`, in the drop-in) stops the game from starting in **one case only**. Three things are true together. The mods are present. The build is not on the approved list, or the guard cannot read it. The guard cannot move the mods away.
+
+The reason is the user's rule of 28 Oct. SML on an unapproved build can
+crash the game or write mod data into the save, and a stopped server protects the save. In every
+other case the guard exits 0. With no `Mods` folder, it exits 0 whatever else fails.
+
+The journal then has one line: `mods-control: REFUSING TO START THE GAME: build '<id>' is not approved for mods, and … cannot be moved away`. systemd retries every 60 seconds, and each try runs `steamcmd`
+again.
+
+1. Stop the retries. **Needs user approval.**
+
+   ```bash
+   ssh openclaw 'sudo -n systemctl stop satisfactory.service'
+   ```
+
+2. Find the reason (read-only, no approval needed). The move needs write access to the
+   `FactoryGame` folder, which the game user owns (mode `775` on 5 Nov).
+
+   ```bash
+   ssh openclaw 'sudo -n journalctl -u satisfactory.service --since "-1h" --no-pager -o cat | grep mods-control | tail -3; ls -ld /home/satisfactory/server/FactoryGame /home/satisfactory/server/FactoryGame/Mods*'
+   ```
+
+3. Repair the folder. **Needs user approval.**
+
+   ```bash
+   ssh openclaw 'sudo -n chown satisfactory:satisfactory /home/satisfactory/server/FactoryGame && sudo -n chmod 775 /home/satisfactory/server/FactoryGame'
+   ```
+
+4. Run the command of R1. It moves the mods away and starts the game without mods. Then follow step U.
 
 ## R2: back to the state before the bridge (rollback, level 2)
 
-This removes the bridge from the running system: the receiver stops, the drop-in goes, and the mods
-leave the game folder. The backup and the files under `/opt` and `/etc` stay, so a new try is easy. **Needs
-user approval.** The game does not save on shutdown, so save first if it is healthy.
+This removes the bridge from the running system: the receiver stops, the drop-in goes, and every mods
+folder leaves the game folder. The backup and the files under `/opt` and `/etc` stay, so a new try is
+easy. **Needs user approval.** The game does not save on shutdown, so save first if it is healthy.
+
+The script works after a half-finished install, at any point from b1 to b7. It does not use `set -e`,
+and it tolerates a missing unit, a missing drop-in and a missing folder.
+
+It stops and starts the game only if the drop-in or a mods folder exists (then step b7 has started). If it stops the game, it starts the game again. The one exception is a mods folder that it cannot move. Then the game stays stopped and the script says so, because a start would load the mods. With nothing to roll back in the game, it leaves the game
+running.
+
+Every folder that the guard and `mods-control.sh` can make (`Mods`, `Mods.off`, `Mods.off-<stamp>`)
+moves into one new folder, `Mods.removed-<stamp>`. Step X deletes it.
 
 ```bash
-ssh openclaw 'sudo -n bash -es' <<'REMOTE'
-systemctl stop satisfactory.service
-systemctl disable --now gaffer-bridge-cert-renew.timer gaffer-bridge-receiver.service
-rm -f /etc/systemd/system/satisfactory.service.d/bridge.conf
-rmdir --ignore-fail-on-non-empty /etc/systemd/system/satisfactory.service.d
-systemctl daemon-reload
-STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-for dir in Mods Mods.off; do
-  if [ -e /home/satisfactory/server/FactoryGame/$dir ]; then
-    sudo -u satisfactory mv /home/satisfactory/server/FactoryGame/$dir /home/satisfactory/server/FactoryGame/$dir.removed-$STAMP
-  fi
+ssh openclaw 'sudo -n bash -s' <<'REMOTE'
+FG=/home/satisfactory/server/FactoryGame
+DROPIN=/etc/systemd/system/satisfactory.service.d/bridge.conf
+HOLD=$FG/Mods.removed-$(date -u +%Y%m%dT%H%M%SZ)
+CHANGE=no
+for path in $DROPIN $FG/Mods $FG/Mods.off*; do
+  if [ -e "$path" ]; then CHANGE=yes; fi
 done
-systemctl start satisfactory.service
+if [ $CHANGE = yes ]; then
+  systemctl stop satisfactory.service || { echo "R2 stopped: the game did not stop"; exit 1; }
+fi
+for unit in gaffer-bridge-cert-renew.timer gaffer-bridge-receiver.service; do
+  systemctl disable --now $unit 2>/dev/null || echo "note: $unit is not installed or not enabled"
+done
+rm -f $DROPIN
+rmdir /etc/systemd/system/satisfactory.service.d 2>/dev/null
+systemctl daemon-reload
+if [ $CHANGE = yes ]; then
+  FAILED=no
+  for path in $FG/Mods $FG/Mods.off*; do
+    [ -e "$path" ] || continue
+    sudo -u satisfactory mkdir -p "$HOLD" && sudo -u satisfactory mv -T -- "$path" "$HOLD/$(basename "$path")" || FAILED=yes
+  done
+  if [ $FAILED = yes ]; then echo "R2 stopped: a mods folder could not be moved; the game stays stopped"; exit 1; fi
+  systemctl start satisfactory.service
+fi
+echo "R2 done"
 REMOTE
 ```
 
@@ -591,7 +651,7 @@ REMOTE
 ```
 
 Expected: `bridge lines in the unit: 0`, `listeners on 9443: 0`, `game: active` (after the load time), `Mods folder: absent`,
-and the renamed `Mods.removed-<stamp>` folder in the listing. The journal has no `ForemanBridge` line. The unit has its
+and the `Mods.removed-<stamp>` folder in the listing (it holds the moved folders). The journal has no `ForemanBridge` line. The unit has its
 original `ExecStart`.
 
 ## R3: restore the saves (rollback, level 3)
@@ -604,17 +664,25 @@ from step c2 (`before-first-modded-start`). If the game still cannot load that a
 
 ## X: remove everything
 
-Do R2 first. Then remove the files. **Needs user approval.** This deletes the receiver database (the live
-state history of the bridge; nothing else uses it). It leaves the save backups in place; delete those
-by the README, step 6, when you no longer need them.
+Do R2 first. The script refuses to run while the drop-in or a `Mods` folder exists. **Needs user
+approval.** It works after a half-finished install. It deletes the receiver database (the live state
+history of the bridge; nothing else uses it) and every `Mods.removed-*` and `Mods.off*` folder. It
+leaves the save backups in place; delete those by the README, step 6, when you no longer need them.
 
 ```bash
-ssh openclaw 'sudo -n bash -es' <<'REMOTE'
+ssh openclaw 'sudo -n bash -s' <<'REMOTE'
+FG=/home/satisfactory/server/FactoryGame
+if [ -e /etc/systemd/system/satisfactory.service.d/bridge.conf ] || [ -e $FG/Mods ]; then
+  echo "X stopped: the drop-in or the Mods folder still exists. Do R2 first."
+  exit 1
+fi
+systemctl disable --now gaffer-bridge-cert-renew.timer gaffer-bridge-receiver.service 2>/dev/null
 rm -f /etc/systemd/system/gaffer-bridge-receiver.service /etc/systemd/system/gaffer-bridge-cert-renew.service /etc/systemd/system/gaffer-bridge-cert-renew.timer
 systemctl daemon-reload
-rm -r /opt/gaffer-bridge /etc/gaffer-bridge /etc/gaffer-bridge-game /var/lib/gaffer-bridge
-userdel gaffer-bridge
-rm -rf /home/satisfactory/server/FactoryGame/Mods.removed-* /home/satisfactory/server/FactoryGame/Mods.off.removed-*
+rm -rf /opt/gaffer-bridge /etc/gaffer-bridge /etc/gaffer-bridge-game /var/lib/gaffer-bridge /tmp/gaffer-bridge-stage
+if getent passwd gaffer-bridge >/dev/null; then userdel gaffer-bridge; fi
+rm -rf $FG/Mods.removed-* $FG/Mods.off*
+echo "X done"
 REMOTE
 ```
 
@@ -645,4 +713,4 @@ Leftovers that the removal does not touch, and that do no harm:
 | `systemd/gaffer-bridge-receiver.service`                                             | The receiver. Tailscale address only. Own user. Hardened.                                                                      |
 | `systemd/gaffer-bridge-cert-renew.service`, `systemd/gaffer-bridge-cert-renew.timer` | The weekly certificate check.                                                                                                  |
 | `systemd/satisfactory-bridge.conf`                                                   | The drop-in for `satisfactory.service`: starts the receiver first, runs the guard, adds the config flag.                       |
-| `test-bridge-*.sh`                                                                   | Local tests for the scripts and the units. No server is involved.                                                              |
+| `test-bridge-*.sh`                                                                   | Local tests for the scripts, the units and the runbook's own R1, R2, X and e4 commands. No server is involved.                 |

@@ -11,7 +11,6 @@ game="$work/server"
 approved="$work/supported-builds"
 export GAFFER_GAME_DIR="$game" GAFFER_APPROVED_BUILDS="$approved" GAFFER_SYSTEMCTL="$work/systemctl"
 control() { "$bridge/mods-control.sh" "$@"; }
-quietly() { "$@" >/dev/null 2>&1; }
 
 # The fake systemctl: "is-active" is true while the file "running" exists.
 printf '#!/usr/bin/env bash\n[ "$1" = is-active ] && [ -e "%s/running" ]\n' "$work" >"$work/systemctl"
@@ -70,20 +69,55 @@ test_guard_edges() {
   fresh_game 25782486
   rm -r "$game/FactoryGame/Mods"
   check "guard does nothing when there is no Mods directory" quietly control guard
+
+  # R1-02: with no Mods folder the guard exits 0 whatever else fails.
+  if [ "$(id -u)" -ne 0 ]; then
+    fresh_game 25782486
+    rm -r "$game/FactoryGame/Mods"
+    chmod 000 "$game/steamapps/appmanifest_1690800.acf"
+    check "no Mods + unreadable manifest: guard exits 0" quietly control guard
+    chmod 644 "$game/steamapps/appmanifest_1690800.acf"
+    chmod 000 "$approved"
+    check "no Mods + unreadable approval list: guard exits 0" quietly control guard
+    chmod 644 "$approved"
+  else
+    echo "skip the unreadable-file tests: they need a user that is not root"
+  fi
+  fresh_game 25782486
+  rm -r "$game/FactoryGame/Mods" "$game/steamapps"
+  check "no Mods + no manifest: guard exits 0" quietly control guard
+  check "no Mods + no game directory at all: guard exits 0" quietly env GAFFER_GAME_DIR="$work/missing" "$bridge/mods-control.sh" guard
+
   fresh_game 25782486
   mkdir "$game/FactoryGame/Mods.off"
   control guard >/dev/null 2>&1
   check "guard never overwrites an existing Mods.off" test "$(find "$game/FactoryGame" -maxdepth 1 -name 'Mods.off-*' | wc -l)" -eq 1
   check "the old Mods.off is untouched" test -d "$game/FactoryGame/Mods.off"
+  check "the mods moved to the stamped folder, not into Mods.off" test ! -e "$game/FactoryGame/Mods.off/Mods"
 
   if [ "$(id -u)" -ne 0 ]; then
+    # The one case in which the guard stops the game: mods present, build unapproved, move fails.
     fresh_game 25782486
     chmod 555 "$game/FactoryGame"
-    check "guard fails closed when it cannot move mods away" refuses control guard
+    local status=0
+    control guard >"$work/out" 2>&1 || status=$?
     chmod 755 "$game/FactoryGame"
+    check "unapproved build + rename fails: guard exits non-zero" test "$status" -ne 0
+    check "the refusal is one clear journal line" test "$(grep -c 'REFUSING TO START THE GAME' "$work/out")" -eq 1
     check "mods stay where they were after that failure" mods_on
+    fresh_game ""
+    chmod 555 "$game/FactoryGame"
+    status=0
+    control guard >/dev/null 2>&1 || status=$?
+    chmod 755 "$game/FactoryGame"
+    check "unreadable manifest + rename fails: guard exits non-zero" test "$status" -ne 0
+    fresh_game 25782485
+    chmod 555 "$game/FactoryGame"
+    check "approved build: guard exits 0 even when the folder is read-only" quietly control guard
+    chmod 755 "$game/FactoryGame"
+    check "approved build: mods are left on" mods_on
   else
-    echo "skip the fail-closed test: it needs a user that is not root"
+    echo "skip the fail-closed tests: they need a user that is not root"
   fi
 }
 
@@ -94,7 +128,20 @@ test_on_and_off() {
   rm "$work/running"
   control off >/dev/null
   check "off moves mods away" mods_off
-  check "off refuses when mods are already off" refuses control off
+  # R1-03: off is idempotent, so the rollback can always start the game again.
+  check "off succeeds when mods are already off" quietly control off
+  check "a repeated off leaves mods off" mods_off
+  fresh_game 25782485
+  rm -r "$game/FactoryGame/Mods"
+  check "off succeeds when there never were mods" quietly control off
+  fresh_game 25782485
+  mkdir "$game/FactoryGame/Mods.off"
+  check "off succeeds when Mods and Mods.off both exist" quietly control off
+  check "off then moves Mods to a stamped folder" test "$(find "$game/FactoryGame" -maxdepth 1 -name 'Mods.off-*' | wc -l)" -eq 1
+  check "off leaves no Mods folder" test ! -e "$game/FactoryGame/Mods"
+
+  fresh_game 25782485
+  control off >/dev/null
   touch "$work/running"
   check "on refuses while the game runs" refuses control on
   rm "$work/running"

@@ -193,11 +193,24 @@ first. The weekly timer is enabled only after that run succeeds.
 client must match. The guard reads the Steam build id from `steamapps/appmanifest_1690800.acf`, which
 `steamcmd` has just written. If the id is not in `/etc/gaffer-bridge-game/supported-builds`, it renames
 `FactoryGame/Mods` to `Mods.off`, so the server starts without mods. This also protects an unplanned
-restart (a crash restart or a reboot after Steam published an update). It fails closed: if the rename
-fails, the start fails, because SML must not start on an unapproved build. An unreadable manifest or
-list counts as "not approved". The build `25782485` is approved by the runbook. A new build needs a
-manual decision, after a test on the disposable server (SML's `GameVersion` is only a lower bound, and
-the bridge library links against game code).
+restart (a crash restart or a reboot after Steam published an update). An unreadable manifest or list
+counts as "not approved". The build `25782485` is approved by the runbook. A new build needs a manual
+decision, after a test on the disposable server (SML's `GameVersion` is only a lower bound, and the
+bridge library links against game code).
+
+**When the guard may stop the game (decision of the orchestrator, review round 1).** The first version
+made every guard failure stop the game. That was too wide: a guard error could block a server that has
+no mods at all. The rule now is narrow. The guard exits non-zero in **one case only**: mods are present,
+the build is not approved (or cannot be read), and the guard cannot move the mods away. The drop-in
+has no `-` prefix on the `ExecStartPre`, so that exit code stops the start. The reason is the user's
+rule of 28 Oct: SML on an unapproved build can crash the game or write mod data into the save, and a
+stopped server protects the save. In every other case the guard exits 0. With no `Mods` folder (the
+mods are already off), it exits 0 whatever else fails. When it refuses, it writes one line to the
+journal (`REFUSING TO START THE GAME`), and the runbook has the recovery steps ("If the guard refuses
+the start"). `mods-control.sh off` is idempotent for the same reason: the rollback must always be able to
+start the game again. All moves use `mv -T`, so a move never goes into an existing folder. The only
+names under `FactoryGame` that the scripts create are `Mods.off` and `Mods.off-<stamp>`. Rollback R2
+moves every such folder, and `Mods`, into `Mods.removed-<stamp>`, and step X deletes that.
 
 ### Network
 

@@ -15,6 +15,11 @@ export GAFFER_BRIDGE_CONF_DIR="$conf" GAFFER_BRIDGE_GAME_CONF_DIR="$game" GAFFER
 export GAFFER_BRIDGE_HOST=127.0.0.1 GAFFER_BRIDGE_NAME=127.0.0.1 GAFFER_BRIDGE_PORT=9443
 export GAFFER_RECEIVER_CREDENTIALS_DIR="$credentials" GAFFER_RECEIVER_DATABASE="$work/state/receiver.db"
 
+# No test puts a secret in a command line: these are shell functions (no new process), and
+# lacks_secret reads the secret on standard input.
+token_ok() { [[ "$1" =~ ^[A-Za-z0-9_-]{32,256}$ ]]; }
+uuid_ok() { [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; }
+
 # json_field <file> <key> prints one string value. Python is used because it ships with the server.
 json_field() { python3 -I -c 'import json, sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' "$1" "$2"; }
 env_value() { sed -n "s/^$2=//p" "$1"; }
@@ -29,20 +34,23 @@ test_generated_files() {
   check "the three files are mode 600" test "$(mode_of "$conf/receiver.json")$(mode_of "$conf/dev.env")$(mode_of "$game/bridge.json")" = 600600600
   check "the receiver's directory is private (700)" test "$(mode_of "$conf")" = 700
   check "the game's directory is group-only (750)" test "$(mode_of "$game")" = 750
-  check "the tokens follow the receiver's rule (32 to 256 of A-Za-z0-9_-)" bash -c '[[ "$0" =~ ^[A-Za-z0-9_-]{32,256}$ && "$1" =~ ^[A-Za-z0-9_-]{32,256}$ ]]' "$token" "$query_token"
+  check "the producer token follows the receiver's rule (32 to 256 of A-Za-z0-9_-)" token_ok "$token"
+  check "the query token follows the receiver's rule" token_ok "$query_token"
   check "the producer token and the query token differ" test "$token" != "$query_token"
-  check "the ids are lowercase UUIDs" bash -c '[[ "$0" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ && "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]' "$server" "$world"
+  check "the server id is a lowercase UUID" uuid_ok "$server"
+  check "the world id is a lowercase UUID" uuid_ok "$world"
   check "the server id and the world id differ" test "$server" != "$world"
   check "the game config has exactly the six keys that the plugin accepts" \
     test "$(python3 -I -c 'import json, sys; print(",".join(sorted(json.load(open(sys.argv[1])))))' "$game/bridge.json")" = enabled,serverId,sessionName,token,url,worldId
   check "the game gets the producer token" test "$(json_field "$game/bridge.json" token)" = "$token"
   check "the game config names the session" test "$(json_field "$game/bridge.json" sessionName)" = Codex
   check "the game URL uses the certificate name" test "$(json_field "$game/bridge.json" url)" = https://127.0.0.1:9443
-  check "the game config does not hold the query token" bash -c '! grep -qF -- "$1" "$0"' "$game/bridge.json" "$query_token"
+  check "the game config does not hold the query token" lacks_secret "$game/bridge.json" "$query_token"
   check "dev.env holds the query token" test "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_QUERY_TOKEN)" = "$query_token"
-  check "dev.env does not hold the producer token" bash -c '! grep -qF -- "$1" "$0"' "$conf/dev.env" "$token"
+  check "dev.env does not hold the producer token" lacks_secret "$conf/dev.env" "$token"
   check "dev.env carries both ids" test "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_SERVER_ID)/$(env_value "$conf/dev.env" FOREMAN_BRIDGE_WORLD_ID)" = "$server/$world"
-  check "the output shows no secret" bash -c '! grep -qF -e "$1" -e "$2" "$0"' "$work/output" "$token" "$query_token"
+  check "the output shows no producer token" lacks_secret "$work/output" "$token"
+  check "the output shows no query token" lacks_secret "$work/output" "$query_token"
   check "no temporary directory is left behind" test -z "$(find "$conf" -maxdepth 1 -name '.new.*')"
 }
 
@@ -81,9 +89,17 @@ test_real_receiver_accepts_config() {
   check "the real receiver starts with the generated config" contains "$work/health" '"ready":true'
   query_token=$(env_value "$conf/dev.env" FOREMAN_BRIDGE_QUERY_TOKEN)
   token=$(json_field "$game/bridge.json" token)
-  query() { curl -sS --cacert "$pki/ca.pem" -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $1" -H 'content-type: application/json' -d '{}' "https://127.0.0.1:$port/query/v1/constructors"; }
+  # The bearer header goes to curl on standard input, never as an argument.
+  query() { printf 'header = "Authorization: Bearer %s"\n' "$1" | curl -sS --config - --cacert "$pki/ca.pem" -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' "https://127.0.0.1:$port/query/v1/constructors"; }
   check "the query token from dev.env is accepted by the query route" test "$(query "$query_token")" = 200
   check "the game's producer token is refused by the query route" test "$(query "$token")" = 401
+
+  # The runbook's own e4 command, with a real curl, against the real receiver.
+  local home="$work/e4-home"
+  mkdir -p "$home/.config/gaffer"
+  cp "$conf/dev.env" "$home/.config/gaffer/bridge.env"
+  HOME="$home" CURL_CA_BUNDLE="$pki/ca.pem" bash -c "$(runbook_block '^\*\*e4\.')" </dev/null >"$work/e4.out" 2>&1
+  check "the runbook's e4 command gets the receiver's answer" contains "$work/e4.out" '"reason": "no_baseline"'
 }
 
 test_fetch_env() {
@@ -94,7 +110,8 @@ test_fetch_env() {
   check "fetch writes the file with the same values" cmp -s "$destination" "$conf/dev.env"
   check "the fetched file is mode 600" test "$(mode_of "$destination")" = 600
   check "its directory is mode 700" test "$(mode_of "$(dirname "$destination")")" = 700
-  check "fetch output shows no value" bash -c '! grep -qF -e "$1" -e "$2" "$0"' "$work/fetch-output" "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_QUERY_TOKEN)" "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_WORLD_ID)"
+  check "fetch output shows no token" lacks_secret "$work/fetch-output" "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_QUERY_TOKEN)"
+  check "fetch output shows no world id" lacks_secret "$work/fetch-output" "$(env_value "$conf/dev.env" FOREMAN_BRIDGE_WORLD_ID)"
   check "fetch refuses to overwrite" refuses env GAFFER_SSH="$fake" "$bridge/fetch-bridge-env.sh" fake-host "$destination"
 
   git init -q "$work/repo"

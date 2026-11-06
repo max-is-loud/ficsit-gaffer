@@ -6,6 +6,17 @@
 # supported-builds: an unknown build gets no mods, so a game update can never start SML on a
 # build that nobody has tested (user decision of 28 Oct 2026, issue #65). The build id comes
 # from the Steam manifest, which steamcmd writes, so the guard sees the build it is about to start.
+#
+# Exit codes of `guard`. The guard may stop the game from starting in ONE case only: mods are
+# present, the build is not approved (or cannot be read), and the mods cannot be moved away.
+# Mods on an unapproved build can crash the game or write mod data into the save, and a stopped
+# server protects the save. In every other case the guard exits 0. In particular, with no Mods
+# folder (the mods are already off) it exits 0 whatever else fails, so a guard problem can
+# never block a server that has no mods.
+#
+# `off` is idempotent: it succeeds when the mods are already off, so the rollback can always
+# start the game again. Every move uses `mv -T`, so a move never goes INTO an existing folder.
+# Names that this script can create under FactoryGame: Mods.off and Mods.off-<UTC stamp>.
 # Runs as the game user (guard) or as root or the game user (the other commands).
 # See tools/testbed/bridge-runbook.md.
 #
@@ -42,20 +53,31 @@ refuse_while_running() {
   if "$SYSTEMCTL" is-active --quiet "$GAME_UNIT"; then fail "$GAME_UNIT is running; stop it first"; fi
 }
 
-# Unlike `off`, this must work while the unit is starting, and it must fail closed: if the
-# rename fails, the game must not start with mods on an unapproved build.
+# Moves Mods aside to Mods.off, or to Mods.off-<stamp> when Mods.off exists. It prints the
+# new folder name, and fails only when the move fails. mv -T never moves INTO a folder.
+move_mods_aside() {
+  local target=$MODS_OFF
+  if [ -e "$target" ]; then target="$MODS_OFF-$(date -u +%Y%m%dT%H%M%SZ)"; fi
+  mv -T -- "$MODS" "$target" || return 1
+  basename "$target"
+}
+
+# Unlike `off`, this must work while the unit is starting. An unreadable manifest or list means
+# "not approved", so the only step that can fail the guard is the move itself.
 guard() {
   local build target
-  [ -d "$MODS" ] || { say "no Mods directory; nothing to guard"; return 0; }
+  if [ ! -d "$MODS" ]; then say "no Mods directory; nothing to guard"; return 0; fi
   build=$(installed_build)
   if build_is_approved "$build"; then
     say "game build $build is approved; mods stay on"
     return 0
   fi
-  target=$MODS_OFF
-  if [ -e "$target" ]; then target="$MODS_OFF-$(date -u +%Y%m%dT%H%M%SZ)"; fi
-  mv -- "$MODS" "$target" || fail "could not move $MODS away; refusing to start mods on an unapproved build"
-  say "game build '${build:-unknown}' is not in $APPROVED_BUILDS; moved Mods to $(basename "$target"). The server starts WITHOUT mods."
+  if target=$(move_mods_aside); then
+    say "game build '${build:-unknown}' is not in $APPROVED_BUILDS; moved Mods to $target. The server starts WITHOUT mods."
+    return 0
+  fi
+  echo "mods-control: REFUSING TO START THE GAME: build '${build:-unknown}' is not approved for mods, and $MODS cannot be moved away. See 'If the guard refuses the start' in tools/testbed/bridge-runbook.md." >&2
+  return 1
 }
 
 status() {
@@ -69,11 +91,11 @@ status() {
 }
 
 switch_off() {
+  local target
   refuse_while_running
-  [ -d "$MODS" ] || fail "mods are already off (no $MODS)"
-  [ ! -e "$MODS_OFF" ] || fail "$MODS_OFF already exists; look at it first"
-  mv -- "$MODS" "$MODS_OFF"
-  say "mods are OFF; the next start is a plain server"
+  if [ ! -d "$MODS" ]; then say "mods are already off (no $MODS); nothing to do"; return 0; fi
+  target=$(move_mods_aside) || fail "could not move $MODS away"
+  say "mods are OFF (moved to $target); the next start is a plain server"
 }
 
 switch_on() {
