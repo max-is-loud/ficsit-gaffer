@@ -1,0 +1,14 @@
+# Checks the receiver's certificate every week. The service renews it only when it has less
+# than 30 days left, so most runs change nothing. A certificate lives 90 days, so a run that
+# fails still leaves weeks to notice (the journal shows the failure).
+[Unit]
+Description=Check the TLS certificate of the Gaffer bridge receiver every week
+
+[Timer]
+OnCalendar=Mon *-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=30min
+Unit=gaffer-bridge-cert-renew.service
+
+[Install]
+WantedBy=timers.target

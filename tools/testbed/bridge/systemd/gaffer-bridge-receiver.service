@@ -1,0 +1,73 @@
+# The Gaffer bridge receiver: the HTTPS endpoint that the game plugin reports to and that
+# ff-server queries. It listens on the Tailscale address only. It runs as its own user, not as
+# the game user: the game is the part of this host that faces the internet, and a compromise of
+# the game must not reach the receiver's database, its key or the read-only query token.
+# The secrets stay root-owned in /etc/gaffer-bridge. systemd copies them into a private,
+# in-memory credentials directory for this unit (LoadCredential), so the receiver can read
+# them but never owns or changes them. Install steps: tools/testbed/bridge-runbook.md.
+[Unit]
+Description=Gaffer bridge receiver (live world state from the Satisfactory server)
+After=network-online.target tailscaled.service
+Wants=network-online.target tailscaled.service
+ConditionPathExists=/etc/gaffer-bridge/receiver.json
+# The Tailscale address can appear a few seconds after boot. Keep trying; never give up.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=gaffer-bridge
+Group=gaffer-bridge
+ExecStart=/usr/bin/node --max-old-space-size=128 /opt/gaffer-bridge/receiver/src/main.mjs --config %d/receiver.json
+LoadCredential=receiver.json:/etc/gaffer-bridge/receiver.json
+LoadCredential=server.pem:/etc/gaffer-bridge/tls/server.pem
+LoadCredential=server-key.pem:/etc/gaffer-bridge/tls/server-key.pem
+# The SQLite database (and its WAL files) live here, private to the receiver user.
+StateDirectory=gaffer-bridge
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/gaffer-bridge
+UMask=0077
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=15
+
+# The receiver is small (about 60 MB resident). These limits keep a fault from taking memory
+# or CPU from the game, which shares an 8 GB host with a 6 GB cap. The kernel kills the
+# receiver first if the host runs out of memory.
+MemoryMax=256M
+MemoryHigh=200M
+TasksMax=32
+CPUQuota=25%
+Nice=5
+OOMScoreAdjust=500
+
+# Hardening, in the style of satisfactory.service. Node.js needs writable and executable
+# memory for its JIT, so MemoryDenyWriteExecute stays off.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectProc=invisible
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+# IPv4 and the journal socket only. No port below 1024, so no capability is needed.
+RestrictAddressFamilies=AF_INET AF_UNIX
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Only the tailnet (100.64.0.0/10) and this host may talk to the receiver, whatever the
+# firewall says. The game reaches it through the host's own Tailscale address.
+IPAddressDeny=any
+IPAddressAllow=100.64.0.0/10 127.0.0.0/8
+
+[Install]
+WantedBy=multi-user.target
