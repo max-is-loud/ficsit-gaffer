@@ -1,15 +1,30 @@
 import {createServer} from 'node:https';
-import {readFileSync,statSync} from 'node:fs';
-import {isAbsolute} from 'node:path';
+import {readFileSync,realpathSync,statSync} from 'node:fs';
+import {dirname,isAbsolute} from 'node:path';
 import {createHash,timingSafeEqual} from 'node:crypto';
 import {decodeRequest,ProtocolError,MAX_BODY_BYTES} from './protocol.mjs';
 import {MAX_QUERY_BYTES,MAX_RESPONSE_BYTES} from './query.mjs';
 
+/** A secret file must be private: no group or other access (0600 or 0400). One exception is
+ * systemd's credentials directory (LoadCredential, given in CREDENTIALS_DIRECTORY). With User=,
+ * systemd 255 makes each credential 0400 root:root and grants the service user read through an
+ * ACL, so stat shows the ACL mask as group read (0440). systemd keeps that directory private to
+ * the unit, so a file in it passes when it is read-only and others have no access. A link that
+ * leads out of the directory does not pass. */
+function isPrivateFile(path,credentialsDirectory) {
+ const mode=statSync(path).mode;
+ if((mode&0o077)===0)return true;
+ if(!credentialsDirectory||(mode&0o337)!==0)return false;
+ return dirname(realpathSync(path))===realpathSync(credentialsDirectory);
+}
+
 /** @typedef {{token:string,queryToken?:string,serverId:string,worldId:string,host:string,port:number,databasePath:string,cert:Buffer,key:Buffer,requestTimeoutMs?:number}} ReceiverConfig */
-/** @returns {ReceiverConfig} */
-export function loadConfig(absolutePath) {
+/** Reads and checks the private configuration. `credentialsDirectory` defaults to the
+ * CREDENTIALS_DIRECTORY that systemd sets for a unit with LoadCredential.
+ * @returns {ReceiverConfig} */
+export function loadConfig(absolutePath,{credentialsDirectory=process.env.CREDENTIALS_DIRECTORY}={}) {
  if(!isAbsolute(absolutePath))throw Error('Configuration path must be absolute');
- if((statSync(absolutePath).mode&0o077)!==0)throw Error('Configuration must be private (0600)');
+ if(!isPrivateFile(absolutePath,credentialsDirectory))throw Error('Configuration must be private (0600, or a systemd credential)');
  const value=JSON.parse(readFileSync(absolutePath,'utf8'));
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  const token=/^[A-Za-z0-9_-]{32,256}$/;
@@ -17,7 +32,7 @@ export function loadConfig(absolutePath) {
  // The optional read-only credential must differ from the producer credential.
  if(value.queryToken!==undefined&&(typeof value.queryToken!=='string'||!token.test(value.queryToken)||value.queryToken===value.token))throw Error('Invalid receiver query token');
  for(const field of ['databasePath','certPath','keyPath'])if(typeof value[field]!=='string'||!isAbsolute(value[field]))throw Error('Storage and TLS paths must be absolute');
- if((statSync(value.keyPath).mode&0o077)!==0)throw Error('TLS key must be private (0600)');
+ if(!isPrivateFile(value.keyPath,credentialsDirectory))throw Error('TLS key must be private (0600, or a systemd credential)');
  const host=value.host??'127.0.0.1',port=value.port??9443,requestTimeoutMs=value.requestTimeoutMs??5000;
  if(typeof host!=='string'||host.length===0||!Number.isInteger(port)||port<1||port>65535||!Number.isInteger(requestTimeoutMs)||requestTimeoutMs<100||requestTimeoutMs>30000)throw Error('Invalid receiver listener settings');
  return {...value,host,port,requestTimeoutMs,cert:readFileSync(value.certPath),key:readFileSync(value.keyPath)};
