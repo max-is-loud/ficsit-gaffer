@@ -31,7 +31,10 @@ MODS="$GAME_DIR/FactoryGame/Mods"
 MODS_OFF="$GAME_DIR/FactoryGame/Mods.off"
 MANIFEST="$GAME_DIR/steamapps/appmanifest_1690800.acf"
 
-say() { echo "mods-control: $*"; }
+# A message must never change a result. The guard runs as an ExecStartPre, so a failed write
+# (a full or closed output) must not stop the game: both helpers ignore a write error.
+say() { echo "mods-control: $*" || true; }
+warn() { echo "mods-control: $*" >&2 || true; }
 
 fail() {
   echo "mods-control: $*" >&2
@@ -54,18 +57,25 @@ refuse_while_running() {
 }
 
 # Moves Mods aside to Mods.off, or to Mods.off-<stamp> when Mods.off exists. It prints the
-# new folder name, and fails only when the move fails. mv -T never moves INTO a folder.
+# new folder name, and fails only when the move fails: a failed `date` gets a fallback stamp,
+# and a failed print after a good move still returns 0. mv -T never moves INTO a folder.
 move_mods_aside() {
-  local target=$MODS_OFF
-  if [ -e "$target" ]; then target="$MODS_OFF-$(date -u +%Y%m%dT%H%M%SZ)"; fi
+  local target=$MODS_OFF stamp=""
+  if [ -e "$target" ]; then
+    stamp=$(date -u +%Y%m%dT%H%M%SZ 2>/dev/null) || stamp=""
+    target="$MODS_OFF-${stamp:-pid$$-$RANDOM}"
+  fi
   mv -T -- "$MODS" "$target" || return 1
-  basename "$target"
+  printf '%s\n' "${target##*/}" || true
+  return 0
 }
 
 # Unlike `off`, this must work while the unit is starting. An unreadable manifest or list means
 # "not approved", so the only step that can fail the guard is the move itself.
 guard() {
   local build target
+  # A closed output pipe must not kill the guard with SIGPIPE either.
+  trap '' PIPE
   if [ ! -d "$MODS" ]; then say "no Mods directory; nothing to guard"; return 0; fi
   build=$(installed_build)
   if build_is_approved "$build"; then
@@ -76,7 +86,7 @@ guard() {
     say "game build '${build:-unknown}' is not in $APPROVED_BUILDS; moved Mods to $target. The server starts WITHOUT mods."
     return 0
   fi
-  echo "mods-control: REFUSING TO START THE GAME: build '${build:-unknown}' is not approved for mods, and $MODS cannot be moved away. See 'If the guard refuses the start' in tools/testbed/bridge-runbook.md." >&2
+  warn "REFUSING TO START THE GAME: build '${build:-unknown}' is not approved for mods, and $MODS cannot be moved away. See 'If the guard refuses the start' in tools/testbed/bridge-runbook.md."
   return 1
 }
 

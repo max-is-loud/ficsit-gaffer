@@ -119,6 +119,32 @@ test_guard_edges() {
   else
     echo "skip the fail-closed tests: they need a user that is not root"
   fi
+
+  # Review round 2 of R1-02: a failed write or a failed helper command must not fail the guard
+  # outside the one refusal case. /dev/full makes every write fail with ENOSPC.
+  if [ -w /dev/full ]; then
+    fresh_game 25782486
+    rm -r "$game/FactoryGame/Mods"
+    check "no Mods + output that cannot be written: guard exits 0" quietly bash -c '"$0" guard >/dev/full 2>/dev/full' "$bridge/mods-control.sh"
+    fresh_game 25782486
+    check "unapproved build + output that cannot be written: guard exits 0" quietly bash -c '"$0" guard >/dev/full 2>/dev/full' "$bridge/mods-control.sh"
+    check "unapproved build + output that cannot be written: mods moved away" mods_off
+    fresh_game 25782485
+    check "approved build + output that cannot be written: guard exits 0" quietly bash -c '"$0" guard >/dev/full 2>/dev/full' "$bridge/mods-control.sh"
+    check "approved build + output that cannot be written: mods stay on" mods_on
+  else
+    echo "skip the write-failure tests: /dev/full is not available"
+  fi
+  local shims="$work/failing-tools"
+  mkdir -p "$shims"
+  printf '#!/bin/sh\nexit 1\n' >"$shims/date"
+  printf '#!/bin/sh\nexit 1\n' >"$shims/basename"
+  chmod +x "$shims/date" "$shims/basename"
+  fresh_game 25782486
+  mkdir "$game/FactoryGame/Mods.off"
+  check "unapproved build + failing date and basename: guard exits 0" quietly env PATH="$shims:$PATH" "$bridge/mods-control.sh" guard
+  check "unapproved build + failing date and basename: the mods moved to a fallback name" test "$(find "$game/FactoryGame" -maxdepth 1 -name 'Mods.off-pid*' | wc -l)" -eq 1
+  check "unapproved build + failing date and basename: no Mods folder remains" test ! -e "$game/FactoryGame/Mods"
 }
 
 test_on_and_off() {
