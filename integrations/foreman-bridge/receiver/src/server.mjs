@@ -9,12 +9,13 @@ import {MAX_QUERY_BYTES,MAX_RESPONSE_BYTES} from './query.mjs';
  * systemd's credentials directory (LoadCredential, given in CREDENTIALS_DIRECTORY). With User=,
  * systemd 255 makes each credential 0400 root:root and grants the service user read through an
  * ACL, so stat shows the ACL mask as group read (0440). systemd keeps that directory private to
- * the unit, so a file in it passes when it is read-only and others have no access. A link that
- * leads out of the directory does not pass. */
+ * the unit, so a file in it passes when its permission bits are 0440 or less (no write, no
+ * execute, no setuid, setgid or sticky bit, no access for others). A link that leads out of the
+ * directory, or a file in a subdirectory, does not pass. */
 function isPrivateFile(path,credentialsDirectory) {
  const mode=statSync(path).mode;
- if((mode&0o077)===0)return true;
- if(!credentialsDirectory||(mode&0o337)!==0)return false;
+ if((mode&0o077)===0) {return true;}
+ if(!credentialsDirectory||(mode&0o7337)!==0) {return false;}
  return dirname(realpathSync(path))===realpathSync(credentialsDirectory);
 }
 

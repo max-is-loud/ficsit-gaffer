@@ -83,8 +83,11 @@ test('a 0440 systemd credential passes only inside the credentials directory',()
  assert.equal(loadConfig(config,{credentialsDirectory:credentials}).port,9443);
  assert.throws(()=>loadConfig(config,{credentialsDirectory:''}),/Configuration must be private/);
  assert.throws(()=>loadConfig(config,{credentialsDirectory:elsewhere}),/Configuration must be private/);
- for(const mode of [0o444,0o640,0o460,0o540]){chmodSync(config,mode);assert.throws(()=>loadConfig(config,{credentialsDirectory:credentials}),/Configuration must be private/,mode.toString(8));}
+ for(const mode of [0o444,0o640,0o460,0o540,0o441,0o450,0o1440,0o2440,0o4440]) {chmodSync(config,mode);assert.throws(()=>loadConfig(config,{credentialsDirectory:credentials}),/Configuration must be private/,mode.toString(8));}
  chmodSync(config,0o440);
+ assert.throws(()=>loadConfig(config,{credentialsDirectory:join(dir,'no-such-directory')}),/no such file or directory/);
+ const nested=mkdtempSync(join(credentials,'nested-'));
+ assert.throws(()=>loadConfig(put(nested,'receiver.json',JSON.stringify(data),0o440),{credentialsDirectory:credentials}),/Configuration must be private/);
  const outsideKey=put(elsewhere,'server-key.pem',key,0o440);
  const withOutsideKey=put(credentials,'outside-key.json',JSON.stringify({...data,keyPath:outsideKey}),0o440);
  assert.throws(()=>loadConfig(withOutsideKey,{credentialsDirectory:credentials}),/TLS key must be private/);
