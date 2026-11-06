@@ -1,0 +1,36 @@
+# Gets the receiver's TLS certificate from Tailscale and restarts the receiver when it changed.
+# Run by gaffer-bridge-cert-renew.timer. It needs root: tailscale cert talks to tailscaled, and
+# the files in /etc/gaffer-bridge/tls are root-owned. Install steps: tools/testbed/bridge-runbook.md.
+[Unit]
+Description=Renew the TLS certificate of the Gaffer bridge receiver
+After=network-online.target tailscaled.service
+Wants=network-online.target tailscaled.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/gaffer-bridge/bin/renew-bridge-cert.sh
+TimeoutStartSec=5min
+UMask=0077
+MemoryMax=128M
+TasksMax=32
+
+# Hardening. The job writes in one directory, talks to tailscaled and systemd through Unix
+# sockets, and runs openssl. The first run by hand (runbook step b5) proves that this set works.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/etc/gaffer-bridge/tls
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=

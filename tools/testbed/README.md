@@ -7,6 +7,11 @@ issue #65, task 1. Back up the real save before each bridge install.
 **Nothing in this folder runs on the server until the user approves it.** Every step that
 changes the server is marked **needs user approval**. Read-only checks need no approval.
 
+The bridge install has its own runbook: [`bridge-runbook.md`](./bridge-runbook.md). It covers SML,
+the plugin, the receiver, the connection from a dev machine, rollback and removal (issue #65, tasks 3
+to 6). [`bridge-design.md`](./bridge-design.md) gives the reasons, the package provenance and the
+sources. The scripts and units are in [`bridge/`](./bridge). Run the backup (steps 1 to 4 below) first.
+
 ## Files
 
 | File | Job |
@@ -19,6 +24,7 @@ changes the server is marked **needs user approval**. Read-only checks need no a
 | `package.json`, `package-lock.json` | Pin the parser library (`@etothepii/satisfactory-file-parser` 4.1.2, the version of `packages/sf-save-data`). |
 | `test-save-backup.sh` | Tests the backup and restore scripts with a fake save tree. No server is involved. |
 | `test-save-validation.sh` | Tests the validation step with synthetic saves. Optional extra tests use one real save (see step 0). |
+| `bridge-runbook.md`, `bridge-design.md`, `bridge/` | The bridge install: runbook, design and provenance, scripts, systemd units and their tests. |
 | `test-common.sh`, `make-synthetic-save.mjs`, `cut-save.mjs` | Test helpers: shared setup; a tool that writes a tiny valid save with the library; a tool that cuts a real save. |
 
 ## Design decisions
