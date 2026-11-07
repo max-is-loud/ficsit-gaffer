@@ -1,6 +1,6 @@
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync,readFileSync,writeFileSync,chmodSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,writeFileSync,chmodSync,symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -72,4 +72,27 @@ test('private absolute config loads TLS files with loopback default',()=>{
  writeFileSync(path,JSON.stringify(data),{mode:0o600});assert.equal(loadConfig(path).host,'127.0.0.1');assert.throws(()=>loadConfig('relative.json'));
  chmodSync(path,0o644);assert.throws(()=>loadConfig(path));chmodSync(path,0o600);
  writeFileSync(path,JSON.stringify({...data,token:'short'}));assert.throws(()=>loadConfig(path));
+});
+// systemd 255 (system manager, User= set) gives LoadCredential files 0400 root:root plus a read
+// ACL for the service user, so stat shows 0440. The mode is the same as a chmod 0440 file.
+test('a 0440 systemd credential passes only inside the credentials directory',()=>{
+ const credentials=mkdtempSync(join(dir,'credentials-')),elsewhere=mkdtempSync(join(dir,'elsewhere-'));
+ const put=(folder,name,content,mode)=>{const path=join(folder,name);writeFileSync(path,content);chmodSync(path,mode);return path;};
+ const data={token:'x'.repeat(64),serverId:randomUUID(),worldId:randomUUID(),databasePath:join(dir,'credential.db'),certPath:join(dir,'server.pem'),keyPath:put(credentials,'server-key.pem',key,0o440)};
+ const config=put(credentials,'receiver.json',JSON.stringify(data),0o440);
+ assert.equal(loadConfig(config,{credentialsDirectory:credentials}).port,9443);
+ assert.throws(()=>loadConfig(config,{credentialsDirectory:''}),/Configuration must be private/);
+ assert.throws(()=>loadConfig(config,{credentialsDirectory:elsewhere}),/Configuration must be private/);
+ for(const mode of [0o444,0o640,0o460,0o540,0o441,0o450,0o1440,0o2440,0o4440]) {chmodSync(config,mode);assert.throws(()=>loadConfig(config,{credentialsDirectory:credentials}),/Configuration must be private/,mode.toString(8));}
+ chmodSync(config,0o440);
+ assert.throws(()=>loadConfig(config,{credentialsDirectory:join(dir,'no-such-directory')}),/no such file or directory/);
+ const nested=mkdtempSync(join(credentials,'nested-'));
+ assert.throws(()=>loadConfig(put(nested,'receiver.json',JSON.stringify(data),0o440),{credentialsDirectory:credentials}),/Configuration must be private/);
+ const outsideKey=put(elsewhere,'server-key.pem',key,0o440);
+ const withOutsideKey=put(credentials,'outside-key.json',JSON.stringify({...data,keyPath:outsideKey}),0o440);
+ assert.throws(()=>loadConfig(withOutsideKey,{credentialsDirectory:credentials}),/TLS key must be private/);
+ const linked=join(credentials,'linked.json');symlinkSync(put(elsewhere,'receiver.json',JSON.stringify(data),0o440),linked);
+ assert.throws(()=>loadConfig(linked,{credentialsDirectory:credentials}),/Configuration must be private/);
+ const ordinary=put(elsewhere,'private.json',JSON.stringify({...data,keyPath:join(dir,'server-key.pem')}),0o600);
+ assert.equal(loadConfig(ordinary,{credentialsDirectory:credentials}).port,9443);
 });

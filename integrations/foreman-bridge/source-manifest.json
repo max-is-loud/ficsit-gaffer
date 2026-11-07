@@ -50,9 +50,12 @@
         "modified": [
           "Tests/fixtures/v1.json"
         ],
-        "added": [],
+        "added": [
+          ".clang-format"
+        ],
         "deleted": [],
         "files": {
+          ".clang-format": "0ffe1a5e5fc1488928c935631fac98e0d978199bc31841f6cf6386f8a1f01edb",
           ".gitignore": "3de3c3f1520ab2724361930b10cf063dbb77432968b2dc295865d0b65ed7a7cd",
           "ForemanBridge.uplugin": "142649d284a56f9877a4d1eaa30f655a86e7e4a85d02d2417c91f3f6ea2c663f",
           "README.md": "7b22dc45c2d332b270fee804c4e20a09c858595101ab405555a4571ee0fe9900",
@@ -127,6 +130,7 @@
           "src/store.mjs",
           "test/protocol.test.mjs",
           "test/recovery.test.mjs",
+          "test/server.test.mjs",
           "test/store.test.mjs"
         ],
         "added": [
@@ -141,7 +145,7 @@
         "deleted": [],
         "files": {
           ".gitignore": "19ec15539f455ae74b6aa076419f24c0971b54fa075b7b20c215c7aaaa62ed2f",
-          "README.md": "d11c02812b90ccb5125285eb6eabdd959c7499d9025c3a0bad178d30bb04b8d1",
+          "README.md": "1f1a3c75ca6d96f2aaefb8883959e24194df3cc835d056a2e136db2894ce7fe5",
           "docs/query-v1.md": "cde5171a3df870c1dec983379cc64044fae657169fe0aa02d7775b97fcbec2db",
           "fixtures/v1.json": "9eea01d3c770189905065d700accbc32c36db2c41034651c431300abd68136da",
           "package.json": "f39eb050adbb883e0cd163d9becd82aa12616564e7b5eba5800814b03c55d269",
@@ -152,7 +156,7 @@
           "src/main.mjs": "eac39b55f5b68ed3becec94e233e67c22c82cdd1b7f37a730e81c94efc7afe53",
           "src/protocol.mjs": "a2635e79af7230639c793e2f4fe29c924b1ec67859222cabc476e74b417b66d8",
           "src/query.mjs": "e6cf952cc48e58e3793c008ce5abe4ba7d29103d8686bcd6cdcb168a435e8f25",
-          "src/server.mjs": "71a12f0d892d12b25df645da7c42bd2eda6d6c1b1baafdf20f844a6d323bf677",
+          "src/server.mjs": "8de06d373038979201e14630ae74abe5bd3b10f4e366cae68ab0bbb0e51fa38e",
           "src/store.mjs": "05b963d94b26fd9833704a5a1937205664038084ae2529b7370183b5e0f47aa0",
           "test/acceptance-gate.test.mjs": "f3b11aff9b4ce339c71cfd55bf614a748669d29365264f06a05a9b6b0b6a7d81",
           "test/freshness.test.mjs": "b6d2fbb4125e45e67254d889d057d64b1ea4dd09c48636cfd351f37f1ca4e2c5",
@@ -160,7 +164,7 @@
           "test/query-server.test.mjs": "8f9282e734e8aedc75ac7969b15abc2b7dd4f8c95aa5a53e1594e7ecedd54a09",
           "test/query.test.mjs": "43c78fee517611ac968bbb2fb090ce3c75f47e13f1ecd1c3076b204e13b7534e",
           "test/recovery.test.mjs": "e53bde4e6fec7aa12c90ad8e4d6b9b3784802b76bd44d8d44df31c53bd29a6c8",
-          "test/server.test.mjs": "30c88b3550b18f22ef250d863c021c91eb214156d0a752980e0afec99b67e4e1",
+          "test/server.test.mjs": "fb34be4764e01d829e5202d23b3b213e0998c00c101b2572dc2ff1d8a34a922f",
           "test/store.test.mjs": "95c1e5f912cb8c18f95508ffca30453c7ef779ed9f9bccf9a5fc6a066c1acc72",
           "test/support.mjs": "9ded893c965ab74b56e246a3164f4c26349053fb01279f6b8c93cba3396bbd1b"
         }

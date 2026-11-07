@@ -10,7 +10,7 @@ FOREMAN_INTEROP=/path/to/mod/out/wire-interop.json npm test
 node src/main.mjs --config /absolute/private/receiver.json
 ```
 
-Private configuration (mode 0600):
+Private configuration (mode 0600, or a systemd credential as described below):
 
 ```json
 {
@@ -29,7 +29,10 @@ Private configuration (mode 0600):
 
 Host defaults to loopback; a separate-machine test requires an explicitly
 reachable binding and endpoint. Keep configuration/database/key directories
-private. The key must be mode 0600. Health `GET /healthz` exposes readiness only.
+private. The configuration and the key must be mode 0600 (or 0400). One exception:
+under systemd `LoadCredential`, a read-only 0440 file inside `$CREDENTIALS_DIRECTORY`
+also passes, because systemd 255 grants the service user read through an ACL that
+`stat` shows as group read. Health `GET /healthz` exposes readiness only.
 All four `/v1/` POST routes require `Authorization: Bearer TOKEN` and
 `Content-Type: application/json`. Tokens/bodies are never logged. Error replies
 contain classified codes, never exceptions or secrets. Authentication precedes

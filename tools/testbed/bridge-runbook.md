@@ -210,7 +210,7 @@ That name is already in the log from the June certificate. The command can take 
 
 ```bash
 ssh openclaw 'sudo -n /opt/gaffer-bridge/bin/renew-bridge-cert.sh'
-ssh openclaw 'sudo -n openssl x509 -in /etc/gaffer-bridge/tls/server.pem -noout -issuer -enddate -ext subjectAltName; sudo -n stat -c "%a %U:%G %n" /etc/gaffer-bridge/tls/*'
+ssh openclaw 'sudo -n openssl x509 -in /etc/gaffer-bridge/tls/server.pem -noout -issuer -enddate -ext subjectAltName; sudo -n stat -c "%a %U:%G %n" /etc/gaffer-bridge/tls/server.pem /etc/gaffer-bridge/tls/server-key.pem'
 ```
 
 Expected from the first command: `installed a certificate that expires <a date about 90 days away>`, then
